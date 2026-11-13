@@ -1069,22 +1069,35 @@ function trafficDelivery(list,T){
     priceOf(res)});
 }
 /* opponents */
-function genOpp(m,dir){
+/* Saturday's local challengers are matched to the driver and car you send: about the same OVR and PI,
+   nudged a little up on the harder passes and down on the easy ones, with a few points of luck either way. */
+const OPP_TUNES=[[0,0,0,0,0],[1,1,0,0,0],[1,1,1,1,0],[2,2,1,1,1],[2,3,2,1,1],[3,3,2,1,2]];
+function oppTarget(m,d){const c=d&&carById(d.carId);if(!c)return null;const off=(m.diff-.45)*8;
+  return{tyre:Math.min(2,c.tyre.dry??c.tyre.grade),d:clamp(dskill(d)*100,10,100)+off,c:Math.round(spec(Object.assign({},c,{cond:100,tyre:{grade:c.tyre.dry??c.tyre.grade,wear:20}})).pi/20)*20+off*10}}
+function genOpp(m,dir,drv){
   const r=mulberry32(strHash(m.id)*31+S.week*977+(dir==='up'?13:29)),pick=a=>a[Math.floor(r()*a.length)];
-  const lvl=clamp(m.diff+Math.min(.24,(S.week-1)*.01)+(r()-.5)*.06,.08,.97);
-  const stats={};STATS.forEach(([k])=>stats[k]=clamp(lvl*100+(r()-.5)*22,6,98));
+  const ref=drv||S.drivers.filter(raceReady).sort((a,b)=>dskill(b)-dskill(a))[0],tg=oppTarget(m,ref);
+  const lvl=tg?clamp((tg.d+(r()-.5)*7)/100,.08,1):clamp(m.diff+Math.min(.24,(S.week-1)*.01)+(r()-.5)*.06,.08,.97);
+  const stats={};STATS.forEach(([k])=>stats[k]=clamp(lvl*100+(r()-.5)*22,6,99));
+  for(let k=0;k<3;k++){const sh=lvl*100-dskill({stats})*100;STATS.forEach(([q])=>stats[q]=clamp(stats[q]+sh,6,99))}
   const keys=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&k!=='ae86'&&!GB[k].kei).sort((a,b)=>CARS[a].price-CARS[b].price);
-  let model;const ti=Math.round(lvl*keys.length*.85+(r()-.5)*3)-1;
-  if(ti<0)model=r()<.5?'ae86l':'ae86';else model=keys[clamp(ti,0,keys.length-1)];
-  const legs=Object.keys(CARS).filter(k=>CARS[k].legend&&CARS[k].legend>=300);if(m.id==='kurogane'||(m.id==='rokko'&&r()<.5))model=pick(legs);
-  const paint=CARS[model].paint||pick(PAINTS);
-  const car={id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:Math.min(3,Math.floor(lvl*2.8+r()*.9-.15)),susp:Math.min(3,Math.floor(lvl*3.4+r()*.6)),brakes:Math.min(2,Math.floor(lvl*2.4+r()*.5)),lsd:lvl>.25||r()<.4?1:0,weight:Math.min(2,Math.floor(lvl*2.2*r())),cradle:0,tyre:{grade:lvl>.58?2:lvl>.28?1:0,wear:15+r()*25},cond:100,km:Math.round(60000+r()*120000)};
+  const legs=Object.keys(CARS).filter(k=>CARS[k].legend&&CARS[k].legend>=300);
+  let model,tune;
+  if(tg){const want=clamp(tg.c+(r()-.5)*70,200,995),pool=keys.concat(['ae86','ae86l'],m.id==='kurogane'||m.id==='rokko'?legs:[]),opts=[];
+    pool.forEach(k=>OPP_TUNES.forEach((t,ti)=>{const pi=spec({model:k,engine:t[0],susp:t[1],brakes:t[2],lsd:t[3],weight:t[4],cond:100,tyre:{grade:tg.tyre,wear:20}}).pi;opts.push({k,ti,gap:Math.abs(pi-want)})}));
+    opts.sort((a,b)=>a.gap-b.gap);const best=opts.slice(0,8).filter(o=>o.gap<=opts[0].gap+25),ch=best[Math.floor(r()*best.length)];model=ch.k;tune=ch.ti}
+  else{const ti=Math.round(lvl*keys.length*.85+(r()-.5)*3)-1;
+    if(ti<0)model=r()<.5?'ae86l':'ae86';else model=keys[clamp(ti,0,keys.length-1)];
+    if(m.id==='kurogane'||(m.id==='rokko'&&r()<.5))model=pick(legs)}
+  const paint=CARS[model].paint||pick(PAINTS),T=tune!=null?OPP_TUNES[tune]:null;
+  const car=T?{id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:T[0],susp:T[1],brakes:T[2],lsd:T[3],weight:T[4],cradle:0,tyre:{grade:tg.tyre,wear:15+r()*25},cond:100,km:Math.round(60000+r()*120000)}
+    :{id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:Math.min(3,Math.floor(lvl*2.8+r()*.9-.15)),susp:Math.min(3,Math.floor(lvl*3.4+r()*.6)),brakes:Math.min(2,Math.floor(lvl*2.4+r()*.5)),lsd:lvl>.25||r()<.4?1:0,weight:Math.min(2,Math.floor(lvl*2.2*r())),cradle:0,tyre:{grade:lvl>.58?2:lvl>.28?1:0,wear:15+r()*25},cond:100,km:Math.round(60000+r()*120000)};
   if(model==='ae86'||model==='ae86l'){if(r()<.5){car.c1='#eeede6';car.c2='#17181c';car.paint='High Tech Two-Tone'}}
   const trait=pick(Object.keys(TRAITS).filter(t=>t!=='natural'));
   const wx=S&&tropWx(S.raceWeather,m.id),rw=r(),dry=car.tyre.grade;car.tyre.dry=dry;
   if(wx==='Snow'){if(trait==='hot'&&rw<.2&&dry>0){car.tyre.gamble=true}else car.tyre.grade=rw<(CARS[model].drive==='AWD'||trait==='ice'?.9:.75)?3:0;car.tyre.wear=6+rw*12}
   else if(wx==='Wet'&&dry>0){if(trait==='hot'&&rw<.35){car.tyre.gamble=true}else if(trait==='rain'||CARS[model].drive==='AWD'){car.tyre.grade=rw<.6?0:1}else car.tyre.grade=0;car.tyre.wear=8+rw*15}
-  const o={first:pick(FIRST),family:pick(FAMILY),team:pick(TEAMS),seed:Math.floor(r()*1e9),stats,trait,car,lvl};o.know={[m.id]:Math.round(clamp(25+lvl*45+r()*10,0,95))};o.mmRank=lvl>.9?3:lvl>.6?2:1;o.perks=lvl>.55?[pick(['cool','closer','launch','hunter','tyre'])]:[];return o;
+  const o={first:pick(FIRST),family:pick(FAMILY),team:pick(TEAMS),seed:Math.floor(r()*1e9),stats,trait,car,lvl};o.know={[m.id]:Math.round(clamp(tg?((ref.know||{})[m.id]||0)+4+r()*12:25+lvl*45+r()*10,5,95))};o.mmRank=lvl>.9?3:lvl>.6?2:1;o.perks=lvl>.55?[pick(['cool','closer','launch','hunter','tyre'])]:[];return o;
 }
 
 /* race */
@@ -2635,7 +2648,7 @@ function openRacePlanner(){
   MAP.setDark(1);renderPlanner();
 }
 function oppCard(o,mid){const sp=spec(o.car);return`<div class="opp"><img class="av" src="${avatar(o.seed,o.face)}" alt=""><div style="min-width:0"><div class="nm">${esc(o.first)} ${esc(o.family)}</div><div class="meta">${esc(o.team)} · ${CARS[o.car.model].code} ${esc(CARS[o.car.model].name)}</div><div class="meta">${TRAITS[o.trait].name} · PI ${sp.pi} · ${TYRES[o.car.tyre.grade].name} tyres${o.car.tyre.gamble?` <span style="color:var(--brake)">(gambling on ${S.raceWeather==='Snow'?'summer tyres in the snow':'slicks in the wet'})</span>`:o.car.tyre.dry!=null&&o.car.tyre.dry!==o.car.tyre.grade?` (swapped for the ${S.raceWeather==='Snow'?'snow':'rain'})`:''}</div><div class="meta">${o.net?'Ghost':'Local'}: knows the pass ${Math.floor(mid?knowOf(o,mid):o.know?Object.values(o.know)[0]||0:0)}%${o.net?' · level '+o.lv:' · moves rank '+ROMAN[o.mmRank||1]}${(o.perks||[]).length?' · '+o.perks.map(p=>PERKS[p].name).join(', '):''}</div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(o)*100)}</b></div></div>`}
-function oppOf(dir,m){const v=RP[dir].vs;return(v&&v!=='cpu'&&NET.oppVs(v,dir,m))||genOpp(m,dir)}
+function oppOf(dir,m){const v=RP[dir].vs;return(v&&v!=='cpu'&&NET.oppVs(v,dir,m))||genOpp(m,dir,S.drivers.find(x=>x.id===RP[dir].d))}
 function renderPlanner(){
   const open=MTNS.filter(passOpen),ds=S.drivers.filter(raceReady);
   const RW=S.raceWeather||S.weather;const slot=(dir)=>{const s=RP[dir],m=MTNS.find(x=>x.id===s.m),o=oppOf(dir,m),vo=NET.vsOptions(),d=S.drivers.find(x=>x.id===s.d),c=carById(d.carId),sp=spec(c);
@@ -2985,7 +2998,8 @@ const NET=(()=>{
       lean=dd/5+dc/50,band=sd<=1.2?'close':lean>0?'up':'down';return{p,t,dd,dc,days,dist,pct,band}}
   function matches(n){if(!ready||!S.hkey||S.hpend)return[];const me=myPair();if(!me)return[];
     return plList.filter(p=>live(p)&&!openWith(p.key)).map(p=>matchOf(p,me)).filter(Boolean).sort((a,b)=>a.dist-b.dist||a.p.key.localeCompare(b.p.key)).slice(0,n||5)}
-  function rival(){if(!ready||!S.hkey||S.hpend)return null;const me=myPair(),c=plList.filter(live).map(p=>matchOf(p,me)).filter(Boolean);if(!c.length)return null;
+  /* the rival of the week has to be a fair fight: within about two steps (10 OVR or 100 PI) of your crew */
+  function rival(){if(!ready||!S.hkey||S.hpend)return null;const me=myPair(),c=plList.filter(live).map(p=>matchOf(p,me)).filter(x=>x&&Math.abs(x.dd)/5+Math.abs(x.dc)/50<=2);if(!c.length)return null;
     c.sort((a,b)=>a.dist-b.dist||a.p.key.localeCompare(b.p.key));const pool=c.slice(0,3);return pool[Math.floor(mulberry32(strHash(S.hkey)+S.week*7919)()*pool.length)].p}
   /* a car limit that brings both sides close, only if the stronger side owns a car that fits under it */
   function fairCap(p){const me=myPair(),t=theirPair(p);if(!me||!t||!me.best||!t.best||Math.abs(me.best-t.best)<40)return null;
@@ -2996,10 +3010,13 @@ const NET=(()=>{
     return`<div class="mtags"><span class="mt ${Math.abs(m.dd)<=3?'ok':''}" title="Average OVR of their two race drivers">Drivers ${m.t.d} <small>${sg(m.dd)}</small></span><span class="mt ${Math.abs(m.dc)<=30?'ok':''}" title="Average PI of the cars those drivers use">Cars PI ${m.t.c} <small>${sg(m.dc)}</small></span><span class="mt ${m.days<2?'ok':''}">${m.days<1/24?'Active now':m.days<1?'Active today':'Seen '+Math.round(m.days)+'d ago'}</span><span class="mt pct ${m.band}">${m.band==='close'?m.pct+'% match':m.band==='up'?'A step up':'A step down'}</span></div>`}
   const friends=()=>(S.friends||[]);
   function vsOptions(){const o=[],r=rival();if(r)o.push({v:'rival',l:`Rival of the week: @${r.h} · OVR ${r.ovr}`});
-    friends().forEach(k=>{const p=players[k];if(live(p)&&(!r||r.key!==k))o.push({v:'f:'+k,l:`Friend: @${p.h} · OVR ${p.ovr}`})});o.push({v:'cpu',l:'Local challenger'});return o}
+    const me=myPair();friends().forEach(k=>{const p=players[k];if(live(p)&&(!r||r.key!==k)){const mt=me&&matchOf(p,me);o.push({v:'f:'+k,l:`Friend: @${p.h} · OVR ${p.ovr}${mt?mt.band==='close'?' · even match':mt.band==='up'?' · a step up':' · a step down':''}`})}});o.push({v:'cpu',l:'Local challenger'});return o}
   function defaultVs(){return rival()?'rival':'cpu'}
   function oppVs(vs,dir,m){const p=vs==='rival'?rival():vs&&vs.startsWith('f:')?players[vs.slice(2)]:null;if(!live(p))return null;
-    const sn=dir==='up'?(p.crew[1]||p.crew[0]):p.crew[0];return oppFrom(sn,p.h,p.key,tropWx(S.raceWeather||S.weather,m.id))}
+    const mine=typeof RP!=='undefined'&&RP&&RP[dir]?S.drivers.find(x=>x.id===RP[dir].d):null,mc=mine&&carById(mine.carId);
+    const rate=(ovr,pi)=>ovr*.65+pi/10*.35,cr=p.crew.filter(x=>x&&x.car);let sn=dir==='up'?(cr[1]||cr[0]):cr[0];
+    if(mine&&mc&&cr.length>1){const my=rate(dskill(mine)*100,spec(mc).pi);sn=cr.slice().sort((a,b)=>Math.abs(rate(num(a.ovr,0,150,0),num(a.car.pi,0,1000,0))-my)-Math.abs(rate(num(b.ovr,0,150,0),num(b.car.pi,0,1000,0))-my))[0]}
+    return oppFrom(sn,p.h,p.key,tropWx(S.raceWeather||S.weather,m.id))}
   function toggleFriend(k){S.friends=friends();const i=S.friends.indexOf(k);if(i>=0){S.friends.splice(i,1);toast(`@${(players[k]||{}).h||k} removed from friends`)}else{if(S.friends.length>=40){toast('Friends list is full (40).');return}S.friends.push(k);toast(`@${(players[k]||{}).h||k} added to friends`)}save();render()}
   function addFriend(){const i=$('#fIn');if(!i)return;const k=keyOf(i.value.replace(/^@/,''));const m=$('#fMsg');
     const say=t=>{if(m)m.textContent=t};if(!k){say('Type a handle.');return}if(k===S.hkey){say('That\'s you.');return}
@@ -3368,7 +3385,7 @@ function showHelp(intro){
   <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
-  <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
+  <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, PI and tyres, a little tougher on the harder passes, and they always know their home pass a bit better than you. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
   <div class="mact">${intro?'':'<button class="btn" data-act="tutReplay">Replay tutorial</button>'}<button class="btn primary" data-act="${intro?'intro':'close'}">${intro?'Hand Kenta the keys':'Got it'}</button></div>`);
 }
 
