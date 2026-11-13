@@ -146,10 +146,23 @@ html.admin body{background:var(--night);color:var(--ink);font-family:var(--f-bod
 #adm .brow:first-of-type{border-top:0}
 #adm .brow .meta{flex:1}
 #adm .aempty{padding:12px 4px}
+#adm .pdx{display:flex;flex-direction:column;gap:7px;padding:2px 0 12px 50px}
+#adm .xbars{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px 10px}
+#adm .xs{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;font-size:11.5px;color:var(--mute);gap:0 6px}
+#adm .xs b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:13px}
+#adm .xs i{grid-column:1/-1;height:4px;border-radius:2px;background:var(--line);position:relative;overflow:hidden;margin-top:3px}
+#adm .xs i::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--sodium);border-radius:2px}
+#adm .pdx .kv{font-size:12.5px}
+#adm .kmoney b{color:var(--sodium)}
+#adm .xchips{display:flex;flex-wrap:wrap;gap:5px}
+#adm .xchip{font-size:11.5px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--ink)}
+#adm .xchip.tr{border-color:var(--sodium);color:var(--sodium)}
+#adm .xchip.pk{border-color:var(--cyan);color:var(--cyan)}
+#adm .xchip.mv{border-color:rgba(255,77,77,.6)}
 #adm .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 #adm :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .toast.bad{border-color:var(--brake)}
-@media (max-width:860px){#adm .agrid{grid-template-columns:minmax(0,1fr)}#adm .alist{position:static;max-height:none}#adm .arows{max-height:50vh}#adm .phr{grid-template-columns:56px minmax(0,1fr)}#adm .phr .btn{grid-column:2;justify-self:start}}
+@media (max-width:860px){#adm .pdx{padding-left:0}#adm .xbars{grid-template-columns:repeat(3,minmax(0,1fr))}#adm .agrid{grid-template-columns:minmax(0,1fr)}#adm .alist{position:static;max-height:none}#adm .arows{max-height:50vh}#adm .phr{grid-template-columns:56px minmax(0,1fr)}#adm .phr .btn{grid-column:2;justify-self:start}}
 
 </style>
 </head>
@@ -226,7 +239,7 @@ html.phone .lc .ovs{display:none}
 .tyreopt{border:1px solid var(--line);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mute);min-width:0}
 .tyreopt b{color:var(--ink);font-size:12px}
 .tyreopt.on{border-color:var(--sodium);background:rgba(255,176,59,.06)}
-.tyreopt .wetg{color:var(--cyan)}
+.tyreopt .wetg{color:var(--cyan)}.tyreopt .dryg{color:var(--sodium)}
 .tyreopt .btn.sm{padding:4px 7px;font-size:11px}
 .wxnote{color:var(--cyan)!important;font-size:13px}
 #coach{position:fixed;z-index:72;width:min(330px,calc(100vw - 24px));background:rgba(10,14,30,.97);border:1px solid var(--sodium);border-radius:12px;padding:12px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;transition:left .18s ease,top .18s ease}
@@ -776,8 +789,14 @@ const SNOW_DRIVE={AWD:1,FF:.88,FR:.76,MR:.76,RR:.8};
 /* Seasons. Change SEASON_WEEKS to make each season longer or shorter. */
 const SEASON_WEEKS=4;
 const SEASONS=[{n:'Spring',jp:'春'},{n:'Summer',jp:'夏'},{n:'Autumn',jp:'秋'},{n:'Winter',jp:'冬'}];
+/* grip of a fresh set on one scale, 100 = semi-slicks on a dry road, so dry, wet and snow compare directly */
+const tyreGrip=t=>{const mu=.7+.6*t.grip,top=.7+.6*Math.max(...TYRES.map(x=>x.grip)),f=v=>Math.round(v/top*100);return{dry:f(mu),wet:f(mu*t.wet),snow:f(mu*t.snow)}};
 const seasonIdx=w=>Math.floor(((w||1)-1)/SEASON_WEEKS)%4;
 const SEASON=()=>SEASONS[seasonIdx(S?S.week:1)].n;
+/* Sakura: across spring the blossom spreads week by week, peaks, then the petals fall as the leaves come in. 0..1 through the season. */
+const springP=()=>SEASON()!=='Spring'?-1:((((S?S.week:1)-1)%SEASON_WEEKS)+.5)/SEASON_WEEKS;
+const bloomOf=p=>p<0?null:{pink:p>.75?.6:clamp(.12+p*1.35,0,1),late:p>.75,petals:p<.5?0:p>.75?1:.55};
+const seasonKey=()=>{const p=springP();return p<0?SEASON():'Spring'+Math.floor(p*SEASON_WEEKS)};
 const WINTER_CLOSED=['shiga'];
 const passClosed=id=>SEASON()==='Winter'&&WINTER_CLOSED.includes(id);
 const passOpen=m=>S.cred>=m.cred&&!passClosed(m.id);
@@ -1417,8 +1436,10 @@ const MAP=(()=>{
   function nearRoad(u,v){const x=Math.floor(v-B.v0),y=Math.floor(u-B.u0);return x>=0&&y>=0&&x<NGW&&NG[y*NGW+x]===1}
   function fden(u,v,bi){return bi.dens*(.75+vnoise(u*.15,v*.15,9)*.55)}
   let bSeason=null;const SEAS=()=>bSeason||SEASON();
+  const BLOOM=()=>bSeason?null:bloomOf(springP());
   function seasonGround(c,u,v,sl){const s=SEAS();
-    if(s==='Spring')return[c[0]*1.02+16,c[1]*1.12+18,c[2]*.95+12];
+    if(s==='Spring'){const g=[c[0]*1.02+16,c[1]*1.12+18,c[2]*.95+12],bl=BLOOM();if(!bl||!bl.petals)return g;
+      const d=bl.petals*.2*(.35+vnoise(u*.6,v*.6,57)),h=hash2(Math.floor(u*8),Math.floor(v*8),58);return h<d?lerp3(g,[238,192,208],.45+h/d*.35):g}
     if(s==='Summer')return[c[0]*.85,c[1]*1.0,c[2]*.8];
     if(s==='Autumn')return lerp3(c,[c[0]*1.25+22,c[1]*1.04+12,c[2]*.62],.62);
     const n=vnoise(u*.35,v*.35,31),amt=clamp(.74+n*.22-Math.max(0,sl-1.5)*.3,.15,.92);return lerp3(c,[224,230,240],amt);
@@ -1537,7 +1558,10 @@ const MAP=(()=>{
     },'b');
   }
   function seasonTree(pal,maple,h){const s=SEAS(),pine=pal[0]==='#123323';
-    if(s==='Spring')return{pal:maple?(h<.6?['#b06a80','#e29ab0','#f7cdd9']:['#3f7030','#5d9a3c','#9ccc66']):pine?pal:['#2a5a2c','#3f7d38','#6fae4c']};
+    if(s==='Spring'){if(pine)return{pal};const bl=BLOOM()||{pink:.6,late:false},sak=maple||h<.62,f=(h*7.31+.13)%1;
+      if(sak&&f<bl.pink)return{pal:bl.late?(f<bl.pink*.5?['#8a6a62','#d39bb0','#f3d2dc']:['#4f7a36','#c98aa2','#f1c9d5']):bl.pink>=.95&&f<.6?['#c27392','#f0a6c0','#fddbe6']:['#a65878','#e08cab','#f6c3d4']};
+      if(sak&&!bl.late&&bl.pink<.95)return{pal:['#4c6a34','#6f9144','#a8c66e']};
+      return{pal:maple?['#3f7030','#5d9a3c','#9ccc66']:['#2a5a2c','#3f7d38','#6fae4c']}}
     if(s==='Summer')return{pal:maple?['#2c5a26','#3f7c2f','#69a446']:pal};
     if(s==='Autumn')return{pal:maple||pine||h>.32?pal:(h<.16?['#5a5a1e','#7d7a26','#b0a33a']:['#6a4a1c','#946a24','#c89a3a'])};
     if(maple)return{pal:['#3e332c','#54463b','#6b5a4b'],bare:true};
@@ -1789,7 +1813,7 @@ const MAP=(()=>{
     return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox,ng:ngKeep,ngw:ngwKeep,season:null};
   }
   function useWorld(W){world=W;({B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox}=W)}
-  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==SEASON()){WORLDS[id]=buildWorld(id);WORLDS[id].season=SEASON()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
+  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==seasonKey()){WORLDS[id]=buildWorld(id);WORLDS[id].season=seasonKey()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
   /* ---------- the countryside beyond the pass ----------
      Baked once per world into two canvases the first time the view opens up: ground for the wide margin around the map,
      and a transparent layer of forest canopy, hamlets with their paddies, and (on city passes) blocks of town. Inside the map
@@ -1853,7 +1877,7 @@ const MAP=(()=>{
           t.fillStyle=sea==='Winter'?'#e8edf2':shade(rf,.12);t.fillRect(v-.04,u-.02,w+.08,dd*.3);t.fillStyle=sea==='Winter'?'#cfd6de':shade(rf,-.1);t.fillRect(v-.04,u+dd*.28,w+.08,dd*.24);
           if(rr()<.55)wins.push({v:v+w*.3,u:u+dd*.75,w:w*.2,h:.05})}}});
     return{E,g:G,t:T,wins,feather:F}}
-  function home(){if(!WORLDS.usuzumi){WORLDS.usuzumi=buildWorld('usuzumi');WORLDS.usuzumi.season=SEASON()}return WORLDS.usuzumi}
+  function home(){if(!WORLDS.usuzumi){WORLDS.usuzumi=buildWorld('usuzumi');WORLDS.usuzumi.season=seasonKey()}return WORLDS.usuzumi}
 
   /* ---------- view ---------- */
   function computeFit(){fitZ=clamp(Math.min(vw/fitBox[0],vh/(fitBox[1]*TILT)),2.5,120);return fitZ}
@@ -2447,7 +2471,7 @@ function garageHTML(){
     ${meter('Tyre wear',wear,wc,Math.round(wear)+'%')}
     ${meter('Condition',c.cond,c.cond<70?'var(--brake)':'var(--cyan)',Math.round(c.cond)+'%')}
     ${c.cond<15?'<div class="note" style="color:var(--brake)">Wrecked. Repair it before it can drive again.</div>':c.cond<50?'<div class="note" style="color:var(--warn)">Rough shape. Breakdowns get likely below 60%.</div>':''}${c.tyre.wear>80?'<div class="note" style="color:var(--warn)">Tyres nearly bald. Expect slides and spins.</div>':''}
-    <div class="tyrerow">${TYRES.map((t,i)=>{const sp2=setsOf(c)[i],fit=c.tyre.grade===i;return`<div class="tyreopt ${fit?'on':''}"><b>${t.name}</b><span>${fit?`Fitted · ${Math.round(c.tyre.wear)}%`:sp2!=null?`Spare · ${Math.round(sp2)}%`:'Not owned'}</span><span class="wetg">Wet grip ${Math.round(t.wet*100)}%</span><span class="wetg">Snow grip ${Math.round(t.snow*100)}%</span><div class="row">${!fit&&sp2!=null?`<button class="btn sm" data-act="swapTyre" data-id="${c.id}" data-g="${i}" ${S.money<SWAP_FEE?'disabled':''}>Swap ${yenK(SWAP_FEE)}</button>`:''}<button class="btn sm" data-act="tyre" data-id="${c.id}" data-g="${i}" ${S.money<t.cost?'disabled':''}>New ${yenK(t.cost)}</button></div></div>`}).join('')}</div>
+    <div class="tyrerow">${TYRES.map((t,i)=>{const sp2=setsOf(c)[i],fit=c.tyre.grade===i;return`<div class="tyreopt ${fit?'on':''}"><b>${t.name}</b><span>${fit?`Fitted · ${Math.round(c.tyre.wear)}%`:sp2!=null?`Spare · ${Math.round(sp2)}%`:'Not owned'}</span>${(g=>`<span class="dryg">Dry grip ${g.dry}%</span><span class="wetg">Wet grip ${g.wet}%</span><span class="wetg">Snow grip ${g.snow}%</span>`)(tyreGrip(t))}<div class="row">${!fit&&sp2!=null?`<button class="btn sm" data-act="swapTyre" data-id="${c.id}" data-g="${i}" ${S.money<SWAP_FEE?'disabled':''}>Swap ${yenK(SWAP_FEE)}</button>`:''}<button class="btn sm" data-act="tyre" data-id="${c.id}" data-g="${i}" ${S.money<t.cost?'disabled':''}>New ${yenK(t.cost)}</button></div></div>`}).join('')}</div>
     <div class="row">
     ${c.cond<100?`<button class="btn sm" data-act="repair" data-id="${c.id}" ${S.money<repairCost(c)?'disabled':''}>Repair ${yenK(repairCost(c))}</button>`:''}</div>
     <div class="mods">${MODS.map(md=>{const lv=c[md.k],mx=lv>=md.max,cost=mx?0:modCost(c,md.k,lv);return`<div class="mod"><div class="ml"><b>${md.name}</b><span>${md.labels[lv]}</span></div><div class="pips">${Array.from({length:md.max},(_,i)=>`<i class="${i<lv?'on':''}"></i>`).join('')}</div>${mx?'<span class="chip good">Maxed</span>':`<button class="btn sm" data-act="mod" data-id="${c.id}" data-m="${md.k}" ${S.money<cost?'disabled':''}>${yenK(cost)}</button>`}</div>`}).join('')}</div>
@@ -2631,7 +2655,7 @@ function endWeek(){
   <div class="mact"><button class="btn primary" data-act="startWeek">Start week ${S.week+1}</button></div>`);
 }
 function weekQuip(){const n=MTNS.filter(m=>S.cred>=m.cred).length;if(n===MTNS.length)return'Every pass in the region knows the name Kasumi Tofu.';const nx=MTNS.find(m=>S.cred<m.cred);return`${nx.name} opens at ${nx.cred} street cred. You have ${Math.round(S.cred)}.`}
-function startWeek(){S.raceWeather=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. Sakura on the pass and the snow is gone.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red and the fog comes in.',Winter:'Winter. Snow on the passes. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
+function startWeek(){S.raceWeather=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red and the fog comes in.',Winter:'Winter. Snow on the passes. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
 
 /* ================= race night ================= */
 let RP=null,RQ=[],RES=[];
@@ -2850,7 +2874,11 @@ const NET=(()=>{
       S.hist.unshift({r:g[1]==='WIN'?'W':'L',k:g[2]?'ch':g[3]?'gh':'cpu',vs:g[2]?'@'+g[2]:g[3]?'@'+g[3]:'',m,dir:g[5]==='uphill'?'up':'down',line:g[6],when:l.t||''})});
     if(S.hist.length>30)S.hist.length=30;save()}
   function roster(){return S.drivers.map(d=>{const c=carById(d.carId);return{first:d.first,family:d.family,seed:d.seed,face:cleanFace(d.face),ovr:Math.round(dskill(d)*100),lv:levelInfo(d.xp||0).lv,trait:d.trait,legend:!!d.legend,
-    car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null}})}
+    car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null,x:drvExtra(d,c)}})}
+  /* the fuller picture of a driver, read by the control room (admin.html); the game itself ignores it */
+  function drvExtra(d,c){const st={};STATS.forEach(([k])=>st[k]=Math.round(d.stats[k]||0));const kn={};Object.keys(d.know||{}).forEach(m=>{const v=Math.round(d.know[m]||0);if(v)kn[m]=v});
+    return{st,xp:Math.round(d.xp||0),runs:d.runs||0,wins:d.wins||0,losses:d.losses||0,wage:d.wage||0,perks:(d.perks||[]).slice(0,8),moves:movesOf(d),mm:Object.assign({},d.mm||{}),know:kn,
+      car:c?{cond:Math.round(c.cond||0),km:Math.round(c.km||0),tg:c.tyre?c.tyre.grade:0,tw:c.tyre?Math.round(c.tyre.wear):0}:null}}
   /* ---- ratings and snapshots ---- */
   function rateOf(d){const c=carById(d.carId);return dskill(d)*100*.65+(c?spec(c).pi/10:0)*.35}
   function crewTop(){return S.drivers.filter(d=>carById(d.carId)).map(d=>({d,r:rateOf(d)})).sort((a,b)=>b.r-a.r).slice(0,2)}
@@ -2965,7 +2993,7 @@ const NET=(()=>{
   function touch(){if(!ready||ro||!S||!S.hkey||S.hpend)return;clearTimeout(pubT);pubT=setTimeout(publish,1500)}
   async function publish(){
     if(!ready||ro||!S.hkey||S.hpend)return;if(pubBusy){touch();return}
-    const t=crewTop(),doc={h:S.handle,ovr:teamOVR(),crew:t.map(x=>snap(x.d)).filter(Boolean),w:net().w,l:net().l,wk:S.week,roster:roster(),hist:(S.hist||[]).slice(0,20),rw:S.wins||0,rl:S.losses||0};
+    const t=crewTop(),doc={h:S.handle,ovr:teamOVR(),crew:t.map(x=>snap(x.d)).filter(Boolean),w:net().w,l:net().l,wk:S.week,roster:roster(),hist:(S.hist||[]).slice(0,20),rw:S.wins||0,rl:S.losses||0,eco:{money:Math.round(S.money||0),earned:Math.round(S.earned||0),cred:Math.round(S.cred||0),cars:(S.cars||[]).length,drivers:(S.drivers||[]).length}};
     const sig=JSON.stringify(doc);if(sig!==pubLast){pubBusy=true;try{doc.t=now();await db.doc('players/'+S.hkey).set(doc);pubLast=sig}catch(e){wErr(e)}pubBusy=false}
     refreshSides();
   }
@@ -3367,7 +3395,7 @@ function showHelp(intro){
   <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. Downhill, weight and nimbleness count for more than power.</p>
   <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well.</p>
-  <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
+  <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
   <div class="mact">${intro?'':'<button class="btn" data-act="tutReplay">Replay tutorial</button>'}<button class="btn primary" data-act="${intro?'intro':'close'}">${intro?'Hand Kenta the keys':'Got it'}</button></div>`);
 }
@@ -3884,6 +3912,7 @@ const ADMIN=(()=>{
   const ago=t=>{if(!t)return'never';const d=(Date.now()-t)/DAYMS;return d<1/1440?'just now':d<1/24?Math.round(d*1440)+'m ago':d<1?Math.round(d*24)+'h ago':d<60?Math.round(d)+'d ago':new Date(t).toLocaleDateString()};
   const day=t=>t?new Date(t).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'–';
   const short=u=>u?String(u).slice(0,8):'–';
+  const nn=(v,d=0)=>{v=+v;return isFinite(v)?v:d};
   const tms=x=>typeof x==='number'?x:x?Date.parse(x)||0:0;
   function note(t,bad){const el=document.createElement('div');el.className='toast'+(bad?' bad':'');el.textContent=t;(document.getElementById('toasts')||document.body).appendChild(el);setTimeout(()=>el.remove(),3200)}
 
@@ -3908,13 +3937,13 @@ const ADMIN=(()=>{
   /* ---------- model ---------- */
   function rowOf(k){const H=data.handles[k],P=data.players[k];if(!H&&!P)return null;
     const ch=data.ch.filter(c=>c.from===k||c.to===k),seen=Math.max(P&&P.t||0,H&&H.t||0,P&&P.upd||0);
-    return{k,h:(P&&P.h)||(H&&H.h)||k,H,P,blocked:!!(H&&H.blocked),ovr:P?Math.round(P.ovr||0):0,w:P?P.w||0:0,l:P?P.l||0:0,rw:P?P.rw||0:0,rl:P?P.rl||0:0,wk:P?P.wk||0:0,seen,joined:H&&H.t||0,owner:(H&&H.owner)||(P&&P.owner),ch,inbox:data.inbox[k]||0,
+    return{k,h:(P&&P.h)||(H&&H.h)||k,H,P,blocked:!!(H&&H.blocked),ovr:P?Math.round(P.ovr||0):0,w:P?P.w||0:0,l:P?P.l||0:0,rw:P?P.rw||0:0,rl:P?P.rl||0:0,wk:P?P.wk||0:0,seen,eco:P&&P.eco&&typeof P.eco==='object'?P.eco:null,money:P&&P.eco?nn(P.eco.money,-1):-1,joined:H&&H.t||0,owner:(H&&H.owner)||(P&&P.owner),ch,inbox:data.inbox[k]||0,
       top:P&&Array.isArray(P.roster)&&P.roster.length?P.roster.slice().sort((a,b)=>(b.ovr||0)-(a.ovr||0))[0]:P&&Array.isArray(P.crew)&&P.crew[0]||null,banned:bans.some(b=>b.uid===((H&&H.owner)||(P&&P.owner)))}}
   function rows(){const keys=new Set(Object.keys(data.handles).concat(Object.keys(data.players)));let R=[...keys].map(rowOf).filter(Boolean);
     const wk=Date.now()-7*DAYMS;
     if(filt==='active')R=R.filter(r=>r.seen>=wk&&!r.blocked);else if(filt==='blocked')R=R.filter(r=>r.blocked);else if(filt==='noprof')R=R.filter(r=>!r.P&&!r.blocked);else R=R.filter(r=>!r.blocked);
     if(q){const s=q.toLowerCase();R=R.filter(r=>r.k.includes(s)||r.h.toLowerCase().includes(s)||(r.P&&(r.P.roster||[]).some(d=>(d.first+' '+d.family).toLowerCase().includes(s))))}
-    const S2={ovr:(a,b)=>b.ovr-a.ovr,seen:(a,b)=>b.seen-a.seen,wins:(a,b)=>b.w-a.w||a.l-b.l,new:(a,b)=>b.joined-a.joined,name:(a,b)=>a.k.localeCompare(b.k)}[sort];
+    const S2={ovr:(a,b)=>b.ovr-a.ovr,seen:(a,b)=>b.seen-a.seen,wins:(a,b)=>b.w-a.w||a.l-b.l,new:(a,b)=>b.joined-a.joined,money:(a,b)=>b.money-a.money,name:(a,b)=>a.k.localeCompare(b.k)}[sort];
     return R.sort(S2)}
 
   /* ---------- views ---------- */
@@ -3932,12 +3961,12 @@ const ADMIN=(()=>{
       <span class="meta">Admin rights belong to this browser's sign-in. If you clear this browser's data you'll get a new ID and need to run the line again.</span></div>`}
   function listRow(r){const d=r.top;return`<button type="button" class="arow ${sel===r.k?'on':''}" data-adm="pick" data-k="${esc(r.k)}" aria-pressed="${sel===r.k}">
       ${d&&d.seed?`<img class="av" src="${avatar(d.seed,d.face)}" alt="">`:'<span class="av noav">?</span>'}
-      <span class="an"><b>@${esc(r.h)}</b><span class="meta">${r.blocked?'Blocked name':r.P?`${r.w}W ${r.l}L · seen ${ago(r.seen)}`:'No profile yet'}${r.banned?' · banned':''}</span></span>
+      <span class="an"><b>@${esc(r.h)}</b><span class="meta">${r.blocked?'Blocked name':r.P?`${sort==='money'&&r.money>=0?yen(r.money)+' · ':''}${r.w}W ${r.l}L · seen ${ago(r.seen)}`:'No profile yet'}${r.banned?' · banned':''}</span></span>
       <span class="povr"><small>OVR</small>${r.P?r.ovr:'–'}</span></button>`}
   function listView(){const R=rows();
     return`<div class="alist card"><div class="atools">
         <label class="sr" for="admQ">Search handles or drivers</label><input id="admQ" type="search" placeholder="Search @handle or driver" value="${esc(q)}" autocomplete="off">
-        <label class="sr" for="admSort">Sort</label><select id="admSort">${[['seen','Last seen'],['ovr','Crew OVR'],['wins','Battles won'],['new','Newest'],['name','A to Z']].map(([v,l])=>`<option value="${v}" ${sort===v?'selected':''}>${l}</option>`).join('')}</select></div>
+        <label class="sr" for="admSort">Sort</label><select id="admSort">${[['seen','Last seen'],['ovr','Crew OVR'],['money','Most money'],['wins','Battles won'],['new','Newest'],['name','A to Z']].map(([v,l])=>`<option value="${v}" ${sort===v?'selected':''}>${l}</option>`).join('')}</select></div>
       <div class="achips" role="group" aria-label="Filter">${[['all','All'],['active','Active 7 days'],['noprof','No profile'],['blocked','Blocked']].map(([v,l])=>`<button type="button" class="chip ${filt===v?'on':''}" data-adm="filt" data-v="${v}" aria-pressed="${filt===v}">${l}</button>`).join('')}</div>
       <div class="arows">${R.length?R.map(listRow).join(''):`<div class="meta aempty">${loading?'Loading…':q?'No handles match that search.':'Nobody here yet.'}</div>`}</div></div>`}
   function chRow(c,k){const m=mt(c.crit&&c.crit.m),other=c.from===k?c.th||c.to:c.fh||c.from,dir=c.from===k?'sent to':'from',res=c.res;
@@ -3948,17 +3977,32 @@ const ADMIN=(()=>{
   function detail(){const r=sel&&rowOf(sel);if(!r)return`<div class="card adetail aempty"><div class="eyebrow">管理室</div><h2>Pick a handle</h2><p class="meta">Choose a player on the left to see their crew, record and battles.</p></div>`;
     const P=r.P||{},ros=Array.isArray(P.roster)&&P.roster.length?P.roster:(P.crew||[]),ds=ros.slice().sort((a,b)=>(b.ovr||0)-(a.ovr||0));
     const drv=ds.length?ds.map(d=>{const car=d.car&&CARS[d.car.model]?d.car:null;return`<div class="pdr"><img class="av" src="${avatar(d.seed||1,d.face)}" alt=""><div class="pn"><b>${esc(d.first||'?')} ${esc(d.family||'')}</b><span class="meta">Level ${d.lv||1}${d.trait&&TRAITS[d.trait]?' · '+TRAITS[d.trait].name:''}</span></div><span class="povr"><small>OVR</small>${Math.round(d.ovr||0)}</span>
-      ${car?`<span class="pcar"><img src="${SPR.url(car,132,84)}" alt=""><span><b>${esc(CARS[car.model].code)}</b> ${esc(CARS[car.model].name)}</span></span><span class="povr pi"><small>PI</small>${Math.round(car.pi||0)}</span>`:'<span class="pcar meta">No car</span><span></span>'}</div>`}).join(''):'<div class="meta">No drivers shared.</div>';
+      ${car?`<span class="pcar"><img src="${SPR.url(car,132,84)}" alt=""><span><b>${esc(CARS[car.model].code)}</b> ${esc(CARS[car.model].name)}</span></span><span class="povr pi"><small>PI</small>${Math.round(car.pi||0)}</span>`:'<span class="pcar meta">No car</span><span></span>'}</div>${drvX(d)}`}).join(''):'<div class="meta">No drivers shared.</div>';
     const hist=Array.isArray(P.hist)?P.hist.slice(0,20):[];
     const hs=hist.length?hist.map(e=>{const m=mt(e.m);return`<div class="phr"><span class="res ${e.r}">${e.r==='W'?'WON':e.r==='L'?'LOST':'DRAW'}</span><div><b>${e.vs?'vs '+esc(e.vs):'vs a local challenger'}</b> <span class="meta">${m?esc(m.name):''} ${e.dir==='up'?'uphill':'downhill'} · ${KIND[e.k]||'Race'}${e.when?' · '+esc(e.when):''}</span><div class="meta">${esc(e.line||'')}</div></div></div>`}).join(''):'<div class="meta">No races shared.</div>';
     const conf=confirmK===r.k?confirmBox(r):'';
     return`<div class="card adetail"><div class="eyebrow">Touge Net profile${r.blocked?' · blocked name':''}${r.banned?' · banned device':''}</div><h2 class="phd">@${esc(r.h)}</h2>
+      ${r.eco?`<div class="kv kmoney"><span>Money <b>${yen(nn(r.eco.money))}</b></span><span>Lifetime sales <b>${yen(nn(r.eco.earned))}</b></span><span>Cred <b>${nn(r.eco.cred).toLocaleString()}</b></span><span>Drivers <b>${nn(r.eco.drivers)}</b></span><span>Cars <b>${nn(r.eco.cars)}</b></span></div>`:r.P?'<div class="kv"><span class="meta">Money and full driver stats show after this player\'s game next syncs on the new version.</span></div>':''}
       <div class="kv"><span>Crew OVR <b>${r.P?r.ovr:'–'}</b></span><span>Battles <b>${r.w}W ${r.l}L</b></span><span>All races <b>${r.rw}W ${r.rl}L</b></span><span>Game week <b>${r.wk||'–'}</b></span><span>Last seen <b>${ago(r.seen)}</b></span><span>Joined <b>${day(r.joined)}</b></span><span>Ghost notes <b>${r.inbox}</b></span><span>Device <b title="${esc(r.owner||'')}">${short(r.owner)}</b></span></div>
       <h3>Drivers</h3><div class="card pdrv">${drv}</div>
       <h3>Challenges <span class="meta inl">${r.ch.length}</span></h3><div class="card phist">${r.ch.length?r.ch.map(c=>chRow(c,r.k)).join(''):'<div class="meta">No challenges on record.</div>'}</div>
       <h3>Previous races</h3><div class="card phist">${hs}</div>
       <div class="card adanger"><div><b>${r.blocked?'Release this name':'Delete this account'}</b><span class="meta">${r.blocked?`@${esc(r.h)} is blocked, so nobody can claim it. Releasing it lets anyone take the name again.`:`Removes @${esc(r.h)}'s handle, profile, ghost notes, challenges and replays from Touge Net. Their saved game on their own device isn't touched.`}</span></div>
         ${me.admin?(r.blocked?`<button class="btn" data-adm="unblock" data-k="${esc(r.k)}">Release @${esc(r.h)}</button>`:`<button class="btn race" data-adm="ask" data-k="${esc(r.k)}">Delete account</button>`):'<span class="meta">Admins only</span>'}</div>${conf}</div>`}
+  /* the extra driver block: six stats, record, money matters, perks, moves and pass knowledge */
+  function drvX(d){const x=d&&d.x&&typeof d.x==='object'?d.x:null;if(!x)return'';const st=x.st||{};
+    const bars=STATS.map(([k,l])=>{const v=Math.round(nn(st[k]));return`<div class="xs"><span>${l}</span><b>${v}</b><i style="--w:${clamp(v,0,100)}%"></i></div>`}).join('');
+    const runs=nn(x.runs),w=nn(x.wins),l=nn(x.losses),rate=w+l?Math.round(w/(w+l)*100)+'%':'–';
+    const kv=`<span>XP <b>${nn(x.xp).toLocaleString()}</b></span><span>Runs <b>${runs.toLocaleString()}</b></span><span>Races <b>${w}W ${l}L</b></span><span>Win rate <b>${rate}</b></span><span>Wage <b>${nn(x.wage)?yen(nn(x.wage))+'/wk':'none'}</b></span>`;
+    const c=x.car&&typeof x.car==='object'?x.car:null,ty=c&&TYRES[nn(c.tg)]?TYRES[nn(c.tg)].name:'?';
+    const carKv=c?`<span>Car condition <b>${nn(c.cond)}%</b></span><span>Tyres <b>${esc(ty)} · ${nn(c.tw)}% worn</b></span><span>Odometer <b>${nn(c.km).toLocaleString()} km</b></span>`:'';
+    const chip=(t,cl)=>`<span class="xchip ${cl||''}">${esc(t)}</span>`;
+    const tr=d.trait&&TRAITS[d.trait]?chip(TRAITS[d.trait].name,'tr'):'';
+    const pk=(Array.isArray(x.perks)?x.perks:[]).filter(k=>PERKS[k]).map(k=>chip(PERKS[k].name,'pk')).join('');
+    const mm=x.mm&&typeof x.mm==='object'?x.mm:{},mv=(Array.isArray(x.moves)?x.moves:[]).filter(k=>MOVES[k]).map(k=>{const n=nn(mm[k]),rk=n>=10?3:n>=4?2:1;return chip(MOVES[k].name+' '+'★'.repeat(rk),'mv')}).join('');
+    const kn=x.know&&typeof x.know==='object'?Object.keys(x.know).map(id=>({m:mt(id),v:nn(x.know[id])})).filter(o=>o.m&&o.v>0).sort((a,b)=>b.v-a.v):[];
+    const know=kn.length?kn.map(o=>`<span>${esc(o.m.name)} <b>${Math.round(o.v)}%</b></span>`).join(''):'<span class="meta">No pass knowledge yet</span>';
+    return`<div class="pdx"><div class="xbars">${bars}</div><div class="kv">${kv}${carKv}</div>${tr||pk||mv?`<div class="xchips">${tr}${pk}${mv}</div>`:''}<div class="kv xknow"><span class="meta">Knows</span>${know}</div></div>`}
   function confirmBox(r){return`<div class="card aconfirm" role="group" aria-label="Confirm delete">
       <b>Delete @${esc(r.h)} for good?</b>
       <label class="tog"><input type="checkbox" id="admBlock" checked> Block the name, so nobody can claim @${esc(r.h)} again</label>

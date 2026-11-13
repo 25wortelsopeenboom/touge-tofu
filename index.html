@@ -156,7 +156,7 @@ html.phone .lc .ovs{display:none}
 .tyreopt{border:1px solid var(--line);border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--mute);min-width:0}
 .tyreopt b{color:var(--ink);font-size:12px}
 .tyreopt.on{border-color:var(--sodium);background:rgba(255,176,59,.06)}
-.tyreopt .wetg{color:var(--cyan)}
+.tyreopt .wetg{color:var(--cyan)}.tyreopt .dryg{color:var(--sodium)}
 .tyreopt .btn.sm{padding:4px 7px;font-size:11px}
 .wxnote{color:var(--cyan)!important;font-size:13px}
 #coach{position:fixed;z-index:72;width:min(330px,calc(100vw - 24px));background:rgba(10,14,30,.97);border:1px solid var(--sodium);border-radius:12px;padding:12px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;transition:left .18s ease,top .18s ease}
@@ -706,8 +706,14 @@ const SNOW_DRIVE={AWD:1,FF:.88,FR:.76,MR:.76,RR:.8};
 /* Seasons. Change SEASON_WEEKS to make each season longer or shorter. */
 const SEASON_WEEKS=4;
 const SEASONS=[{n:'Spring',jp:'春'},{n:'Summer',jp:'夏'},{n:'Autumn',jp:'秋'},{n:'Winter',jp:'冬'}];
+/* grip of a fresh set on one scale, 100 = semi-slicks on a dry road, so dry, wet and snow compare directly */
+const tyreGrip=t=>{const mu=.7+.6*t.grip,top=.7+.6*Math.max(...TYRES.map(x=>x.grip)),f=v=>Math.round(v/top*100);return{dry:f(mu),wet:f(mu*t.wet),snow:f(mu*t.snow)}};
 const seasonIdx=w=>Math.floor(((w||1)-1)/SEASON_WEEKS)%4;
 const SEASON=()=>SEASONS[seasonIdx(S?S.week:1)].n;
+/* Sakura: across spring the blossom spreads week by week, peaks, then the petals fall as the leaves come in. 0..1 through the season. */
+const springP=()=>SEASON()!=='Spring'?-1:((((S?S.week:1)-1)%SEASON_WEEKS)+.5)/SEASON_WEEKS;
+const bloomOf=p=>p<0?null:{pink:p>.75?.6:clamp(.12+p*1.35,0,1),late:p>.75,petals:p<.5?0:p>.75?1:.55};
+const seasonKey=()=>{const p=springP();return p<0?SEASON():'Spring'+Math.floor(p*SEASON_WEEKS)};
 const WINTER_CLOSED=['shiga'];
 const passClosed=id=>SEASON()==='Winter'&&WINTER_CLOSED.includes(id);
 const passOpen=m=>S.cred>=m.cred&&!passClosed(m.id);
@@ -1347,8 +1353,10 @@ const MAP=(()=>{
   function nearRoad(u,v){const x=Math.floor(v-B.v0),y=Math.floor(u-B.u0);return x>=0&&y>=0&&x<NGW&&NG[y*NGW+x]===1}
   function fden(u,v,bi){return bi.dens*(.75+vnoise(u*.15,v*.15,9)*.55)}
   let bSeason=null;const SEAS=()=>bSeason||SEASON();
+  const BLOOM=()=>bSeason?null:bloomOf(springP());
   function seasonGround(c,u,v,sl){const s=SEAS();
-    if(s==='Spring')return[c[0]*1.02+16,c[1]*1.12+18,c[2]*.95+12];
+    if(s==='Spring'){const g=[c[0]*1.02+16,c[1]*1.12+18,c[2]*.95+12],bl=BLOOM();if(!bl||!bl.petals)return g;
+      const d=bl.petals*.2*(.35+vnoise(u*.6,v*.6,57)),h=hash2(Math.floor(u*8),Math.floor(v*8),58);return h<d?lerp3(g,[238,192,208],.45+h/d*.35):g}
     if(s==='Summer')return[c[0]*.85,c[1]*1.0,c[2]*.8];
     if(s==='Autumn')return lerp3(c,[c[0]*1.25+22,c[1]*1.04+12,c[2]*.62],.62);
     const n=vnoise(u*.35,v*.35,31),amt=clamp(.74+n*.22-Math.max(0,sl-1.5)*.3,.15,.92);return lerp3(c,[224,230,240],amt);
@@ -1467,7 +1475,10 @@ const MAP=(()=>{
     },'b');
   }
   function seasonTree(pal,maple,h){const s=SEAS(),pine=pal[0]==='#123323';
-    if(s==='Spring')return{pal:maple?(h<.6?['#b06a80','#e29ab0','#f7cdd9']:['#3f7030','#5d9a3c','#9ccc66']):pine?pal:['#2a5a2c','#3f7d38','#6fae4c']};
+    if(s==='Spring'){if(pine)return{pal};const bl=BLOOM()||{pink:.6,late:false},sak=maple||h<.62,f=(h*7.31+.13)%1;
+      if(sak&&f<bl.pink)return{pal:bl.late?(f<bl.pink*.5?['#8a6a62','#d39bb0','#f3d2dc']:['#4f7a36','#c98aa2','#f1c9d5']):bl.pink>=.95&&f<.6?['#c27392','#f0a6c0','#fddbe6']:['#a65878','#e08cab','#f6c3d4']};
+      if(sak&&!bl.late&&bl.pink<.95)return{pal:['#4c6a34','#6f9144','#a8c66e']};
+      return{pal:maple?['#3f7030','#5d9a3c','#9ccc66']:['#2a5a2c','#3f7d38','#6fae4c']}}
     if(s==='Summer')return{pal:maple?['#2c5a26','#3f7c2f','#69a446']:pal};
     if(s==='Autumn')return{pal:maple||pine||h>.32?pal:(h<.16?['#5a5a1e','#7d7a26','#b0a33a']:['#6a4a1c','#946a24','#c89a3a'])};
     if(maple)return{pal:['#3e332c','#54463b','#6b5a4b'],bare:true};
@@ -1719,7 +1730,7 @@ const MAP=(()=>{
     return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox,ng:ngKeep,ngw:ngwKeep,season:null};
   }
   function useWorld(W){world=W;({B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox}=W)}
-  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==SEASON()){WORLDS[id]=buildWorld(id);WORLDS[id].season=SEASON()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
+  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==seasonKey()){WORLDS[id]=buildWorld(id);WORLDS[id].season=seasonKey()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
   /* ---------- the countryside beyond the pass ----------
      Baked once per world into two canvases the first time the view opens up: ground for the wide margin around the map,
      and a transparent layer of forest canopy, hamlets with their paddies, and (on city passes) blocks of town. Inside the map
@@ -1783,7 +1794,7 @@ const MAP=(()=>{
           t.fillStyle=sea==='Winter'?'#e8edf2':shade(rf,.12);t.fillRect(v-.04,u-.02,w+.08,dd*.3);t.fillStyle=sea==='Winter'?'#cfd6de':shade(rf,-.1);t.fillRect(v-.04,u+dd*.28,w+.08,dd*.24);
           if(rr()<.55)wins.push({v:v+w*.3,u:u+dd*.75,w:w*.2,h:.05})}}});
     return{E,g:G,t:T,wins,feather:F}}
-  function home(){if(!WORLDS.usuzumi){WORLDS.usuzumi=buildWorld('usuzumi');WORLDS.usuzumi.season=SEASON()}return WORLDS.usuzumi}
+  function home(){if(!WORLDS.usuzumi){WORLDS.usuzumi=buildWorld('usuzumi');WORLDS.usuzumi.season=seasonKey()}return WORLDS.usuzumi}
 
   /* ---------- view ---------- */
   function computeFit(){fitZ=clamp(Math.min(vw/fitBox[0],vh/(fitBox[1]*TILT)),2.5,120);return fitZ}
@@ -2377,7 +2388,7 @@ function garageHTML(){
     ${meter('Tyre wear',wear,wc,Math.round(wear)+'%')}
     ${meter('Condition',c.cond,c.cond<70?'var(--brake)':'var(--cyan)',Math.round(c.cond)+'%')}
     ${c.cond<15?'<div class="note" style="color:var(--brake)">Wrecked. Repair it before it can drive again.</div>':c.cond<50?'<div class="note" style="color:var(--warn)">Rough shape. Breakdowns get likely below 60%.</div>':''}${c.tyre.wear>80?'<div class="note" style="color:var(--warn)">Tyres nearly bald. Expect slides and spins.</div>':''}
-    <div class="tyrerow">${TYRES.map((t,i)=>{const sp2=setsOf(c)[i],fit=c.tyre.grade===i;return`<div class="tyreopt ${fit?'on':''}"><b>${t.name}</b><span>${fit?`Fitted · ${Math.round(c.tyre.wear)}%`:sp2!=null?`Spare · ${Math.round(sp2)}%`:'Not owned'}</span><span class="wetg">Wet grip ${Math.round(t.wet*100)}%</span><span class="wetg">Snow grip ${Math.round(t.snow*100)}%</span><div class="row">${!fit&&sp2!=null?`<button class="btn sm" data-act="swapTyre" data-id="${c.id}" data-g="${i}" ${S.money<SWAP_FEE?'disabled':''}>Swap ${yenK(SWAP_FEE)}</button>`:''}<button class="btn sm" data-act="tyre" data-id="${c.id}" data-g="${i}" ${S.money<t.cost?'disabled':''}>New ${yenK(t.cost)}</button></div></div>`}).join('')}</div>
+    <div class="tyrerow">${TYRES.map((t,i)=>{const sp2=setsOf(c)[i],fit=c.tyre.grade===i;return`<div class="tyreopt ${fit?'on':''}"><b>${t.name}</b><span>${fit?`Fitted · ${Math.round(c.tyre.wear)}%`:sp2!=null?`Spare · ${Math.round(sp2)}%`:'Not owned'}</span>${(g=>`<span class="dryg">Dry grip ${g.dry}%</span><span class="wetg">Wet grip ${g.wet}%</span><span class="wetg">Snow grip ${g.snow}%</span>`)(tyreGrip(t))}<div class="row">${!fit&&sp2!=null?`<button class="btn sm" data-act="swapTyre" data-id="${c.id}" data-g="${i}" ${S.money<SWAP_FEE?'disabled':''}>Swap ${yenK(SWAP_FEE)}</button>`:''}<button class="btn sm" data-act="tyre" data-id="${c.id}" data-g="${i}" ${S.money<t.cost?'disabled':''}>New ${yenK(t.cost)}</button></div></div>`}).join('')}</div>
     <div class="row">
     ${c.cond<100?`<button class="btn sm" data-act="repair" data-id="${c.id}" ${S.money<repairCost(c)?'disabled':''}>Repair ${yenK(repairCost(c))}</button>`:''}</div>
     <div class="mods">${MODS.map(md=>{const lv=c[md.k],mx=lv>=md.max,cost=mx?0:modCost(c,md.k,lv);return`<div class="mod"><div class="ml"><b>${md.name}</b><span>${md.labels[lv]}</span></div><div class="pips">${Array.from({length:md.max},(_,i)=>`<i class="${i<lv?'on':''}"></i>`).join('')}</div>${mx?'<span class="chip good">Maxed</span>':`<button class="btn sm" data-act="mod" data-id="${c.id}" data-m="${md.k}" ${S.money<cost?'disabled':''}>${yenK(cost)}</button>`}</div>`}).join('')}</div>
@@ -2561,7 +2572,7 @@ function endWeek(){
   <div class="mact"><button class="btn primary" data-act="startWeek">Start week ${S.week+1}</button></div>`);
 }
 function weekQuip(){const n=MTNS.filter(m=>S.cred>=m.cred).length;if(n===MTNS.length)return'Every pass in the region knows the name Kasumi Tofu.';const nx=MTNS.find(m=>S.cred<m.cred);return`${nx.name} opens at ${nx.cred} street cred. You have ${Math.round(S.cred)}.`}
-function startWeek(){S.raceWeather=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. Sakura on the pass and the snow is gone.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red and the fog comes in.',Winter:'Winter. Snow on the passes. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
+function startWeek(){S.raceWeather=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red and the fog comes in.',Winter:'Winter. Snow on the passes. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
 
 /* ================= race night ================= */
 let RP=null,RQ=[],RES=[];
@@ -2780,7 +2791,11 @@ const NET=(()=>{
       S.hist.unshift({r:g[1]==='WIN'?'W':'L',k:g[2]?'ch':g[3]?'gh':'cpu',vs:g[2]?'@'+g[2]:g[3]?'@'+g[3]:'',m,dir:g[5]==='uphill'?'up':'down',line:g[6],when:l.t||''})});
     if(S.hist.length>30)S.hist.length=30;save()}
   function roster(){return S.drivers.map(d=>{const c=carById(d.carId);return{first:d.first,family:d.family,seed:d.seed,face:cleanFace(d.face),ovr:Math.round(dskill(d)*100),lv:levelInfo(d.xp||0).lv,trait:d.trait,legend:!!d.legend,
-    car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null}})}
+    car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null,x:drvExtra(d,c)}})}
+  /* the fuller picture of a driver, read by the control room (admin.html); the game itself ignores it */
+  function drvExtra(d,c){const st={};STATS.forEach(([k])=>st[k]=Math.round(d.stats[k]||0));const kn={};Object.keys(d.know||{}).forEach(m=>{const v=Math.round(d.know[m]||0);if(v)kn[m]=v});
+    return{st,xp:Math.round(d.xp||0),runs:d.runs||0,wins:d.wins||0,losses:d.losses||0,wage:d.wage||0,perks:(d.perks||[]).slice(0,8),moves:movesOf(d),mm:Object.assign({},d.mm||{}),know:kn,
+      car:c?{cond:Math.round(c.cond||0),km:Math.round(c.km||0),tg:c.tyre?c.tyre.grade:0,tw:c.tyre?Math.round(c.tyre.wear):0}:null}}
   /* ---- ratings and snapshots ---- */
   function rateOf(d){const c=carById(d.carId);return dskill(d)*100*.65+(c?spec(c).pi/10:0)*.35}
   function crewTop(){return S.drivers.filter(d=>carById(d.carId)).map(d=>({d,r:rateOf(d)})).sort((a,b)=>b.r-a.r).slice(0,2)}
@@ -2895,7 +2910,7 @@ const NET=(()=>{
   function touch(){if(!ready||ro||!S||!S.hkey||S.hpend)return;clearTimeout(pubT);pubT=setTimeout(publish,1500)}
   async function publish(){
     if(!ready||ro||!S.hkey||S.hpend)return;if(pubBusy){touch();return}
-    const t=crewTop(),doc={h:S.handle,ovr:teamOVR(),crew:t.map(x=>snap(x.d)).filter(Boolean),w:net().w,l:net().l,wk:S.week,roster:roster(),hist:(S.hist||[]).slice(0,20),rw:S.wins||0,rl:S.losses||0};
+    const t=crewTop(),doc={h:S.handle,ovr:teamOVR(),crew:t.map(x=>snap(x.d)).filter(Boolean),w:net().w,l:net().l,wk:S.week,roster:roster(),hist:(S.hist||[]).slice(0,20),rw:S.wins||0,rl:S.losses||0,eco:{money:Math.round(S.money||0),earned:Math.round(S.earned||0),cred:Math.round(S.cred||0),cars:(S.cars||[]).length,drivers:(S.drivers||[]).length}};
     const sig=JSON.stringify(doc);if(sig!==pubLast){pubBusy=true;try{doc.t=now();await db.doc('players/'+S.hkey).set(doc);pubLast=sig}catch(e){wErr(e)}pubBusy=false}
     refreshSides();
   }
@@ -3297,7 +3312,7 @@ function showHelp(intro){
   <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. Downhill, weight and nimbleness count for more than power.</p>
   <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well.</p>
-  <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
+  <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
   <div class="mact">${intro?'':'<button class="btn" data-act="tutReplay">Replay tutorial</button>'}<button class="btn primary" data-act="${intro?'intro':'close'}">${intro?'Hand Kenta the keys':'Got it'}</button></div>`);
 }
