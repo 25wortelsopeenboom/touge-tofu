@@ -85,7 +85,8 @@ img{max-width:100%}
 <style>
 /* control room: same tokens and type as the game, laid out as a two-pane console */
 html.admin #app,html.admin #modal{display:none!important}
-html.admin body{background:var(--night);color:var(--ink);font-family:var(--f-body);min-height:100%}
+html.admin,html.admin body{height:auto;min-height:100%;overflow-x:hidden;overflow-y:auto;overscroll-behavior:auto;touch-action:auto}
+html.admin body{background:var(--night);color:var(--ink);font-family:var(--f-body)}
 #adm{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px;padding-block:14px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));box-sizing:border-box}
 #adm .ahud{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;position:static}
 #adm .brand{display:flex;flex-direction:column}
@@ -241,6 +242,7 @@ html.phone .lc .ovs{display:none}
 .tyreopt.on{border-color:var(--sodium);background:rgba(255,176,59,.06)}
 .tyreopt .wetg{color:var(--cyan)}.tyreopt .dryg{color:var(--sodium)}
 .tyreopt .btn.sm{padding:4px 7px;font-size:11px}
+.keeph{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mute);margin-top:8px;cursor:pointer}.keeph input{margin-top:2px;accent-color:var(--sodium)}.keeph b{color:var(--ink)}
 .wxnote{color:var(--cyan)!important;font-size:13px}
 #coach{position:fixed;z-index:72;width:min(330px,calc(100vw - 24px));background:rgba(10,14,30,.97);border:1px solid var(--sodium);border-radius:12px;padding:12px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;transition:left .18s ease,top .18s ease}
 #coach[hidden],#coachRing[hidden]{display:none}
@@ -3317,10 +3319,11 @@ const ACT={
   intro:()=>{S.seenIntro=true;save();closeModal()},
   exportSave:()=>{modal(`<div class="eyebrow">Export save</div><h2>Your save code</h2><p>${esc(saveSummary(S))}. Copy the whole code and keep it somewhere safe. Paste it into Import save on any device to carry on from here.</p><textarea id="saveOut" class="code" rows="6" readonly>${saveCode()}</textarea><div class="mact"><button class="btn" data-act="close">Close</button><button class="btn primary" data-act="copySave">Copy code</button></div>`);const t=$('#saveOut');t&&t.addEventListener('focus',()=>t.select())},
   copySave:()=>{const t=$('#saveOut');if(!t)return;const done=()=>toast('Save code copied');const fail=()=>{t.focus();t.select();toast('Code selected. Copy it with your keyboard or long-press.')};try{navigator.clipboard.writeText(t.value).then(done,fail)}catch(e){fail()}},
-  importSave:()=>{if(busy){toast('Wait for the current run to finish.');return}modal(`<div class="eyebrow">Import save</div><h2>Load a save code</h2><p>Paste a code from Export save. This replaces the game in this browser, so export your current save first if you want to keep it.</p><textarea id="saveIn" class="code" rows="6" placeholder="TTT1:..." spellcheck="false"></textarea><div id="saveErr" class="note" style="color:var(--brake)" hidden></div><div id="savePrev" class="note" hidden></div><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn race" data-act="loadSave">Replace my game</button></div>`);
+  importSave:()=>{if(busy){toast('Wait for the current run to finish.');return}modal(`<div class="eyebrow">Import save</div><h2>Load a save code</h2><p>Paste a code from Export save. This replaces the game in this browser, so export your current save first if you want to keep it.</p><textarea id="saveIn" class="code" rows="6" placeholder="TTT1:..." spellcheck="false"></textarea><div id="saveErr" class="note" style="color:var(--brake)" hidden></div><div id="savePrev" class="note" hidden></div>${S.hkey&&!S.hpend?`<label class="keeph"><input type="checkbox" id="keepH" checked> Keep my handle <b>@${esc(S.handle)}</b> and battle record. Untick to take the handle from the code instead.</label>`:''}<div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn race" data-act="loadSave">Replace my game</button></div>`);
     const t=$('#saveIn');t&&t.addEventListener('input',()=>{const p=$('#savePrev'),e=$('#saveErr');e.hidden=true;try{const o=readCode(t.value);p.textContent='Found: '+saveSummary(o)+'.';p.hidden=false}catch(x){p.hidden=true}})},
   loadSave:()=>{const t=$('#saveIn'),e=$('#saveErr');let o;try{o=readCode(t.value)}catch(x){e.textContent="That code isn't a valid save. Check that you copied all of it, starting with TTT1:";e.hidden=false;return}
-    S=Object.assign(freshState(),o);normDrivers();if(S.phase==='race')S.phase='post';busy=false;save();closeModal();MAP.loadWorld('usuzumi');MAP.setDarkNow(S.phase==='post'?.12:1);lastView='';$('#hint').hidden=true;TUT.init();renderAll();toast('Save loaded: '+saveSummary(S))},
+    const kh=$('#keepH'),keep=kh&&kh.checked&&S.hkey,id={};if(keep)['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>{if(S[k]!==undefined)id[k]=S[k]});
+    S=Object.assign(freshState(),o);if(keep){['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>delete S[k]);Object.assign(S,id)}normDrivers();if(S.phase==='race')S.phase='post';busy=false;save();closeModal();MAP.loadWorld('usuzumi');MAP.setDarkNow(S.phase==='post'?.12:1);lastView='';$('#hint').hidden=true;TUT.init();renderAll();toast('Save loaded: '+saveSummary(S)+(keep?` · still @${S.handle}`:''))},
   hintOk:()=>{S.seenIntro=true;save();$('#hint').hidden=true},
   perkPick:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||!perkPending(x))return;const opts=Object.keys(PERKS).filter(p=>!(x.perks||[]).includes(p));
     modal(`<div class="eyebrow">Level ${levelInfo(x.xp).lv} · ${esc(x.first)} ${esc(x.family)}</div><h2>Choose a perk</h2><p>Perks are permanent. ${esc(x.first)} earns another at levels ${PERK_LV.join(', ')}.</p><div class="perkgrid">${opts.map(p=>`<button class="perkopt" data-act="perkTake" data-id="${x.id}" data-p="${p}"><b>${PERKS[p].name}</b><span>${PERKS[p].desc}</span></button>`).join('')}</div><div class="mact"><button class="btn" data-act="close">Decide later</button></div>`)},
