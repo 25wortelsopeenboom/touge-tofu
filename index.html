@@ -2489,11 +2489,12 @@ function shopHTML(){
   return h;
 }
 function tougeHTML(){
-  let h=`<div><h2>Touge<span class="jp">峠</span></h2><p class="sub">Saturday nights only. Up to two races: one uphill, one downhill. Uphill rewards horsepower, downhill rewards the driver. Street cred unlocks new passes.</p></div>`;
-  MTNS.forEach(m=>{const shut=passClosed(m.id)&&S.cred>=m.cred,open=S.cred>=m.cred&&!shut,rec=S.records[m.id]||{w:0,l:0};
+  let h=`<div><h2>Touge<span class="jp">峠</span></h2><p class="sub">Saturday nights only. Up to two races: one uphill, one downhill. Uphill rewards horsepower, downhill rewards the driver. Street cred unlocks new passes. Local challengers are matched to the driver and car you send, a little tougher on the harder passes.</p></div>`;
+  const best=S.drivers.filter(raceReady).sort((a,b)=>dskill(b)-dskill(a))[0];
+  MTNS.forEach(m=>{const tg=oppTarget(m,best),shut=passClosed(m.id)&&S.cred>=m.cred,open=S.cred>=m.cred&&!shut,rec=S.records[m.id]||{w:0,l:0};
     h+=`<div class="card mtn ${open?'':'locked'}"><div class="carhead"><div><div class="jpn">${m.jp}</div><div class="enn">${m.name}${m.country?` (${m.country})`:''} · ${m.km} km</div></div>${shut?'<span class="chip">Closed for winter</span>':open?(m.home?'<span class="chip amber">Home</span>':'<span class="chip good">Open</span>'):`<span class="chip red">${m.cred} cred</span>`}</div>
     <div class="note">${esc(m.note)}</div>
-    <div class="kv"><span>Purse <b>${yenK(m.prize)}</b></span><span>Cred <b>+${m.credW}</b></span><span>Rivals <b>${Math.round((m.diff+Math.min(.24,(S.week-1)*.01))*100)} OVR</b></span><span>Record <b>${rec.w}W ${rec.l}L</b></span></div></div>`});
+    <div class="kv"><span>Purse <b>${yenK(m.prize)}</b></span><span>Cred <b>+${m.credW}</b></span><span title="Local challengers are matched to the driver and car you send">Rivals <b>${tg?`about ${Math.round(tg.d)} OVR`:`${Math.round((m.diff+Math.min(.24,(S.week-1)*.01))*100)} OVR`}</b></span><span>Record <b>${rec.w}W ${rec.l}L</b></span></div></div>`});
   return h;
 }
 
