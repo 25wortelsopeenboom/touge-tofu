@@ -303,8 +303,12 @@ select{background:#0f1430;border:1px solid var(--line);border-radius:8px;padding
 .rg .rc{height:26px;min-width:0;padding:0;border-radius:6px;font-size:11px;color:var(--night);background:rgba(255,255,255,.03)}
 .rg .rc.on{background:var(--sodium);border-color:var(--sodium)}.rg .rc.bench{background:rgba(255,176,59,.25);color:var(--ink);border-style:dashed}
 .rg .rc.td{box-shadow:0 0 0 1px var(--sodium) inset}
-.rg .rcount{font-family:var(--f-dot);font-size:10.5px;text-align:center;color:var(--good)}.rg .rcount.over{color:var(--brake)}.rg .rcount.under{color:var(--warn)}
+.rg .rcount{font-family:var(--f-dot);font-size:10.5px;text-align:center;color:var(--good)}.rg .rcount.over{color:var(--brake)}.rg .rcount.under{color:var(--warn)}.rg .rcount.rest{color:var(--mute)}
 .roster .rwarn{color:var(--warn)}
+.rg .rh.sat{color:var(--brake)}.rg .rh.sat.td{background:rgba(255,77,77,.12)}
+.rg .rc.sat{border-color:rgba(255,77,77,.55)}.rg .rc.sat.on{background:var(--brake);border-color:var(--brake)}.rg .rc.sat.bench{background:rgba(255,77,77,.22)}.rg .rc.sat.td{box-shadow:0 0 0 1px var(--brake) inset}
+.dwd.sat{border-color:rgba(255,77,77,.55);color:var(--brake)}.dwd.sat.on{background:var(--brake);border-color:var(--brake);color:var(--night)}.dwd.sat.td{box-shadow:0 0 0 1px var(--brake) inset}
+.note.rest{color:var(--mute)}.note.rest.ok{color:var(--good)}
 .dwrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.dw{display:flex;gap:3px;flex-wrap:wrap}
 .dwd{height:26px;min-width:0;padding:0 6px;font-family:var(--f-dot);font-size:10.5px;letter-spacing:.03em;border-radius:6px}
 .dwd.on{background:var(--sodium);border-color:var(--sodium);color:var(--night)}.dwd.td{box-shadow:0 0 0 1px var(--sodium) inset}
@@ -993,7 +997,7 @@ function traffic(cars,T,race){
     const vO=(o.p-o.pp)/dt*.2*T.mpt;if(maxAhead[j]<.13&&vO>21&&M.has('slip')&&!s.tried.has('st'+(j/45|0))){s.tried.add('st'+(j/45|0));opts.push(['slip',j+18,1])}
     if(!opts.length||(s.att||0)>=({agg:6,bal:4,pat:3}[s.c.tac||'bal'])||R()>tk.k*.5)return false;s.att=(s.att||0)+1;
     let tot=opts.reduce((a,x)=>a+x[2],0),r=R()*tot,pk=opts[0];for(const x of opts){r-=x[2];if(r<=0){pk=x;break}}
-    const [mv,at]=pk,D=o.c.d.stats,A=s.c.d.stats,def=(D.foc+D.brk)/2+(o.c.moves.has('block')?14:0);
+    const [mv,at]=pk,D=o.c.d.stats,A=s.c.d.stats,def=(D.foc+D.brk)/2+(o.c.moves.has('block')?14:0)+(o.c.fresh?REST_K.def:0);
     const fit={gutter:(A.crn+A.dft)/2+6,late:A.brk+(hasT(s.c.d,'latebrake')?10:0),lights:(A.foc+A.crn)/2+14+(FOGGY?(hasT(o.c.d,'fog')?6:18):0),feint:A.dft+4,outside:A.crn,slip:A.thr}[mv]+(mrank(s.c.d,mv)-1)*7+(hasP(s.c.d,'hunter')?8:0)+(mv==='gutter'?8*knowOf(s.c.d,T.id)/100:0),MR=mrank(s.c.d,mv);
     let p=clamp(.4+(fit-def)/55,.12,.88)*(hasT(s.c.d,'hot')?1.08:1);
     if(mv==='slip'){const a=spec(s.c.c).powerN,b=spec(o.c.c).powerN;p*=clamp(.55+a/(b||.01)*.5,.5,1.25)}
@@ -1038,7 +1042,7 @@ function traffic(cars,T,race){
       }
       if(o&&!along.has(key(s.k,o.k))&&des>o.p-FO){des=Math.max(s.p,Math.min(des,o.p-FO))}
       if(race&&des>s.p){const hx=T.hair.find(hh=>hh>Math.floor(s.p)&&hh<=Math.floor(des));if(hx!=null){const q=st.find(q=>q!==s&&!q.done&&!q.out&&s.p-q.p>0&&s.p-q.p<FOL+4&&q.press>2.5);
-        if(q){const pm=.035*Math.min(1.5,q.press/6)*(1.3-s.c.d.stats.foc/100)*(TACTICS[q.c.tac||'bal'].k+.4)*(hasT(s.c.d,'ice')?.5:1)*(s.c.moves.has('block')?.6:1)*(hasP(s.c.d,'cool')?.5:1);if(R()<pm){s.slowUntil=t+(.45+R()*.7)/.6;s.slowK=.4;s.soft=true;ev.push({type:'pressure',t,i:hx,by:s.k,on:q.k})}}}}
+        if(q){const pm=.035*Math.min(1.5,q.press/6)*(1.3-s.c.d.stats.foc/100)*(TACTICS[q.c.tac||'bal'].k+.4)*(hasT(s.c.d,'ice')?.5:1)*(s.c.moves.has('block')?.6:1)*(hasP(s.c.d,'cool')?.5:1)*(s.c.fresh?REST_K.press:1);if(R()<pm){s.slowUntil=t+(.45+R()*.7)/.6;s.slowK=.4;s.soft=true;ev.push({type:'pressure',t,i:hx,by:s.k,on:q.k})}}}}
       if(des>s.p){for(let j=Math.floor(s.p)+1;j<=Math.floor(des);j++)s.act[j]=t+dt*((j-s.p)/(des-s.p))}
       s.p=des;
       if(dnf!=null&&s.p>=dnf){s.out=true}else if(s.p>=N-1){s.done=true;if(s.act[N-1]<0)s.act[N-1]=t+dt}
@@ -2334,17 +2338,20 @@ function autoRoster(mode){const el=S.drivers.filter(d=>carById(d.carId)),P=Math.
     else pick=el.slice().sort((a,b)=>cnt.get(a.id)-cnt.get(b.id)||(prev.has(a.id)-prev.has(b.id))||idx.get(a.id)-idx.get(b.id)).slice(0,P);
     pick.forEach(d=>{cnt.set(d.id,cnt.get(d.id)+1);dw.set(d.id,dw.get(d.id)|(1<<day))});prev=new Set(pick.map(d=>d.id))}
   S.drivers.forEach(d=>setDw(d,dw.get(d.id)))}
-function dayNeed(day){const n=S.drivers.filter(d=>onDay(d,day)&&carById(d.carId)).length;return{n,cls:n>S.prod?'over':n<Math.min(S.prod,S.drivers.filter(d=>carById(d.carId)).length)?'under':'ok'}}
+function dayNeed(day){const n=S.drivers.filter(d=>onDay(d,day)&&carById(d.carId)).length;return{n,cls:n===0?'rest':n>S.prod?'over':n<Math.min(S.prod,S.drivers.filter(d=>carById(d.carId)).length)?'under':'ok'}}
 function rosterHTML(){if(S.drivers.length<2)return'';
   const ds=sortedDrivers(),cols=`minmax(64px,auto) repeat(7,minmax(0,1fr))`;
-  let g=`<div class="rg" style="grid-template-columns:${cols}"><span></span>${DAYS.map((x,i)=>`<span class="rh ${i===S.day?'td':''}">${x}</span>`).join('')}`;
-  ds.forEach(d=>{const c=carById(d.carId);g+=`<span class="rn"><img class="av" src="${avatar(d.seed,d.face)}" alt="">${esc(d.first)}${c?'':' <i>no car</i>'}</span>`+DAYS.map((x,i)=>{const on=onDay(d,i),bench=on&&c&&!plannedRuns(i).some(r=>r.d===d);return`<button class="rc ${on?'on':''} ${bench?'bench':''} ${i===S.day?'td':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${on}" aria-label="${esc(d.first)} on ${x}" title="${bench?'Rostered, but no press is free':''}">${on?(bench?'–':'●'):''}</button>`}).join('')});
-  g+=`<span class="rn rf">Runs</span>${DAYS.map((x,i)=>{const q=dayNeed(i);return`<span class="rcount ${q.cls} ${i===S.day?'td':''}">${Math.min(q.n,S.prod)}/${S.prod}</span>`}).join('')}</div>`;
-  const warn=DAYS.map((x,i)=>{const q=dayNeed(i);return q.cls==='over'?`${x}: ${q.n-S.prod} benched`:q.cls==='under'?`${x}: ${S.prod-q.n>1?S.prod-q.n+' presses':'a press'} idle`:''}).filter(Boolean);
+  let g=`<div class="rg" style="grid-template-columns:${cols}"><span></span>${DAYS.map((x,i)=>`<span class="rh ${i===S.day?'td':''} ${i===6?'sat':''}">${x}</span>`).join('')}`;
+  ds.forEach(d=>{const c=carById(d.carId);g+=`<span class="rn"><img class="av" src="${avatar(d.seed,d.face)}" alt="">${esc(d.first)}${c?'':' <i>no car</i>'}</span>`+DAYS.map((x,i)=>{const on=onDay(d,i),bench=on&&c&&!plannedRuns(i).some(r=>r.d===d);return`<button class="rc ${on?'on':''} ${bench?'bench':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${on}" aria-label="${esc(d.first)} on ${x}" title="${bench?'Rostered, but no press is free':''}">${on?(bench?'–':'●'):''}</button>`}).join('')});
+  g+=`<span class="rn rf">Runs</span>${DAYS.map((x,i)=>{const q=dayNeed(i);return`<span class="rcount ${q.cls} ${i===S.day?'td':''} ${i===6?'sat':''}">${q.n?Math.min(q.n,S.prod)+'/'+S.prod:'rest'}</span>`}).join('')}</div>`;
+  const warn=DAYS.map((x,i)=>{const q=dayNeed(i);return q.cls==='over'?`${x}: ${q.n-S.prod} benched`:q.cls==='rest'?`${x}: rest day`:q.cls==='under'?`${x}: ${S.prod-q.n>1?S.prod-q.n+' presses':'a press'} idle`:''}).filter(Boolean);
   const per=S.drivers.filter(d=>carById(d.carId)).map(d=>plannedCount(d)),lo=Math.min(...per),hi=Math.max(...per);
-  return`<div class="card roster"><div class="rtop"><h3>Dawn roster <span class="jp">当番表</span></h3><span class="note">Tap a day to put a driver on or off. The week repeats until you change it.</span></div>${g}
+  return`<div class="card roster"><div class="rtop"><h3>Dawn roster <span class="jp">当番表</span></h3><span class="note">Tap a day to put a driver on or off. The week repeats until you change it. Drivers who skip the Saturday run race fresher that night.</span></div>${g}
     <div class="row">${[['rotate','Rotate evenly'],['top','Strongest only'],['all','Everyone, every day']].map(([m,l])=>`<button class="btn sm" data-act="rosAuto" data-m="${m}">${l}</button>`).join('')}</div>
-    <div class="note ${warn.length?'rwarn':''}">${warn.length?warn.join(' · ')+'.':'Every press is busy and nobody is benched.'} ${per.length?`Each driver runs ${lo===hi?lo:lo+' to '+hi} day${hi===1?'':'s'} a week.`:''}</div></div>`}
+    <div class="note ${warn.some(w=>!/rest day/.test(w))?'rwarn':''}">${warn.length?warn.join(' · ')+'.':'Every press is busy and nobody is benched.'} ${per.length?`Each driver runs ${lo===hi?lo:lo+' to '+hi} day${hi===1?'':'s'} a week.`:''}</div></div>`}
+/* Saturday: drivers who skipped the dawn run go into race night fresher (fewer mistakes, steadier under pressure, a touch quicker) */
+const REST_K={mist:.65,press:.7,pace:.997,def:5};
+function rested(d){return!(S.satRan&&S.satRan.w===S.week&&S.satRan.ids.includes(d.id))}
 function plannedCount(d){let n=0;for(let i=0;i<7;i++)if(plannedRuns(i).some(r=>r.d===d))n++;return n}
 function renderHUD(){
   $('#sMoney').textContent=yen(S.money);$('#sCred').textContent=Math.round(S.cred);$('#sWeek').textContent=S.week;
@@ -2358,7 +2365,7 @@ function renderAction(){
   document.documentElement.classList.toggle('busy',!!busy);const a=$('#actionbar');let h='';
   if(busy)h=`<button class="btn" data-act="skip">Skip to results</button>`;
   else if(S.phase==='pre'){const runs=plannedRuns();
-    if(!runs.length){const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;h=`<span class="why">${why}</span><button class="btn primary big" disabled>Dispatch</button>`}
+    if(!runs.length){const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}
     else{const ready=readyDrivers().length,extra=ready-runs.length;
       if(extra>0)h=`<span class="why">${extra} driver${extra>1?'s':''} waiting: only ${S.prod} press${S.prod>1?'es':''}.</span>`+(S.prod<6?`<button class="btn" data-act="tab" data-t="shop">${S.money>=PROD[S.prod]?'Add press '+yenK(PROD[S.prod]):'Press costs '+yenK(PROD[S.prod])}</button>`:'');
       h+=`<button class="btn primary big" data-act="dispatch">Dispatch ${runs.length} run${runs.length>1?'s':''} <small>04:30</small></button>`}}
@@ -2403,7 +2410,7 @@ function crewHTML(){
     ${progHTML(d)}
     <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<span class="carmini" title="${esc(CARS[c.model].maker+' '+CARS[c.model].name)}"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></span>`:''})()}
     <span class="wage">${d.wage?yen(d.wage)+' per run':d.legend?'Drives for free':'Family, unpaid'}</span></div>
-    <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${x}</button>`).join('')}</div></div>
+    <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${x}</button>`).join('')}</div></div>
     <div class="row"><button class="btn sm" data-act="studio" data-id="${d.id}">Look and name</button>${d.son?'':`<button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button>`}</div>
     ${onDay(d,S.day)&&carById(d.carId)&&!plannedRuns().some(r=>r.d===d)?`<div class="note" style="color:var(--warn)">Benched ${S.phase==='pre'?'this morning':'today'}: more drivers are rostered than there are presses. Change the roster, or add a press in the Shop tab.</div>`:''}</div>`;
   });
@@ -2590,7 +2597,7 @@ function finishDelivery(list){
     return{d,c,res,notes,cup};
   });
   const tow=rows.reduce((s,r)=>s+(r.res.tow||0),0),net=rev-prod-fuel-wages-tow;
-  S.money+=net;S.weekRev+=net;S.batches+=list.length;S.earned+=rev;
+  S.money+=net;S.weekRev+=net;S.batches+=list.length;S.earned+=rev;if(S.day===6)S.satRan={w:S.week,ids:rows.map(r=>r.d.id)};
   const fin=rows.filter(r=>r.res.dnf==null),best=fin.length?fin.reduce((a,b)=>a.res.time<b.res.time?a:b):null;
   addLog(`Delivered ${fin.length} of ${list.length} batch${list.length>1?'es':''} for ${yen(rev)}.${best?` Best run ${best.d.first}, ${fmtT(best.res.time)}.`:''}`);
   S.phase='post';MAP.setDark(S.day===6?.05:.12);save();renderAll();if(rev>0)AUDIO.cash();
@@ -2634,7 +2641,7 @@ function renderPlanner(){
   const RW=S.raceWeather||S.weather;const slot=(dir)=>{const s=RP[dir],m=MTNS.find(x=>x.id===s.m),o=oppOf(dir,m),vo=NET.vsOptions(),d=S.drivers.find(x=>x.id===s.d),c=carById(d.carId),sp=spec(c);
     return`<div class="card slot"><h3>${dir==='up'?'Uphill · 上り':'Downhill · 下り'}<label class="tog"><input type="checkbox" id="rp-${dir}-on" data-chg="rpOn" data-dir="${dir}" ${s.on?'checked':''}> Enter</label></h3>
     <div class="row"><label class="fld" for="rp-${dir}-m">Pass</label><select id="rp-${dir}-m" data-chg="rpM" data-dir="${dir}">${open.map(x=>`<option value="${x.id}" ${x.id===s.m?'selected':''}>${x.name}</option>`).join('')}</select></div>
-    <div class="row"><label class="fld" for="rp-${dir}-d">Driver</label><select id="rp-${dir}-d" data-chg="rpD" data-dir="${dir}">${ds.map(x=>`<option value="${x.id}" ${x.id===s.d?'selected':''}>${esc(x.first)} · ${CARS[carById(x.carId).model].code}</option>`).join('')}</select></div>
+    <div class="row"><label class="fld" for="rp-${dir}-d">Driver</label><select id="rp-${dir}-d" data-chg="rpD" data-dir="${dir}">${ds.map(x=>`<option value="${x.id}" ${x.id===s.d?'selected':''}>${esc(x.first)} · ${CARS[carById(x.carId).model].code}${S.day===6&&rested(x)?' · rested':''}</option>`).join('')}</select></div>${S.day===6?(rested(d)?`<div class="note rest ok">Rested: ${esc(d.first)} had the morning off. Fewer mistakes, steadier under pressure and a touch quicker tonight.</div>`:`<div class="note rest">${esc(d.first)} did the dawn run this morning, so no rest bonus tonight.</div>`):''}
     <div class="row"><label class="fld" for="rp-${dir}-t">Approach</label><select id="rp-${dir}-t" data-chg="rpT" data-dir="${dir}">${Object.keys(TACTICS).map(k=>`<option value="${k}" ${k===(s.tac||'bal')?'selected':''}>${TACTICS[k].name}</option>`).join('')}</select></div>
     <div class="row"><label class="fld" for="rp-${dir}-s">Start</label><select id="rp-${dir}-s" data-chg="rpS" data-dir="${dir}"><option value="side" ${s.start==='side'?'selected':''}>Side by side</option><option value="toss" ${s.start==='toss'?'selected':''}>Coin toss: leader and chaser</option><option value="chase" ${s.start==='chase'?'selected':''}>Chase (+25% cred if you win)</option></select></div>
     <div class="row"><label class="fld" for="rp-${dir}-ty">Tyres</label><select id="rp-${dir}-ty" style="max-width:min(300px,100%)" data-chg="rpTy" data-dir="${dir}">${tyreOptions(c).map(o=>`<option value="${o.g}" ${o.kind==='fitted'?'selected':''} ${o.kind!=='fitted'&&!o.ok?'disabled':''}>${o.label}</option>`).join('')}</select></div>${RW==='Wet'&&c.tyre.grade===2?'<div class="note" style="color:var(--brake)">Semi-slicks in the rain: slow and spin-prone.</div>':''}${RW==='Snow'&&c.tyre.grade!==3?'<div class="note" style="color:var(--brake)">No studless tyres on snow: very slow and likely to spin.</div>':''}
@@ -2699,14 +2706,14 @@ function raceEvents(A0,B0,T,d,opp,tev){
   if(A.dnf==null||Bq.dnf==null){const ta=A.dnf==null?A.cumReal[N-1]:Infinity,tb=Bq.dnf==null?Bq.cumReal[N-1]:Infinity;add(Math.min(ta,tb),'FIN',ta<tb?`${an} crosses the line first!`:`${bn} crosses the line first!`,true)}
   return ev.sort((x,y)=>x.t-y.t);
 }
-function racer(drv,car,T,w,tac){
+function racer(drv,car,T,w,tac,fresh){
   tac=tac||'bal';const tk=TACTICS[tac],prof=MAP.profile(drv,car,w,T,true),N=T.len,base=prof.cum,cum=new Float32Array(N),sp=spec(car),seed=Math.floor(R()*1e6);
   const deg=(.012+.026*sp.powerN+.014*drv.stats.dft/100)*tk.deg*(car.tyre.grade===2?1.3:car.tyre.grade===0?.85:1)*(hasT(drv,'gear')?.55:1)*(hasT(drv,'natural')?.85:1)*(hasP(drv,'tyre')?.75:1)*(1+Math.max(0,car.tyre.wear-40)/80);
-  const pace=(1+(R()-.5)*.006)*tk.pace;let acc=0;for(let i=1;i<N;i++){const f=i/N,form=1+.006*vnoise(i/110,seed%997,31);acc+=(base[i]-base[i-1])*pace*form*(1+deg*Math.pow(f,1.3))*(f>.75&&hasP(drv,'closer')?.985:1);cum[i]=acc}
-  const mist=[],pm=.03*(1-drv.stats.foc/100)*WEATHER[w].mist*tk.mist*(hasT(drv,'ice')?.6:1)*(hasT(drv,'hot')?1.25:1)*(car.tyre.wear>75?1.6:1)*(1-.4*knowOf(drv,T.id)/100)*(hasP(drv,'cool')?.75:1);
+  const pace=(1+(R()-.5)*.006)*tk.pace*(fresh?REST_K.pace:1);let acc=0;for(let i=1;i<N;i++){const f=i/N,form=1+.006*vnoise(i/110,seed%997,31);acc+=(base[i]-base[i-1])*pace*form*(1+deg*Math.pow(f,1.3))*(f>.75&&hasP(drv,'closer')?.985:1);cum[i]=acc}
+  const mist=[],pm=.03*(1-drv.stats.foc/100)*WEATHER[w].mist*tk.mist*(hasT(drv,'ice')?.6:1)*(hasT(drv,'hot')?1.25:1)*(car.tyre.wear>75?1.6:1)*(1-.4*knowOf(drv,T.id)/100)*(hasP(drv,'cool')?.75:1)*(fresh?REST_K.mist:1);
   T.hair.forEach(h=>{if(R()<pm){mist.push(h);const cost=.5+R()*1.6;for(let i=h;i<N;i++)cum[i]+=cost}});
   const incs=rollIncidents(drv,car,T,w,true),dnf=applyIncidents(cum,incs);
-  return{d:drv,c:car,tac,deg,res:{sp,prof,time:dnf!=null?Infinity:cum[N-1],dmg:0},cumReal:cum,mist,incs,dnf};
+  return{d:drv,c:car,tac,deg,fresh:!!fresh,res:{sp,prof,time:dnf!=null?Infinity:cum[N-1],dmg:0},cumReal:cum,mist,incs,dnf};
 }
 function collide(A,Bq,T){
   const N=T.len;let n=0;
@@ -2721,13 +2728,13 @@ function nextRace(){
   if(!RQ.length){finishRaceNight();return}
   const job=RQ.shift(),{dir,m,d,opp}=job,c=job.simCar||carById(d.carId);RACE_M=m.id;if(job.wx)S.raceWeather=job.wx;else if(NIGHT_WX!=null)S.raceWeather=NIGHT_WX;
   if(!job.simCar&&!carOK(c)){toast(`${d.first}'s car is wrecked, so that race is off.`);nextRace();return}
-  closeModal();toast(`${job.ch?`Challenge vs @${opp.h}: `:opp.net?`@${opp.h}'s ghost: `:''}${dir==='up'?'Uphill':'Downhill'} on ${m.name}. Lining up at the ${dir==='up'?'bottom':'summit'}.`);busy=true;renderAction();renderHUD();
+  closeModal();toast(`${job.ch?`Challenge vs @${opp.h}: `:opp.net?`@${opp.h}'s ghost: `:''}${dir==='up'?'Uphill':'Downhill'} on ${m.name}. Lining up at the ${dir==='up'?'bottom':'summit'}.${S.day===6&&!job.ch&&!job.simCar&&rested(d)?` ${d.first} had the morning off and looks sharp.`:''}`);busy=true;renderAction();renderHUD();
   setTimeout(()=>{
     MAP.loadWorld(m.id);MAP.setDarkNow(1);const T=MAP.track(dir);
     const oTac=hasT(opp,'hot')?'agg':hasT(opp,'ice')||hasT(opp,'steady')?'pat':'bal';
-    const RW=tropWx(S.raceWeather||S.weather,m.id),A=racer(d,c,T,RW,job.tac),Bq=racer(opp,opp.car,T,RW,oTac);
+    const RW=tropWx(S.raceWeather||S.weather,m.id),fr=S.day===6&&!job.ch&&!job.simCar&&rested(d),A=racer(d,c,T,RW,job.tac,fr),Bq=racer(opp,opp.car,T,RW,oTac);
     const lead=job.lead0!==undefined?job.lead0:job.start==='chase'?1:job.start==='toss'?(R()<.5?0:1):null;job.chased=lead===1&&job.start==='chase';job.lead=lead;A.start=lead===1?.75:0;Bq.start=lead===0?.75:0;
-    const cars=[A,Bq].map(r=>({cum:r.cumReal,start:r.start,dnf:r.dnf,d:r.d,c:r.c,incs:r.incs,tac:r.tac,moves:new Set(movesOf(r.d))})),tev=traffic(cars,T,true);
+    const cars=[A,Bq].map(r=>({cum:r.cumReal,start:r.start,dnf:r.dnf,d:r.d,c:r.c,incs:r.incs,tac:r.tac,fresh:r.fresh,moves:new Set(movesOf(r.d))})),tev=traffic(cars,T,true);
     [A,Bq].forEach((r,k)=>{r.cumReal=cars[k].rel;r.lanes=cars[k].lanes;r.fx=cars[k].fx;r.incs.sort((a,b)=>a.i-b.i);r.res.time=r.dnf!=null?Infinity:r.start+r.cumReal[T.len-1]});
     const gh=m.id==='genting'&&(window.YSK_FORCE||R()<YSK_CHANCE)?yskRun(A,Bq,T,RW):null;
     if(job.ch||opp.net){A.hh=S.handle||null;Bq.hh=opp.h||null}CUR={job,A,B:Bq,gh,tev};if(job.onSim)job.onSim(A,Bq,tev);const evs=raceEvents(A,Bq,T,d,opp,tev);if(gh)evs.push(...gh.ev);evs.sort((x,y)=>x.t-y.t);
@@ -3289,6 +3296,9 @@ const ACT={
     x.perks=(x.perks||[]).concat(d.p);addLog(`${x.first} took the ${PERKS[d.p].name} perk.`);toast(`${x.first}: ${PERKS[d.p].name}`);AUDIO.coin();closeModal();save();renderAll()},
   trait2Take:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||!perkPending(x)||!TRAITS[d.t])return;x.trait2=d.t;x.perks=(x.perks||[]).concat('second');addLog(`${x.first} picked up a second trait: ${TRAITS[d.t].name}.`);toast(`${x.first}: ${TRAITS[d.t].name}`);AUDIO.coin();closeModal();save();renderAll()},
   bodyShop:d=>openBodyShop(+d.id),
+  restDay:()=>{if(busy||S.phase!=='pre'||plannedRuns().length)return;if(S.day===6)S.satRan={w:S.week,ids:[]};S.phase='post';
+    addLog(S.day===6?'No dawn run this Saturday. The whole crew rested for race night.':`${DAYS[S.day]}: no dawn run. The shop stayed shut and the crew rested.`);MAP.setDark(S.day===6?.05:.12);save();renderAll();
+    toast(S.day===6?'Rest day. Everyone is fresh for tonight.':'Rest day. The shop stays shut today.')},
   rosT:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||busy)return;setDw(x,dwOf(x)^(1<<+d.d));save();renderAll()},
   rosAuto:d=>{if(busy)return;autoRoster(d.m);save();renderAll();toast({rotate:'Roster shared out evenly across the week',top:'Strongest drivers on every day',all:'Everyone on every day'}[d.m])},
   starD:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
@@ -3349,7 +3359,7 @@ window.onMapPick=k=>{TAB='shop';renderAll();toast(k==='hotel'?`Grand Hotel Kumoi
 function showHelp(intro){
   modal(`<div class="eyebrow">${intro?'04:30 · Mt. Usuzumi':'How it works'}</div><h2>${intro?'The shop at the bottom of the pass':'Running Kasumi Tofu'}</h2>
   ${intro?`<p>Every morning before dawn, Grand Hotel Kumoi at the summit takes delivery of your tofu. Your son Kenta drives it up in the family AE86 while the pass is empty. The kitchen pays for freshness, and it pays for tofu that arrives in one piece.</p>`:''}
-  <p><b>Weekly cycle.</b> Sunday to Saturday, one dawn delivery a day. Each car carries one batch, so the number of runs is capped by both your crew and your production line. The dawn roster in the Crew tab sets which days each driver runs. It repeats every week, and Rotate evenly shares the days out when you have more drivers than presses.</p>
+  <p><b>Weekly cycle.</b> Sunday to Saturday, one dawn delivery a day. Each car carries one batch, so the number of runs is capped by both your crew and your production line. The dawn roster in the Crew tab sets which days each driver runs. It repeats every week, and Rotate evenly shares the days out when you have more drivers than presses. A day with nobody rostered can be taken as a rest day. Drivers who skip Saturday's dawn run go into race night rested: fewer mistakes, steadier under pressure and slightly quicker.</p>
   <p><b>Driving.</b> Every run trains braking, cornering, drifting, heel-toe, throttle and focus. Faster runs mean fresher tofu. Smooth inputs and good suspension mean less damage. Both raise what the hotel pays.</p>
   <p><b>Garage.</b> Spend on engine, suspension, brakes, a limited-slip diff, weight reduction and a sprung tofu cradle. Watch tyre wear: bald tyres cost grip and time.</p>
   <p><b>Risk.</b> Bald tyres, a battered car, rain and fog make spins, slides off the road, breakdowns and crashes more likely. A crash or breakdown loses that run and costs a tow, and the damage needs repairing in the Garage. A car below 15% condition can't drive.</p>
