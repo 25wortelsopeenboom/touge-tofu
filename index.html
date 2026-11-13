@@ -4,14 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Touge Tofu Tycoon</title>
-<!-- =================== TOUGE NET SETUP: paste your two Supabase values here =================== -->
+<!-- Touge Net settings live in config.js next to this file. -->
+<script src="config.js"></script>
+<!-- If you'd rather not use config.js, you can paste the two values here instead. -->
 <script>
-window.TOUGE_NET = {
-  url: "https://zghobikskjzjimpxhuqn.supabase.co",   // Project URL, e.g. "https://abcdxyz.supabase.co"
-  key: "sb_publishable_VuQ_WNuELoFZbX4WdhQeng_aGO2S_8S"    // Publishable key, starts with "sb_publishable_"   (never the secret key)
+window.TOUGE_NET = window.TOUGE_NET || {
+  url: "",   // Project URL, e.g. "https://abcdxyz.supabase.co"
+  key: ""    // Publishable key, starts with "sb_publishable_"   (never the secret key)
 };
 </script>
-<!-- ============================================================================================ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
 <script>
 /* Touge Net bridge for self-hosting.
@@ -41,7 +42,9 @@ window.TOUGE_NET = {
     const tick=async()=>{if(!on)return;if(!document.hidden){try{const r=await fetch(),s=JSON.stringify(r);if(s!==last){last=s;next(r)}}catch(e){error&&error(E(e))}}if(on)tm=setTimeout(tick,ms)};
     const vis=()=>{if(on&&!document.hidden){clearTimeout(tm);tick()}};document.addEventListener('visibilitychange',vis);tick();
     return()=>{on=false;clearTimeout(tm);document.removeEventListener('visibilitychange',vis)}}
-  async function readOne(path){const{data,error}=await sb.from(T).select('data').eq('path',path).maybeSingle();if(error)throw error;return data?data.data:null}
+  /* a handle counts as yours only if this browser's sign-in owns it, even when an imported save carries the same device token */
+  async function readOne(path){const h=path.startsWith('handles/'),{data,error}=await sb.from(T).select(h?'data,owner':'data').eq('path',path).maybeSingle();if(error)throw error;if(!data)return null;
+    if(h&&data.data){let mine=false;try{mine=data.owner===await session()}catch(e){}if(!mine)return Object.assign({},data.data,{dh:'other:'+String(data.data.dh||'')})}return data.data}
   function doc(path){return{id:leaf(path),path,
     async get(){try{return dsnap(path,await readOne(path))}catch(e){throw E(e)}},
     async set(v){await session();const{error}=await sb.from(T).upsert({path,coll:parent(path),id:leaf(path),data:v},{onConflict:'path'});if(error)throw E(error)},
@@ -64,6 +67,7 @@ window.TOUGE_NET = {
       async add(v){const d=doc(path+'/'+rid());await d.set(v);return d}}}
   const db={doc,collection:p=>coll(p)};
   const user={id:async()=>{try{return await session()}catch(e){return null}},can:async()=>true,isOwner:async()=>false,canEdit:async()=>false};
+  window.TOUGE_NETX={sb,session};
   const prev=window.claude||{};
   window.claude=Object.assign({},prev,{use:async n=>{
     if(n==='db'){try{await session();return db}catch(e){console.warn('Touge Net: anonymous sign-in failed, playing offline.',e&&e.message);return null}}
@@ -77,6 +81,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
+
 </head>
 <body>
 
@@ -238,6 +243,8 @@ html.phone .lc .ovs{display:none}
 .hlink:hover,.hlink:focus-visible{color:var(--sodium);text-decoration-color:var(--sodium)}
 .mbox h2.phd{color:var(--sodium);font-size:28px}
 .pdrv,.phist{gap:0}
+.mrow{display:flex;flex-direction:column;gap:4px;padding-bottom:6px;border-bottom:1px solid var(--line)}.mrow:last-child{border-bottom:0;padding-bottom:0}
+.mtags{display:flex;flex-wrap:wrap;gap:5px;padding-left:46px}.mt{font-family:var(--f-dot);font-size:11px;letter-spacing:.03em;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-variant-numeric:tabular-nums}.mt small{font-size:10.5px;margin-left:3px;color:var(--dim)}.mt.ok{color:var(--ink);border-color:rgba(91,211,138,.45)}.mt.pct{color:var(--sodium);border-color:rgba(255,176,59,.5)}.mt.pct.up,.mt.pct.down{color:var(--cyan);border-color:rgba(127,212,255,.45)}.fairnote{color:var(--sodium)}
 .pdr{display:grid;grid-template-columns:40px minmax(0,1.2fr) 44px minmax(0,1.4fr) 44px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.pdr:first-child{border-top:0}
 .pdr .av{width:40px;height:40px}.pdr .pn{display:flex;flex-direction:column;min-width:0}.pdr .pn b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pdr .povr{display:flex;flex-direction:column;align-items:center;font-family:var(--f-display);font-size:20px;line-height:1}.pdr .povr small{font-size:9px;letter-spacing:.1em;color:var(--mute)}.pdr .povr.pi{color:var(--cyan,#7fd6ff)}
@@ -1915,11 +1922,33 @@ const MAP=(()=>{
     const cum=new Float32Array(N),stress=new Float32Array(N),yaw=new Float32Array(N);let st=0;
     const driftK=(sp.drive==='FF'?.25:sp.drive==='AWD'?.55:1)*(.4+d.stats.dft/100*.8);
     for(let i=0;i<N;i++){const k=Math.abs(T.curv[i]);if(i>0)st+=k*vel[i]*vel[i];stress[i]=st;yaw[i]=k>.22?Math.sign(T.curv[i])*Math.min(.75,(k-.18)*1.5)*driftK:0}
-    (r.mist||[]).forEach(j=>{const sg=Math.sign(T.curv[j])||1;for(let q=0;q<14;q++){const i=clamp(j+q,0,N-1);yaw[i]=sg*(.9-q*.03)}});
+    /* ---- driving style from the driver's stats (looks only: the times are already decided) ----
+       line: cornering, braking, focus and how well they know this pass. Rookies drive the middle, wander and turn in at the wrong moment.
+       drift: drifting and car control. Rookies overcook the angle and the car wags its tail; aces hold one clean, smaller angle.
+       calm: focus. Nervy drivers have more "moments", big slides they just about catch. */
+    const pro=!!(r.ghost||d.legend),ds=d.stats,kn=knowOf(d,world&&world.id)/100,rng=mulberry32(((d.seed||1)*7919+N*31+Math.floor((cumReal[N-1]||1)*977))>>>0);
+    const lineSk=pro?1:clamp((ds.crn*.45+ds.brk*.25+ds.foc*.3)/100*.8+kn*.2,0,1),driftSk=pro?1:clamp((ds.dft*.7+ds.ht*.3)/100,0,1),calm=pro?1:clamp(ds.foc/100,0,1);
+    /* hairpins: rookies swing the tail a bit too far past the apex, catch it with a quick counter, then straighten */
+    const hOver=[];
+    {let i=0;while(i<N){if(!yaw[i]){i++;continue}const s0=i,sg=Math.sign(yaw[i]);while(i<N&&yaw[i]&&Math.sign(yaw[i])===sg)i++;const e=i,len=e-s0;
+      let pk=0;for(let q=s0;q<e;q++)pk=Math.max(pk,Math.abs(T.curv[q]));if(len>8&&pk>.6&&rng()<Math.pow(1-driftSk,.8)){const O=(.2+.2*(1-driftSk))*Math.pow(1-driftSk,.7),C=O*1.1,a0=s0+Math.floor(len*.5),L1=Math.max(7,Math.floor(len*.5));hOver.push([a0,L1,sg,O,C])}
+      const mult=.85+(1-driftSk)*.35,A=Math.pow(1-driftSk,1.3)*.14,P=7+rng()*5,D=10+(1-driftSk)*16,ph=rng()*.6;
+      for(let q=s0;q<e;q++){const t=q-s0;yaw[q]=yaw[q]*mult+sg*A*Math.sin(2*Math.PI*t/P+ph)*Math.exp(-t/D)}
+      for(let q=0;q<6&&e+q<N;q++)yaw[e+q]+=-sg*A*.35*Math.sin(Math.PI*q/6);
+      if(len>6&&rng()<.25*Math.pow(1-calm,1.2)*(1-driftSk*.6)){const at=s0+Math.floor(rng()*len*.7),big=.15+rng()*.15;
+        for(let q=0;q<16&&at+q<N;q++)yaw[at+q]+=sg*big*Math.sin(Math.PI*Math.min(1,q/9))*(q<9?1:-(q-9)/7)}}
+      hOver.forEach(([a0,L1,sg,O,C])=>{for(let q=0;q<L1&&a0+q<N;q++)yaw[a0+q]+=sg*O*Math.sin(Math.PI*q/L1);const b0=a0+L1-2;for(let q=0;q<13&&b0+q<N;q++)yaw[b0+q]=yaw[b0+q]*.3-sg*C*Math.sin(Math.PI*q/13)});
+      for(let q=0;q<N;q++)yaw[q]=clamp(yaw[q],-1,1)}
+    /* mistakes from the race sim: the time is already lost; how it looks depends on skill. Rookies spin, mid drivers slide, aces twitch */
+    const mistAt=[];(r.mist||[]).forEach(j=>{const sg=Math.sign(T.curv[j])||1,kind=driftSk<.75?'slide':'twitch';mistAt.push({j,kind,sg,span:kind==='slide'?16:9,amp:kind==='slide'?.35+(1-driftSk)*.3:.18})});
+    /* line wander and apex timing */
+    const wA=Math.pow(1-lineSk,1.6)*.07,w1=rng()*6.28,w2=rng()*6.28,L1=50+rng()*30,L2=17+rng()*9,wander=new Float32Array(N),lnShift=new Int8Array(N);
+    if(wA>.004)for(let i=0;i<N;i++)wander[i]=wA*(.8*Math.sin(2*Math.PI*i/L1+w1)+.2*Math.sin(2*Math.PI*i/L2+w2))*Math.min(1,i/25,(N-1-i)/25)*clamp(Math.abs(T.curv[i])/.18,0,1);
+    (T.feats||[]).forEach(f=>{const sh=Math.round((rng()-.4)*2*(1-lineSk)*9);for(let i=Math.max(0,f.i0-12);i<=Math.min(N-1,f.i1+12);i++)lnShift[i]=sh});
     const incs=r.incs||r.res.incs||[],dnf=r.dnf??r.res.dnf??null,dI=incs.find(x=>x.dnf),sc=commonScale||clamp(cumReal[N-1]/9,22,36)/cumReal[N-1],total=dnf!=null?cumReal[dnf]+(dI&&dI.type==='crash'?5.2:4.4)/sc:cumReal[N-1];for(let i=0;i<N;i++){cum[i]=cumReal[i]*sc;stress[i]/=st||1}
     r.incs=incs;r.dnf=dnf;r.dnfType=dI?dI.type:null;
     const base=isRace?0:.1,l0=isRace&&r.side?(ri===0?-.15:.15):base;
-    Object.assign(r,{cum,cumReal,vel,vA,stress,yaw,dur:total*sc,sc,delay:(r.start||0)*sc,i:0,cy:0,kmhAt:i=>vA[i]*3.6,mpt,lane:l0,laneCur:l0,baseLane:base,lanes:r.lanes||[],c1:r.c.c1,c2:r.c.c2,model:r.c.model,rl:redline(r.c),look:r.c.look,last:null,rlA:r.ghost?1:clamp(.5+.5*dskill(r.d),.5,1),rlB:1,line:racingLine(T)});
+    Object.assign(r,{cum,cumReal,vel,vA,stress,yaw,dur:total*sc,sc,delay:(r.start||0)*sc,i:0,cy:0,kmhAt:i=>vA[i]*3.6,mpt,lane:l0,laneCur:l0,baseLane:base,lanes:r.lanes||[],c1:r.c.c1,c2:r.c.c2,model:r.c.model,rl:redline(r.c),look:r.c.look,last:null,rlA:pro?1:Math.pow(clamp((lineSk-.15)/.7,0,1),1.2),rlB:1,line:racingLine(T),wander,lnShift,mistAt,saw:pro?0:Math.pow(1-lineSk,1.4)*.03,sawPh:rng()*6.28});
     if(!isRace&&!r.ghost)r.cupT=buildCup(r,T);
   }
   /* ---------- the cup of water on the dashboard (display only, no effect on the game) ----------
@@ -2000,10 +2029,13 @@ const MAP=(()=>{
         if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='gutter'){tl=sgi*(HW-.02);noShrink=true}else if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
         r.laneCur+=(tl-r.laneCur)*(noShrink?.18:lw?.16:.08);
         const near=runs.list.some(o=>o!==r&&o.state==='run'&&Math.abs(o.i-i)<8),rlT=noShrink?0:(lw||near)?.35:1;r.rlB+=(rlT-r.rlB)*.08;
-        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const rlo=r.line?(r.line[i]*(1-f)+r.line[i+1]*f)*r.rlA*r.rlB:0,lane=clamp(r.laneCur*r.shk+rlo,-(HW-.07),HW-.07);
-        const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;r.cy+=(r.yaw[i]-r.cy)*.12;
-        let ang=T.theta[i]+r.cy,brake=r.vA[Math.min(N-1,i+5)]<r.vA[i]*.88;
-        s={v,u,a:ang,lights:dark,brake,steer:clamp(T.curv[i]*.5-r.cy*.6,-.45,.45)};
+        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lane=clamp(r.laneCur*r.shk+rlo+wd,-(HW-.07),HW-.07);
+        const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;const mk=r.mistAt&&r.mistAt.find(m=>i>=m.j-1&&i<m.j+m.span);if(!mk)r.cy+=(r.yaw[i]-r.cy)*.12;
+        let mOff=0;if(mk){const pr=i===mk.j-1?f*.3:.3+.7*clamp((i-mk.j+f+1)/mk.span,0,1),e=pr<.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2;
+          if(mk.kind==='spin'){const a2=mk.sg*Math.PI*2*e;r.cy=Math.atan2(Math.sin(a2),Math.cos(a2));mOff=mk.sg*.12*Math.sin(Math.PI*pr)}
+          else if(mk.kind==='slide'){r.cy=mk.sg*mk.amp*Math.sin(Math.PI*pr);mOff=mk.sg*.05*Math.sin(Math.PI*pr)}else r.cy=mk.sg*mk.amp*Math.sin(2*Math.PI*pr)*(1-pr)}
+        let ang=T.theta[i]+r.cy+(r.saw?r.saw*Math.sin(el*5.5+r.sawPh)*clamp((Math.abs(T.curv[i])-.06)/.2,0,1):0),brake=r.vA[Math.min(N-1,i+5)]<r.vA[i]*.88||!!(mk&&mk.kind==='spin');
+        s={v:v+n.v*mOff,u:u+n.u*mOff,a:ang,lights:dark,brake,steer:clamp(T.curv[i]*.5-r.cy*.6,-.45,.45)};
         if(race&&(r.start||0)>0&&tt<.3){const q=lanePos(0,r.laneCur),bk=.48*(1-tt/.3);s.v-=Math.cos(T.theta[0])*bk*(1-tt/.3);s.u-=Math.sin(T.theta[0])*bk*(1-tt/.3)}
         if(fx){const ph=(ra-fx.t0)/(fx.t1-fx.t0),sgi=-(Math.sign(T.curv[fx.at])||1);s.fx=fx.type;
           if(fx.type==='lights'){s.lights=0;s.ghost=true}
@@ -2778,8 +2810,27 @@ const NET=(()=>{
 
   /* ---- rivals and friends ---- */
   const live=p=>p&&p.key!==S.hkey&&p.crew.length&&now()-p.t<60*DAY;
-  function rival(){if(!ready||!S.hkey||S.hpend)return null;const my=teamOVR(),c=plList.filter(live);if(!c.length)return null;
-    c.sort((a,b)=>Math.abs(a.ovr-my)-Math.abs(b.ovr-my)||a.key.localeCompare(b.key));const pool=c.slice(0,3);return pool[Math.floor(mulberry32(strHash(S.hkey)+S.week*7919)()*pool.length)]}
+  /* ---- matchmaking: drivers and cars are compared separately, so an ace in a slow car doesn't look like a rookie in a fast one ---- */
+  function myPair(){const t=crewTop();if(!t.length)return null;const ps=t.map(x=>spec(carById(x.d.carId)).pi);
+    return{d:Math.round(t.reduce((a,x)=>a+dskill(x.d)*100,0)/t.length),c:Math.round(ps.reduce((a,v)=>a+v,0)/ps.length),best:Math.max(...S.drivers.filter(raceReady).map(d=>spec(carById(d.carId)).pi),0)}}
+  function theirPair(p){const cr=(p.crew||[]).filter(x=>x&&x.car);if(cr.length){const ps=cr.map(x=>num(x.car.pi,0,1000,0));
+      return{d:Math.round(cr.reduce((a,x)=>a+num(x.ovr,0,150,0),0)/cr.length),c:Math.round(ps.reduce((a,v)=>a+v,0)/ps.length),best:Math.max(...(p.roster||[]).map(r=>r.car?r.car.pi:0),...ps),cars:(p.roster||[]).filter(r=>r.car).map(r=>r.car.pi).concat(ps)}}
+    return null}
+  /* one "step" is about 5 driver OVR or 50 PI; players who haven't raced lately drift down the list */
+  function matchOf(p,me){const t=theirPair(p);if(!t||!me)return null;const dd=t.d-me.d,dc=t.c-me.c,days=(now()-p.t)/DAY;
+    const sd=Math.abs(dd)/5+Math.abs(dc)/50,dist=sd+Math.min(1.5,Math.max(0,days-1)/10),pct=Math.round(clamp(100-sd*18,5,99)),
+      lean=dd/5+dc/50,band=sd<=1.2?'close':lean>0?'up':'down';return{p,t,dd,dc,days,dist,pct,band}}
+  function matches(n){if(!ready||!S.hkey||S.hpend)return[];const me=myPair();if(!me)return[];
+    return plList.filter(p=>live(p)&&!openWith(p.key)).map(p=>matchOf(p,me)).filter(Boolean).sort((a,b)=>a.dist-b.dist||a.p.key.localeCompare(b.p.key)).slice(0,n||5)}
+  function rival(){if(!ready||!S.hkey||S.hpend)return null;const me=myPair(),c=plList.filter(live).map(p=>matchOf(p,me)).filter(Boolean);if(!c.length)return null;
+    c.sort((a,b)=>a.dist-b.dist||a.p.key.localeCompare(b.p.key));const pool=c.slice(0,3);return pool[Math.floor(mulberry32(strHash(S.hkey)+S.week*7919)()*pool.length)].p}
+  /* a car limit that brings both sides close, only if the stronger side owns a car that fits under it */
+  function fairCap(p){const me=myPair(),t=theirPair(p);if(!me||!t||!me.best||!t.best||Math.abs(me.best-t.best)<40)return null;
+    const lo=Math.min(me.best,t.best),cap=PICAPS.find(v=>v&&v>=lo);if(!cap)return null;
+    const fits=me.best>t.best?S.drivers.filter(raceReady).some(d=>spec(carById(d.carId)).pi<=cap):t.cars.some(v=>v<=cap);
+    return fits&&cap<Math.max(me.best,t.best)?{cap,me:me.best,them:t.best}:null}
+  function mtags(m){const sg=v=>v>0?'+'+v:v<0?'−'+Math.abs(v):'±0';
+    return`<div class="mtags"><span class="mt ${Math.abs(m.dd)<=3?'ok':''}" title="Average OVR of their two race drivers">Drivers ${m.t.d} <small>${sg(m.dd)}</small></span><span class="mt ${Math.abs(m.dc)<=30?'ok':''}" title="Average PI of the cars those drivers use">Cars PI ${m.t.c} <small>${sg(m.dc)}</small></span><span class="mt ${m.days<2?'ok':''}">${m.days<1/24?'Active now':m.days<1?'Active today':'Seen '+Math.round(m.days)+'d ago'}</span><span class="mt pct ${m.band}">${m.band==='close'?m.pct+'% match':m.band==='up'?'A step up':'A step down'}</span></div>`}
   const friends=()=>(S.friends||[]);
   function vsOptions(){const o=[],r=rival();if(r)o.push({v:'rival',l:`Rival of the week: @${r.h} · OVR ${r.ovr}`});
     friends().forEach(k=>{const p=players[k];if(live(p)&&(!r||r.key!==k))o.push({v:'f:'+k,l:`Friend: @${p.h} · OVR ${p.ovr}`})});o.push({v:'cpu',l:'Local challenger'});return o}
@@ -2801,7 +2852,7 @@ const NET=(()=>{
   function chForm(k){
     if(!S.hkey||S.hpend){ask();return}const p=players[k];if(!p)return;
     if(openWith(k)){toast(`You already have an open challenge with @${p.h}.`);return}
-    const ms=baseM().filter(passOpen),best=S.drivers.filter(raceReady).sort((a,b)=>rateOf(b)-rateOf(a))[0];
+    const ms=baseM().filter(passOpen),fc=fairCap(p),best=S.drivers.filter(d=>raceReady(d)&&(!fc||spec(carById(d.carId)).pi<=fc.cap)).sort((a,b)=>rateOf(b)-rateOf(a))[0]||S.drivers.filter(raceReady).sort((a,b)=>rateOf(b)-rateOf(a))[0];
     if(!best){toast('No driver has a roadworthy car. Repair one in the Garage first.');return}
     modal(`<div class="eyebrow">Challenge · 挑戦状</div><h2>Call out @${esc(p.h)}</h2><p>Your rules. If @${esc(p.h)} accepts, they pick their driver, car and tyres and the race runs right away. You'll get the full race to watch.</p>
     <div class="chf">
@@ -2809,11 +2860,12 @@ const NET=(()=>{
       <label class="fld" for="chD">Direction</label><select id="chD"><option value="down">Downhill</option><option value="up">Uphill</option></select>
       <label class="fld" for="chW">Weather</label><select id="chW">${WXS.map(w=>`<option value="${w}">${WX_L[w]}</option>`).join('')}</select>
       <label class="fld" for="chS">Start</label><select id="chS">${STARTS.map(s=>`<option value="${s}">${{side:'Side by side',toss:'Coin toss',ilead:'You lead',ichase:'You chase'}[s]}</option>`).join('')}</select>
-      <label class="fld" for="chP">Car limit</label><select id="chP" data-chg="chPi">${PICAPS.map(v=>`<option value="${v}">${v?'PI '+v+' max':'No limit'}</option>`).join('')}</select>
+      <label class="fld" for="chP">Car limit</label><select id="chP" data-chg="chPi">${PICAPS.map(v=>`<option value="${v}" ${fc&&fc.cap===v?'selected':''}>${v?'PI '+v+' max':'No limit'}</option>`).join('')}</select>
       <label class="fld" for="chG">Wager</label><select id="chG">${WAGERS.filter(v=>v<=Math.max(0,S.money)).map(v=>`<option value="${v}">${v?yen(v):'No wager, just pride'}</option>`).join('')}</select>
-      <label class="fld" for="chR">Your driver</label><select id="chR">${driverOpts(0,best.id)}</select>
+      <label class="fld" for="chR">Your driver</label><select id="chR">${driverOpts(fc?fc.cap:0,best.id)}</select>
       <label class="fld" for="chT">Message</label><input id="chT" class="tin" maxlength="60" placeholder="Optional. Keep it friendly-ish." autocomplete="off">
     </div>
+    ${fc?`<p class="note fairnote">Suggested car limit PI ${fc.cap}: your fastest car is PI ${fc.me}, theirs is PI ${fc.them}. The limit keeps the cars close. Set it to No limit if you'd rather race flat out.</p>`:''}
     <p class="note" id="chMsg" role="status">@${esc(p.h)}: crew OVR ${p.ovr}${p.crew[0]?` · ace ${esc(str(p.crew[0].first,16))} in a ${esc((CARS[p.crew[0].car.model]||{}).name||'car')}`:''}</p>
     <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn race" data-act="netSend" data-k="${esc(k)}">Send challenge</button></div>`);
   }
@@ -3011,7 +3063,9 @@ const NET=(()=>{
     if(ready&&!loaded)h+=`<div class="card hint">${slow?'Touge Net is taking a while to answer. It may be out of reach right now.':'Loading Touge Net…'}</div>`;
     const cs=allCh().filter(x=>x.st!=='declined').slice(0,8);
     if(cs.length)h+=`<h3>Challenges</h3><div class="card">${cs.map(chRow).join('')}</div>`;
-    if(ready&&loaded&&S.hkey&&!S.hpend){const r=rival();h+=`<h3>Rival of the week</h3>${r?`<div class="card">${prow(r)}<div class="meta">Matched on crew OVR. Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
+    if(ready&&loaded&&S.hkey&&!S.hpend){const r=rival(),me=myPair(),ms=matches(6).filter(m=>!r||m.p.key!==r.key).slice(0,5);
+      h+=`<h3>Rival of the week</h3>${r?`<div class="card">${prow(r)}${(m=>m?mtags(m):'')(matchOf(r,me))}<div class="meta">Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
+      h+=`<h3>Good matches</h3><div class="card">${me?`<div class="meta">Your race pair: drivers ${me.d} OVR, cars PI ${me.c}. Matched on both, so a great driver in a slow car meets someone similar.</div>`:''}${ms.length?ms.map(m=>`<div class="mrow">${prow(m.p)}${mtags(m)}</div>`).join(''):`<div class="meta">${me?'Nobody else is racing on Touge Net yet. Matches show up here as players join.':'Put a driver in a roadworthy car to get matched.'}</div>`}</div>`;
       const fs=friends().map(k=>players[k]).filter(Boolean);
       h+=`<h3>Friends</h3><div class="card">${fs.length?fs.map(p=>prow(p)).join(''):'<div class="meta">No friends yet. Add someone by handle, or tap + Friend on the board.</div>'}<div class="hrow"><span class="at">@</span><input id="fIn" class="tin" maxlength="17" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Friend's handle" aria-describedby="fMsg"><button class="btn sm" data-act="netAddF">Add</button></div><div class="note" id="fMsg" role="status"></div></div>`}
     if(ready&&loaded){const top=plList.slice(0,10);h+=`<h3>Top 10</h3><div class="card">${top.length?top.map((p,i)=>prow(p,i)).join(''):'<div class="meta">Nobody on the board yet. Claim a handle and be the first.</div>'}${rk>=10?`<div class="meta">…</div>${prow(plList[rk],rk)}`:''}</div>`}
@@ -3607,6 +3661,7 @@ function boot(data){
 }
 window.claude?.hot?.ready?window.claude.hot.ready(boot):boot(window.claude?.hot?.data??{});
 </script>
+
 
 </body>
 </html>
