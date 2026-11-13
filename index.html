@@ -243,6 +243,13 @@ html.phone .lc .ovs{display:none}
 .hlink:hover,.hlink:focus-visible{color:var(--sodium);text-decoration-color:var(--sodium)}
 .mbox h2.phd{color:var(--sodium);font-size:28px}
 .pdrv,.phist{gap:0}
+.sortbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.sortbar select{width:auto;min-width:140px}.sortbar .note{margin:0}
+.star{appearance:none;background:none;border:0;padding:0 6px 0 0;font-size:17px;line-height:1;color:var(--dim);cursor:pointer;vertical-align:-1px}.star.on{color:var(--sodium)}.star:hover{color:var(--sodium)}
+.card.fav{border-color:rgba(255,176,59,.45)}
+.avbtn{position:relative;appearance:none;border:0;padding:0;background:none;cursor:pointer;border-radius:8px;flex:none}.avbtn .avedit{position:absolute;right:-4px;bottom:-4px;width:18px;height:18px;border-radius:50%;background:var(--sodium);color:var(--sodium-ink);font-size:11px;display:grid;place-items:center;opacity:0;transition:opacity .15s}.avbtn:hover .avedit,.avbtn:focus-visible .avedit{opacity:1}
+.stu{grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.stuv{display:flex;flex-direction:column;gap:12px;position:sticky;top:0}.av.big{width:100%;max-width:220px;height:auto;aspect-ratio:1;align-self:center;border-radius:12px}.stun{display:flex;flex-direction:column;gap:5px}
+.avopts{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:6px}.avopt{appearance:none;padding:0;border:2px solid rgba(255,255,255,.12);border-radius:8px;background:none;cursor:pointer;aspect-ratio:1;overflow:hidden}.avopt img{width:100%;height:100%;image-rendering:pixelated;display:block}.avopt.on{border-color:var(--sodium);box-shadow:0 0 0 2px rgba(255,176,59,.35)}
+@media (max-width:700px){.stu{grid-template-columns:1fr}.stuv{position:static}.av.big{max-width:160px}}
 .mrow{display:flex;flex-direction:column;gap:4px;padding-bottom:6px;border-bottom:1px solid var(--line)}.mrow:last-child{border-bottom:0;padding-bottom:0}
 .mtags{display:flex;flex-wrap:wrap;gap:5px;padding-left:46px}.mt{font-family:var(--f-dot);font-size:11px;letter-spacing:.03em;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-variant-numeric:tabular-nums}.mt small{font-size:10.5px;margin-left:3px;color:var(--dim)}.mt.ok{color:var(--ink);border-color:rgba(91,211,138,.45)}.mt.pct{color:var(--sodium);border-color:rgba(255,176,59,.5)}.mt.pct.up,.mt.pct.down{color:var(--cyan);border-color:rgba(127,212,255,.45)}.fairnote{color:var(--sodium)}
 .pdr{display:grid;grid-template-columns:40px minmax(0,1.2fr) 44px minmax(0,1.4fr) 44px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}.pdr:first-child{border-top:0}
@@ -783,45 +790,60 @@ const tropWx=(w,id)=>id==='genting'&&w==='Snow'?'Wet':w; // no snow in the tropi
 let RACE_M=null;
 const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
 
-/* ================= avatars ================= */
+/* ================= avatars =================
+   Every portrait comes from the driver's seed. A driver can also carry a "face": the parts the player picked in the
+   driver studio, which override the seeded ones. Same face, same pixels, everywhere (crew list, race cards, Touge Net). */
 const AVC={};
-function avatar(seed){
-  if(AVC[seed])return AVC[seed];
-  const r=mulberry32(seed*9301+49297),pick=a=>a[Math.floor(r()*a.length)];
+const AV_BG=['#1e2a4f','#2b1f45','#3a2230','#173a3a','#2f2f1c','#1f3146','#3b2a17'],AV_SKIN=['#f3d2b3','#e9bd94','#d6a173','#bb8257','#94603e'],
+  AV_HAIR=['#141418','#141418','#2a1c14','#4a2f1d','#d8b25a','#b23a2a','#c9ccd3','#2c3b78'],AV_JACKET=['#c8262c','#eeede6','#1c1d22','#2353ad','#e0742a','#3e2659','#2e6b45','#50555e'],
+  AV_STRIPE=['#ffffff','#ffb03b','#111111','#c8262c'],AV_BAND=['#eeede6','#c8262c','#2353ad'];
+const AV_STYLES=['Swept','Spiky','Long','Cropped','Pompadour','Mop','Buzz','Bob'],AV_ACC={none:'None',shades:'Shades',band:'Headband',cap:'Cap',scarf:'Scarf'};
+function avatarBase(seed){const r=mulberry32(seed*9301+49297),pick=a=>a[Math.floor(r()*a.length)];
+  const o={bg:pick(AV_BG),skin:pick(AV_SKIN),hair:pick(AV_HAIR),jacket:pick(AV_JACKET),stripe:pick(AV_STRIPE)};
+  o.eyes=Math.floor(r()*3);o.brow=r()<.5?0:1;o.mouth=Math.floor(r()*3);o.style=Math.floor(r()*6);const acc=r();
+  if(acc<.17){o.acc='shades';o.accCol='#0c0c10'}else if(acc<.3){o.acc='band';o.accCol=pick(AV_BAND)}else{o.acc='none';o.accCol='#eeede6'}
+  o.earring=r()<.12;return o}
+const isHex=v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v);
+function cleanFace(f){if(!f||typeof f!=='object')return null;const o={};
+  ['bg','skin','hair','jacket','stripe','accCol'].forEach(k=>{if(isHex(f[k]))o[k]=f[k].toLowerCase()});
+  [['eyes',2],['brow',1],['mouth',2],['style',AV_STYLES.length-1]].forEach(([k,mx])=>{if(Number.isInteger(f[k])&&f[k]>=0&&f[k]<=mx)o[k]=f[k]});
+  if(AV_ACC[f.acc])o.acc=f.acc;if(typeof f.earring==='boolean')o.earring=f.earring;return Object.keys(o).length?o:null}
+const faceOf=(seed,face)=>face?Object.assign(avatarBase(seed),face):avatarBase(seed);
+function drawAvatar(o){
   const c=document.createElement('canvas');c.width=c.height=20;const x=c.getContext('2d');
   const p=(px,py,col,w=1,h=1)=>{x.fillStyle=col;x.fillRect(px,py,w,h)};
-  p(0,0,pick(['#1e2a4f','#2b1f45','#3a2230','#173a3a','#2f2f1c','#1f3146','#3b2a17']),20,20);
-  x.fillStyle='rgba(255,255,255,.05)';for(let i=0;i<20;i+=4)x.fillRect(i,0,2,20);
-  const skin=pick(['#f3d2b3','#e9bd94','#d6a173','#bb8257','#94603e']),skinD=shade(skin,-.18);
-  const hair=pick(['#141418','#141418','#2a1c14','#4a2f1d','#d8b25a','#b23a2a','#c9ccd3','#2c3b78']);
-  const jacket=pick(['#c8262c','#eeede6','#1c1d22','#2353ad','#e0742a','#3e2659','#2e6b45','#50555e']);
-  p(3,16,jacket,14,4);p(2,17,jacket,16,3);p(8,16,shade(jacket,-.3),4,1);
-  const stripe=pick(['#ffffff','#ffb03b','#111111','#c8262c']);p(4,18,stripe,1,2);p(15,18,stripe,1,2);
+  p(0,0,o.bg,20,20);x.fillStyle='rgba(255,255,255,.05)';for(let i=0;i<20;i+=4)x.fillRect(i,0,2,20);
+  const skin=o.skin,skinD=shade(skin,-.18),hair=o.hair,jacket=o.jacket;
+  p(3,16,jacket,14,4);p(2,17,jacket,16,3);p(8,16,shade(jacket,-.3),4,1);p(4,18,o.stripe,1,2);p(15,18,o.stripe,1,2);
+  if(o.acc==='scarf'){p(6,15,o.accCol,8,2);p(5,16,o.accCol,2,2);p(13,16,shade(o.accCol,-.2),2,3)}
   p(8,14,skinD,4,2);
   const hw=[3,4,5,5,5,5,5,5,4,4,3];for(let k=0;k<11;k++)p(10-hw[k],4+k,skin,hw[k]*2,1);
   p(4,9,skinD,1,2);p(15,9,skinD,1,2);
-  const eyeC='#16161a',ey=Math.floor(r()*3);
-  if(ey===0){p(7,9,eyeC);p(12,9,eyeC)}else if(ey===1){p(6,9,eyeC,2,1);p(12,9,eyeC,2,1)}else{p(7,9,eyeC);p(12,9,eyeC);p(6,8,eyeC);p(13,8,eyeC)}
-  const brow=shade(hair,-.2);if(r()<.5){p(6,7,brow,2,1);p(12,7,brow,2,1)}else{p(6,7,brow,2,1);p(12,6,brow,2,1)}
-  const mc='#7a3d32',mo=Math.floor(r()*3);if(mo===0)p(9,12,mc,2,1);else if(mo===1)p(8,12,mc,3,1);else{p(9,12,mc,2,1);p(11,11,mc)}
+  const eyeC='#16161a';
+  if(o.eyes===0){p(7,9,eyeC);p(12,9,eyeC)}else if(o.eyes===1){p(6,9,eyeC,2,1);p(12,9,eyeC,2,1)}else{p(7,9,eyeC);p(12,9,eyeC);p(6,8,eyeC);p(13,8,eyeC)}
+  const brow=shade(hair,-.2);if(o.brow===0){p(6,7,brow,2,1);p(12,7,brow,2,1)}else{p(6,7,brow,2,1);p(12,6,brow,2,1)}
+  const mc='#7a3d32';if(o.mouth===0)p(9,12,mc,2,1);else if(o.mouth===1)p(8,12,mc,3,1);else{p(9,12,mc,2,1);p(11,11,mc)}
   const hl=shade(hair,.25);
-  switch(Math.floor(r()*6)){
+  switch(o.style){
     case 0:p(5,3,hair,10,2);p(4,4,hair,1,4);p(15,4,hair,1,4);p(6,5,hair,5,1);break;
     case 1:p(5,3,hair,10,2);p(5,2,hair);p(7,1,hair,1,2);p(9,2,hair);p(11,1,hair,1,2);p(13,2,hair);p(4,4,hair,1,3);p(15,4,hair,1,3);p(6,5,hair,2,1);p(10,5,hair,2,1);p(13,5,hair);break;
     case 2:p(5,3,hair,10,2);p(4,4,hair,2,10);p(14,4,hair,2,10);p(6,5,hair,8,1);break;
     case 3:p(5,3,shade(hair,.12),10,1);p(4,4,hair,1,2);p(15,4,hair,1,2);break;
     case 4:p(4,1,hair,10,2);p(3,2,hair,2,2);p(5,3,hair,10,2);p(4,4,hair,1,3);p(15,4,hair,1,3);p(5,1,hl,5,1);break;
+    case 6:x.globalAlpha=.55;p(5,3,hair,10,2);p(4,4,hair,1,2);p(15,4,hair,1,2);x.globalAlpha=1;break;
+    case 7:p(5,3,hair,10,3);p(4,4,hair,2,8);p(14,4,hair,2,8);p(6,6,hair,3,1);p(11,6,hair,3,1);p(5,3,hl,4,1);break;
     default:p(5,3,hair,10,3);p(4,4,hair,1,7);p(15,4,hair,1,7);
   }
-  const acc=r();
-  if(acc<.17){p(5,8,'#0c0c10',10,2);p(6,8,'#3a4a7a',2,1);p(12,8,'#3a4a7a',2,1)}
-  else if(acc<.3){const bc=pick(['#eeede6','#c8262c','#2353ad']);p(4,5,bc,12,1)}
-  if(r()<.12)p(15,11,'#ffd257');
-  return AVC[seed]=c.toDataURL();
+  if(o.acc==='shades'){p(5,8,'#0c0c10',10,2);p(6,8,'#3a4a7a',2,1);p(12,8,'#3a4a7a',2,1)}
+  else if(o.acc==='band')p(4,5,o.accCol,12,1);
+  else if(o.acc==='cap'){p(4,2,o.accCol,12,3);p(5,1,o.accCol,10,1);p(2,4,shade(o.accCol,-.25),4,1);p(9,2,shade(o.accCol,.3),2,1)}
+  if(o.earring)p(15,11,'#ffd257');
+  return c.toDataURL();
 }
+function avatar(seed,face){const k=face?seed+'|'+JSON.stringify(face):seed;if(AVC[k])return AVC[k];return AVC[k]=drawAvatar(faceOf(seed,face))}
 
-function avatarColors(seed){const r=mulberry32(seed*9301+49297),pick=a=>a[Math.floor(r()*a.length)];pick([0,1,2,3,4,5,6]);const skin=pick(['#f3d2b3','#e9bd94','#d6a173','#bb8257','#94603e']),hair=pick(['#141418','#141418','#2a1c14','#4a2f1d','#d8b25a','#b23a2a','#c9ccd3','#2c3b78']),jacket=pick(['#c8262c','#eeede6','#1c1d22','#2353ad','#e0742a','#3e2659','#2e6b45','#50555e']);return{skin,hair,jacket}}
-const AVIMG={};function avatarImg(seed){if(!AVIMG[seed]){const im=new Image();im.src=avatar(seed);AVIMG[seed]=im}return AVIMG[seed]}
+function avatarColors(seed,face){const o=faceOf(seed,face);return{skin:o.skin,hair:o.hair,jacket:o.jacket}}
+const AVIMG={};function avatarImg(seed,face){const k=face?seed+'|'+JSON.stringify(face):seed;if(!AVIMG[k]){const im=new Image();im.src=avatar(seed,face);AVIMG[k]=im}return AVIMG[k]}
 /* ================= state ================= */
 const SAVE='tougeTofu.v1';
 let S=null,TAB='crew',busy=false;
@@ -1669,7 +1691,7 @@ const MAP=(()=>{
     c.save();c.globalAlpha=a;c.fillStyle='rgba(250,248,240,.95)';c.strokeStyle='#141416';c.lineWidth=.01;
     c.beginPath();if(c.roundRect)c.roundRect(bx,by,bw,bh,.03);else c.rect(bx,by,bw,bh);c.fill();c.stroke();
     c.beginPath();c.moveTo(bx+.06,by+bh-.005);c.lineTo(bx-.01,by+bh+.1);c.lineTo(bx+.13,by+bh-.005);c.closePath();c.fill();c.beginPath();c.moveTo(bx+.06,by+bh);c.lineTo(bx-.01,by+bh+.1);c.lineTo(bx+.13,by+bh);c.stroke();
-    const im=avatarImg(W.seed);if(im.complete){c.imageSmoothingEnabled=false;c.drawImage(im,bx+.015,by+.015,bh-.03,bh-.03);c.imageSmoothingEnabled=true}
+    const im=avatarImg(W.seed,W.face);if(im.complete){c.imageSmoothingEnabled=false;c.drawImage(im,bx+.015,by+.015,bh-.03,bh-.03);c.imageSmoothingEnabled=true}
     wtext(c,W.say,bx+bh+.085,by+bh/2+.005,.11,'',W.type==='crash'?'#c8262c':'#2353ad','"Press Start 2P",monospace');
     c.restore();
   }
@@ -1693,11 +1715,74 @@ const MAP=(()=>{
     HW=def.hw;SHW=def.hw+.12;statics=[];lamps=[];vends=[];winLights=[];shopSlots=[];hotelSlots=[];shopRect=null;hotelRect=null;
     Hf=makeTerrain(def,g);buildGround();road=finishRoad(g,def);buildDist();prepMarks(def);paintGround(def);buildPaths(def);buildObjects(def);rev=reverseTrack(road);
     fitC=[(v0+v1)/2,(u0+u1)/2+(def.home?2:BIOMES[def.biome].resort?-3:0)];fitBox=[v1-v0+4,u1-u0+(def.home?12:BIOMES[def.biome].resort?14:8)];
-    hg=null;dg=null;NG=null;bSeason=null;
-    return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox};
+    const ngKeep=NG,ngwKeep=NGW;hg=null;dg=null;NG=null;bSeason=null;
+    return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox,ng:ngKeep,ngw:ngwKeep,season:null};
   }
   function useWorld(W){world=W;({B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox}=W)}
   function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==SEASON()){WORLDS[id]=buildWorld(id);WORLDS[id].season=SEASON()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
+  /* ---------- the countryside beyond the pass ----------
+     Baked once per world into two canvases the first time the view opens up: ground for the wide margin around the map,
+     and a transparent layer of forest canopy, hamlets with their paddies, and (on city passes) blocks of town. Inside the map
+     it only fills the deep forest away from the road, where the real trees are not placed. */
+  function ensureOuter(){const W=world;if(!W||W.outer||W.outerBusy)return;W.outerBusy=1;setTimeout(()=>{try{W.outer=bakeOuter(W)}catch(e){W.outer={fail:1}}},30)}
+  function bakeOuter(W){
+    const def=W.def,bi=BIOMES[def.biome],Bb=W.B,M=Math.ceil(Math.max(26,(Bb.v1-Bb.v0)*.75,(Bb.u1-Bb.u0)*.6)),E={v0:Bb.v0-M,v1:Bb.v1+M,u0:Bb.u0-M,u1:Bb.u1+M};
+    const ew=E.v1-E.v0,eh=E.u1-E.u0,area=ew*eh,rr=mulberry32(9001+strHash(W.id)%1000),sea=SEASON(),wins=[];
+    const inB=(u,v)=>u>Bb.u0&&u<Bb.u1&&v>Bb.v0&&v<Bb.v1,near=(u,v)=>{const x=Math.floor(v-Bb.v0),y=Math.floor(u-Bb.u0);return x>=0&&y>=0&&x<W.ngw&&W.ng&&W.ng[y*W.ngw+x]===1};
+    const busy=(u,v)=>inB(u,v)&&(near(u,v)||W.id==='genting'||def.home&&u>-2.5&&Math.hypot(u-3.5,v*.75)<10.5||bi.city&&u>Bb.u1-6.5||bi.resort);
+    /* ground: soft, low resolution, same colours as the painted map */
+    const GP=2,G=document.createElement('canvas');G.width=ew*GP;G.height=eh*GP;{const g=G.getContext('2d'),img=g.createImageData(G.width,G.height),D=img.data;
+      for(let y=0;y<G.height;y++){const u=E.u0+(y+.5)/GP;for(let x=0;x<G.width;x++){const v=E.v0+(x+.5)/GP,fd=fden(u,v,bi);let c=lerp3(bi.meadow,bi.floor,clamp((fd-.25)*2.4,0,1));
+        if(bi.grass){const n=vnoise(u*.6,v*.6,12);if(n>.1)c=lerp3(c,[184,166,104],clamp(n*1.5,0,.7))}
+        if(bi.rock){const n=vnoise(u*.18,v*.18,13);c=lerp3(c,[150,128,96],clamp(.35+n*.5,0,.8))}
+        if(bi.city&&u>Bb.u1-6.5)c=lerp3(c,[58,58,64],clamp((u-(Bb.u1-6.5))/2,0,1));
+        c=seasonGround(c,u,v,0);const sh=.84+vnoise(u*.07,v*.07,21)*.3,o=(y*G.width+x)*4;D[o]=c[0]*sh;D[o+1]=c[1]*sh;D[o+2]=c[2]*sh;D[o+3]=255}}
+      /* match the painted map's overall tone (it carries hill shading), measured along its border */
+      const gc=W.groundC,gd=gc.getContext('2d').getImageData(0,0,gc.width,gc.height).data,band=Math.max(2,Math.round(gc.width/40)),A=[0,0,0],Bs=[0,0,0];let na=0,nb=0;
+      for(let y=0;y<gc.height;y+=2)for(let x=0;x<gc.width;x+=2){if(x>band&&x<gc.width-band&&y>band&&y<gc.height-band)continue;const o=(y*gc.width+x)*4;A[0]+=gd[o];A[1]+=gd[o+1];A[2]+=gd[o+2];na++}
+      for(let y=0;y<G.height;y++){const u=E.u0+(y+.5)/GP;if(u<Bb.u0||u>Bb.u1)continue;for(let x=0;x<G.width;x++){const v=E.v0+(x+.5)/GP;if(v<Bb.v0||v>Bb.v1)continue;const o=(y*G.width+x)*4;Bs[0]+=D[o];Bs[1]+=D[o+1];Bs[2]+=D[o+2];nb++}}
+      const k=[0,1,2].map(i=>na&&nb&&Bs[i]?clamp((A[i]/na)/(Bs[i]/nb),.6,1.6):1);for(let o=0;o<D.length;o+=4){D[o]=clamp(D[o]*k[0],0,255);D[o+1]=clamp(D[o+1]*k[1],0,255);D[o+2]=clamp(D[o+2]*k[2],0,255)}
+      g.putImageData(img,0,0)}
+    /* the painted map with its edges feathered into the countryside */
+    const gc=W.groundC,F=document.createElement('canvas');F.width=gc.width;F.height=gc.height;{const f=F.getContext('2d');f.drawImage(gc,0,0);const fe=Math.max(4,Math.round(gc.width/(Bb.v1-Bb.v0)*4)),m=f.getImageData(0,0,F.width,F.height),md=m.data;
+      for(let y=0;y<F.height;y++){const ay=Math.min(y,F.height-1-y)/fe;for(let x=0;x<F.width;x++){const a=Math.min(1,ay,Math.min(x,F.width-1-x)/fe);if(a<1)md[(y*F.width+x)*4+3]=255*a*a*(3-2*a)}}f.putImageData(m,0,0)}
+    /* canopy, hamlets and town on a transparent layer. Trees are rasterised straight into pixels: tens of thousands of them, too many for canvas paths */
+    const PPT=clamp(Math.floor(Math.sqrt(2e6/area)),3,6),T=document.createElement('canvas'),Wt=ew*PPT,Ht=eh*PPT;T.width=Wt;T.height=Ht;const t=T.getContext('2d');
+    const cl=[];const nH=Math.round(area/(bi.city?520:bi.resort?1400:900));
+    for(let k=0;k<nH*3&&cl.length<nH;k++){const u=E.u0+rr()*eh,v=E.v0+rr()*ew;if(inB(u,v))continue;if(fden(u,v,bi)>.75&&rr()<.7)continue;cl.push({u,v,r:1.6+rr()*2.4,city:bi.city&&u>Bb.u1-2})}
+    if(bi.city){for(let k=0;k<Math.round(ew*M/14);k++){const u=Bb.u1+1+rr()*(M-2),v=E.v0+rr()*ew;cl.push({u,v,r:2.2+rr()*2.6,city:true})}}
+    /* clearings: a coarse grid of where hamlets, their fields and town blocks sit */
+    const CG=new Uint8Array(ew*eh);cl.forEach(h=>{const R=h.r+(h.city||bi.resort?.6:3.4);for(let y=Math.floor(h.u-R);y<=h.u+R;y++)for(let x=Math.floor(h.v-R);x<=h.v+R;x++){if(Math.hypot(y+.5-h.u,x+.5-h.v)>R)continue;const gx=x-E.v0,gy=y-E.u0;if(gx>=0&&gy>=0&&gx<ew&&gy<eh)CG[gy*ew+gx]=1}});
+    const inCl=(u,v)=>{const gx=Math.floor(v-E.v0),gy=Math.floor(u-E.u0);return gx>=0&&gy>=0&&gx<ew&&gy<eh&&CG[gy*ew+gx]===1};
+    const img=t.createImageData(Wt,Ht),D=img.data,rgbC={},rgb=h=>rgbC[h]||(rgbC[h]=[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]);
+    const disc=(cv,cu,r,c,a)=>{const cx=(cv-E.v0)*PPT,cy=(cu-E.u0)*PPT,R=r*PPT,R2=R*R,x0=Math.max(0,Math.floor(cx-R)),x1=Math.min(Wt-1,Math.ceil(cx+R)),y0=Math.max(0,Math.floor(cy-R)),y1=Math.min(Ht-1,Math.ceil(cy+R));
+      for(let y=y0;y<=y1;y++){const dy=y+.5-cy;for(let x=x0;x<=x1;x++){const dx=x+.5-cx;if(dx*dx+dy*dy>R2)continue;const o=(y*Wt+x)*4,da=D[o+3]/255,oa=a+da*(1-a);
+        D[o]=(c[0]*a+D[o]*da*(1-a))/oa;D[o+1]=(c[1]*a+D[o+1]*da*(1-a))/oa;D[o+2]=(c[2]*a+D[o+2]*da*(1-a))/oa;D[o+3]=oa*255}}};
+    const ellD=(cv,cu,rx,ry,c,a)=>{const cx=(cv-E.v0)*PPT,cy=(cu-E.u0)*PPT,RX=rx*PPT,RY=ry*PPT,x0=Math.max(0,Math.floor(cx-RX)),x1=Math.min(Wt-1,Math.ceil(cx+RX)),y0=Math.max(0,Math.floor(cy-RY)),y1=Math.min(Ht-1,Math.ceil(cy+RY));
+      for(let y=y0;y<=y1;y++){const dy=(y+.5-cy)/RY;for(let x=x0;x<=x1;x++){const dx=(x+.5-cx)/RX;if(dx*dx+dy*dy>1)continue;const o=(y*Wt+x)*4,da=D[o+3]/255,oa=a+da*(1-a);
+        D[o]=(c[0]*a+D[o]*da*(1-a))/oa;D[o+1]=(c[1]*a+D[o+1]*da*(1-a))/oa;D[o+2]=(c[2]*a+D[o+2]*da*(1-a))/oa;D[o+3]=oa*255}}};
+    const BLK=[0,0,0],step=.82;
+    for(let u=E.u0+.3;u<E.u1;u+=step)for(let v=E.v0+.3;v<E.v1;v+=step){const tu=u+(rr()-.5)*.6,tv=v+(rr()-.5)*.6;
+      if(busy(tu,tv)||inCl(tu,tv))continue;if(rr()>fden(tu,tv,bi))continue;
+      const maple=rr()<bi.maple,pal=bi.trop?(rr()<.55?['#0e3a20','#17562c','#2c7a3a']:['#1a5424','#2a7430','#56a244']):maple?(rr()<.55?['#7a2e18','#a8441f','#d7752e']:['#8a5a12','#b88a1c','#e2b941']):(rr()<bi.pine?['#123323','#1c472e','#2b6338']:['#1f4a2a','#2e6432','#4c8a3c']);
+      const sz=seasonTree(pal,maple,hash2(Math.floor(tu*13),Math.floor(tv*13),77)),P=sz.pal,r=.26+rr()*.2;
+      ellD(tv+r*.35,tu+r*.2,r*1.05,r*.7,BLK,.28);
+      if(sz.bare){disc(tv,tu-r*.5,r*.55,rgb(P[1]),.7);continue}
+      disc(tv,tu-r*.5,r,rgb(P[0]),1);disc(tv-r*.2,tu-r*.7,r*.62,rgb(P[1]),1);disc(tv-r*.32,tu-r*.84,r*.26,rgb(P[2]),1)}
+    t.putImageData(img,0,0);t.setTransform(PPT,0,0,PPT,-E.v0*PPT,-E.u0*PPT);
+    /* paddies and fields around rural hamlets */
+    const fieldC={Spring:['#5e8aa0','#6f9aa8','#7aa58f'],Summer:['#4f8a3c','#5f9a42','#6faa4a'],Autumn:['#c49a3c','#b3892f','#d6ad4a'],Winter:['#dfe4ea','#d2d8df','#c9cdd2']}[sea];
+    cl.forEach(h=>{if(h.city||bi.resort)return;for(let k=0;k<5;k++){const a=rr()*6.28,d=h.r+.6+rr()*1.8,fu=h.u+Math.sin(a)*d,fv=h.v+Math.cos(a)*d,fw=1.2+rr()*1.6,fh=.9+rr()*1.1;if(busy(fu,fv))continue;
+        t.fillStyle=fieldC[k%3];t.fillRect(fv-fw/2,fu-fh/2,fw,fh);t.fillStyle='rgba(0,0,0,.12)';for(let q=1;q<4;q++)t.fillRect(fv-fw/2,fu-fh/2+q*fh/4,fw,.04)}});
+    /* houses: tiled roofs in the countryside, flat grey blocks in town */
+    const roofs=['#3a4250','#4a3a34','#6a3226','#2f4a52','#5a5048','#384038'],walls=['#e6ddc6','#d8d0bc','#cfc6b0','#e8e4da'];
+    cl.forEach(h=>{const n=h.city?Math.round(h.r*h.r*1.6):3+Math.floor(rr()*6);for(let k=0;k<n;k++){const a=rr()*6.28,d=Math.sqrt(rr())*h.r,u=h.u+Math.sin(a)*d,v=h.v+Math.cos(a)*d;if(busy(u,v))continue;
+        if(h.city){const w=.6+rr()*.9,dd=.5+rr()*.8,hl=.25+rr()*.9;t.fillStyle='rgba(0,0,0,.35)';t.fillRect(v+.08,u,w,dd);t.fillStyle=['#8a8e96','#9a9a9e','#6e7480','#a8a29a'][k%4];t.fillRect(v,u-hl*.4,w,dd);t.fillStyle='rgba(255,255,255,.08)';t.fillRect(v,u-hl*.4,w,.05);
+          for(let q=0;q<3;q++)if(rr()<.7)wins.push({v:v+w*(.15+q*.28),u:u-hl*.4+dd*.55,w:w*.16,h:.06})}
+        else{const w=.55+rr()*.4,dd=.45+rr()*.25,rf=roofs[Math.floor(rr()*roofs.length)];t.fillStyle='rgba(0,0,0,.3)';t.fillRect(v+.06,u+.04,w,dd);t.fillStyle=walls[k%4];t.fillRect(v,u+dd*.45,w,dd*.55);
+          t.fillStyle=sea==='Winter'?'#e8edf2':shade(rf,.12);t.fillRect(v-.04,u-.02,w+.08,dd*.3);t.fillStyle=sea==='Winter'?'#cfd6de':shade(rf,-.1);t.fillRect(v-.04,u+dd*.28,w+.08,dd*.24);
+          if(rr()<.55)wins.push({v:v+w*.3,u:u+dd*.75,w:w*.2,h:.05})}}});
+    return{E,g:G,t:T,wins,feather:F}}
   function home(){if(!WORLDS.usuzumi){WORLDS.usuzumi=buildWorld('usuzumi');WORLDS.usuzumi.season=SEASON()}return WORLDS.usuzumi}
 
   /* ---------- view ---------- */
@@ -1761,7 +1846,10 @@ const MAP=(()=>{
     c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=true;c.globalCompositeOperation='source-over';c.globalAlpha=1;
     {const f=BIOMES[world.def.biome].floor;c.fillStyle=`rgb(${f.map(q=>Math.round(q*.8)).join(',')})`}c.fillRect(0,0,lowW,lowH);c.setTransform(...WT);
     const vr={v0:cam.v-vw/2/cam.z-1,v1:cam.v+vw/2/cam.z+1,u0:cam.u-vh/2/(cam.z*TILT)-1,u1:cam.u+vh/2/(cam.z*TILT)+1.6},lod=cam.z>55;
-    c.drawImage(groundC,B.v0,B.u0,B.v1-B.v0,B.u1-B.u0);
+    const OW=world.outer&&world.outer.g?world.outer:null;if(!world.outer&&(vr.v0<B.v0||vr.v1>B.v1||vr.u0<B.u0||vr.u1>B.u1||cam.z<fitZ*1.6))ensureOuter();
+    if(OW)c.drawImage(OW.g,OW.E.v0,OW.E.u0,OW.E.v1-OW.E.v0,OW.E.u1-OW.E.u0);
+    c.drawImage(OW&&OW.feather||groundC,B.v0,B.u0,B.v1-B.v0,B.u1-B.u0);
+    if(OW){const fo=clamp((48-cam.z)/22,0,1);if(fo>0){c.globalAlpha=fo;c.drawImage(OW.t,OW.E.v0,OW.E.u0,OW.E.v1-OW.E.v0,OW.E.u1-OW.E.u0);c.globalAlpha=1}}
     if(cam.z>30){c.globalAlpha=clamp((cam.z-30)/40,0,1)*.9;c.fillStyle=pats.grass;const x0=Math.max(B.v0,vr.v0),y0=Math.max(B.u0,vr.u0);c.fillRect(x0,y0,Math.min(B.v1,vr.v1)-x0,Math.min(B.u1,vr.u1)-y0);c.globalAlpha=1}
     if(world.def.home){const L=shopSlots[shopSlots.length-1];rect(c,shopSlots[0].v-.2,shopSlots[0].u-.32,L.v-shopSlots[0].v+.4,L.u-shopSlots[0].u+.64,'#4a4b50');rect(c,hotelSlots[0].v-.18,hotelSlots[0].u-.3,1.85,.6,'#4a4b50');
       if(lod){c.fillStyle='rgba(240,240,230,.7)';shopSlots.forEach(s=>c.fillRect(s.v-.13,s.row?s.u-.22:s.u-.28,.012,.5));{const a=shopSlots[9],b=shopSlots[19];if(a)c.fillRect(a.v+.13,a.u-.28,.012,.5);if(b)c.fillRect(b.v+.13,b.u-.22,.012,.5)}hotelSlots.forEach(s=>c.fillRect(s.v-.135,s.u-.26,.012,.48))}}
@@ -1796,6 +1884,7 @@ const MAP=(()=>{
       lamps.forEach(m=>{if(m.v<vr.v0-2||m.v>vr.v1+2||m.u<vr.u0-2||m.u>vr.u1+2)return;l.globalAlpha=a*(.9+.1*Math.sin(now/130+m.ph));l.drawImage(SP.pool,m.pv-1.15,m.pu-1.15,2.3,2.3)});
       vends.forEach(m=>{l.globalAlpha=a*.9;l.drawImage(SP.cool,m.v-.6,m.u-.6,1.2,1.2)});
       l.globalAlpha=a;winLights.forEach(w=>{if(w.v<vr.v0-1||w.v>vr.v1+1||w.u<vr.u0-1||w.u>vr.u1+1)return;l.drawImage(SP.win,w.v-w.w*.5,w.u-w.h,w.w*2,w.h*3)});
+      if(world.outer&&world.outer.wins&&cam.z<48){l.globalAlpha=a*clamp((48-cam.z)/22,0,1);world.outer.wins.forEach(w=>{if(w.v<vr.v0-1||w.v>vr.v1+1||w.u<vr.u0-1||w.u>vr.u1+1)return;l.drawImage(SP.win,w.v-w.w*.5,w.u-w.h,w.w*2,w.h*3)});l.globalAlpha=a}
       if(world.def.home){l.globalAlpha=a*.9;l.drawImage(SP.pool,shopRect.v-.3,shopRect.u+.5,1.9,1.4);l.drawImage(SP.pool,hotelRect.v,hotelRect.u+1.6,3.6,2.2)}
       l.globalAlpha=1;carsNow.forEach(s=>{if(s.hazard&&Math.floor(now/450)%2){l.globalAlpha=a*.85;l.drawImage(SP.pool,s.v-.7,s.u-.6,1.4,1.2);l.globalAlpha=1}if(s.wreck){l.globalAlpha=a*.6;l.drawImage(SP.cool,s.v-.9,s.u-.8,1.8,1.6);l.globalAlpha=1}carLights(l,s);if(s.lights>.05){l.globalAlpha=Math.min(1,s.lights)*.8;l.drawImage(SP.cool,s.v-.42,s.u-.42,.84,.84);l.globalAlpha=1}});
       c.setTransform(1,0,0,1,0,0);c.globalCompositeOperation='multiply';c.drawImage(lit,0,0);
@@ -1860,7 +1949,7 @@ const MAP=(()=>{
     m.fillStyle='rgba(8,10,22,.82)';m.beginPath();m.moveTo(X0,cy-bh/2+14);m.lineTo(X0+VW,cy-bh/2-14);m.lineTo(X0+VW,cy+bh/2-14);m.lineTo(X0,cy+bh/2+14);m.closePath();m.fill();
     m.fillStyle=col;m.fillRect(X0,cy-bh/2+8,VW,3);m.fillRect(X0,cy+bh/2-11,VW,3);
     m.strokeStyle=col;m.globalAlpha=aout*.35;m.lineWidth=2;for(let k=0;k<14;k++){const y=cy-bh/2+((k*37+now/6)%bh),x=X0+((k*173+now*1.6)%(VW+200))-100;m.beginPath();m.moveTo(x,y);m.lineTo(x+60+k*6,y-3);m.stroke()}m.globalAlpha=aout;
-    const pw=Math.min(bh-26,Math.max(40,VW*.17)),px=X0+Math.min(VW*.08,24+VW*.03),py=cy-pw/2;m.fillStyle=col;m.fillRect(px-4,py-4,pw+8,pw+8);const im=avatarImg(C.seed);if(im.complete){m.imageSmoothingEnabled=false;m.drawImage(im,px,py,pw,pw)}
+    const pw=Math.min(bh-26,Math.max(40,VW*.17)),px=X0+Math.min(VW*.08,24+VW*.03),py=cy-pw/2;m.fillStyle=col;m.fillRect(px-4,py-4,pw+8,pw+8);const im=avatarImg(C.seed,C.face);if(im.complete){m.imageSmoothingEnabled=false;m.drawImage(im,px,py,pw,pw)}
     // title sized from its measured width; if one line would get too small it breaks onto two
     const ttl0=C.custom?C.title:M.name.toUpperCase()+(C.ok?'!':'...'),fam='"Dela Gothic One","Zen Kaku Gothic New",sans-serif',tx=px+pw+20,avail=Math.max(60,X0+VW-tx-14),fmax=clamp(Math.round(bh*.42),20,52);
     const wAt=(str,f)=>{m.font=`${f}px ${fam}`;return m.measureText(str).width+f*.22};
@@ -2012,7 +2101,7 @@ const MAP=(()=>{
         const off=sg*(crash?SHW+.02:HW+.12)*e,v=p0.v+n.v*off,u=p0.u+n.u*off,ang=T.theta[i]+(crash?sg*1.1*e:sg*.25*e);
         if(!r.played){r.played=1;if(crash)AUDIO.crash();else AUDIO.stall();
           const offF=sg*(crash?SHW+.02:HW+.12),cv0=p0.v+n.v*offF,cu0=p0.u+n.u*offF,deb=[];if(crash)for(let k=0;k<11;k++){const a2=R()*6.28,d2=.08+R()*.35;deb.push({v:cv0+Math.cos(a2)*d2-n.v*sg*.15,u:cu0+Math.sin(a2)*d2*.8-n.u*sg*.15,w:.015+R()*.035,h:.01+R()*.02,rot:R()*3,col:[r.c1,r.c1,'#bcd8e6','#141416',shade(r.c1,-.4)][Math.floor(R()*5)]})}
-          r.wreck={t0:el,type:r.dnfType,side:sg,deb,stand:{v:cv0-n.v*sg*.34,u:cu0-n.u*sg*.34+.04},cols:avatarColors(r.d.seed),seed:r.d.seed,say:crash?(R()<.5?'!?':'...'):(R()<.5?'...':'?!')};
+          r.wreck={t0:el,type:r.dnfType,side:sg,deb,stand:{v:cv0-n.v*sg*.34,u:cu0-n.u*sg*.34+.04},cols:avatarColors(r.d.seed,r.d.face),seed:r.d.seed,face:r.d.face,say:crash?(R()<.5?'!?':'...'):(R()<.5?'...':'?!')};
           runs.cine={r,until:el+(crash?4.4:3.6)};zTarget=driveZ()*1.55;runs.camK=.06}
         s={v,u,a:ang,lights:dark,brake:true,steer:0,hazard:true,wreck:r.wreck,wt:el-r.wreck.t0};
         {const fx=v+Math.cos(ang)*CL*.32,fu=u+Math.sin(ang)*CL*.32;if(R()<(crash?.75:.5))smoke.push({v:fx+(R()-.5)*.06,u:fu-.03,r:.04+R()*.05,a:crash?.55:.45,dv:(R()-.5)*.003,du:-.004-R()*.004,col:crash?(R()<.5?'#4a4a50':'#6a6a70'):'#f4f4f4'});if(!crash&&smoke.length)smoke[smoke.length-1].a=.32}
@@ -2055,7 +2144,7 @@ const MAP=(()=>{
           if(r.last){skids.push([r.last[0][0],r.last[0][1],rw[0][0],rw[0][1]]);skids.push([r.last[1][0],r.last[1][1],rw[1][0],rw[1][1]]);if(skids.length>5000)skids.splice(0,600)}r.last=rw;
           if(R()<.9)rw.forEach(w=>smoke.push({v:w[0],u:w[1],r:.04+R()*.04,a:.42,dv:(R()-.5)*.004-Math.cos(ang)*.003,du:(R()-.5)*.004-Math.sin(ang)*.003}))}else r.last=null;
         const prog=i/N;if(prog>leadP&&!r.ghost){leadP=prog;lead=r}}
-      if(r.ghost&&!r.announced&&tt>.35){r.announced=true;if(!runs.cine){runs.cine={r,until:el+3.2};runs.camK=.08}runs.cutin={custom:true,title:r.cutTitle||'A WILD BUNTA APPEARS!',sub:r.cutSub||'BUNTA FUJIWARA · GC8 TYPE R',col:r.cutCol||'#d4dae2',ok:true,by:1,t0:now,seed:r.d.seed};AUDIO.stinger(true)}
+      if(r.ghost&&!r.announced&&tt>.35){r.announced=true;if(!runs.cine){runs.cine={r,until:el+3.2};runs.camK=.08}runs.cutin={custom:true,title:r.cutTitle||'A WILD BUNTA APPEARS!',sub:r.cutSub||'BUNTA FUJIWARA · GC8 TYPE R',col:r.cutCol||'#d4dae2',ok:true,by:1,t0:now,seed:r.d.seed,face:r.d.face};AUDIO.stinger(true)}
       s.c1=r.c1;s.c2=r.c2;s.model=r.model;s.look=r.look;if(race)s.tag=r.ghost?'#7fe0c0':ri===0?'#ffb03b':'#ff4d4d';out.push(s);r.s=s;
     });
     if(smoke.length>500)smoke.splice(0,smoke.length-500);
@@ -2070,7 +2159,7 @@ const MAP=(()=>{
       hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.min(tt,fr.dur)/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:fr.cupT||null,ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
       if(race){const A=runs.list[0],Bq=runs.list[1],ia=A.state==='done'?N-1:A.i,ib=Bq.state==='done'?N-1:Bq.i;const sA=A.start||0,sB=Bq.start||0;let gap;if(ia>=ib)gap=(sB+Bq.cumReal[ia])-(sA+A.cumReal[ia]);else gap=-((sA+A.cumReal[ib])-(sB+Bq.cumReal[ib]));
         Object.assign(hud,{race:true,gap,title:runs.title,dir:runs.dir,count:-el,lead:gap>=0?`${A.d.first.toUpperCase()} LEADS`:`${Bq.d.first.toUpperCase()} LEADS`});
-        const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed};if(!runs.replay)AUDIO.stinger(e.cut.ok)}runs.ev++}}}
+        const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok)}runs.ev++}}}
     runs.audio=null;
     if(fr){const i=fr.i;let rpm,thr;if(fr.state==='run'){rpm=rpmOf(fr,i);thr=thrOf(fr,i)}else if(fr.state==='wait'){thr=race?.4+.4*Math.max(0,Math.sin(now/170)):.1;rpm=race?2800+thr*2600:950}else{rpm=900;thr=0}
       if(fr.state==='out'){rpm=fr.dnfType==='break'?0:900;thr=0}
@@ -2115,14 +2204,14 @@ const MAP=(()=>{
     runs=Object.assign(lastRace,{replay:{segs,k:0,t0:performance.now(),slow:.35,cv:canvas,onSeg,onCut},finished:true,look:null});replayReset();setFollow(true);zTarget=driveZ()*1.15;hlCards(canvas.parentElement);return true}
   // driver cards over the highlights (hidden on phones and narrow replay boxes)
   function hlCards(box){if(!box)return;let el=box.querySelector('.hlcards');if(el)el.remove();el=document.createElement('div');el.className='hlcards';el.setAttribute('aria-hidden','true');
-    el.innerHTML=runs.list.map((r,i)=>`<div class="hc" id="hc${i}"><span class="dot" style="background:${r.ghost?'#7fe0c0':i===0?'#ffb03b':'#ff4d4d'}"></span><img src="${avatar(r.d.seed)}" alt=""><span class="nm"><b>${esc(r.d.first)} ${esc(r.d.family||'')}${r.hh?`<span class="hh">@${esc(r.hh)}</span>`:''}</b><small>${CARS[r.c.model].code} · OVR ${Math.round(dskill(r.d)*100)}</small></span><span class="sp">--</span></div>`).join('');box.appendChild(el);runs.replay.lcKey=null}
+    el.innerHTML=runs.list.map((r,i)=>`<div class="hc" id="hc${i}"><span class="dot" style="background:${r.ghost?'#7fe0c0':i===0?'#ffb03b':'#ff4d4d'}"></span><img src="${avatar(r.d.seed,r.d.face)}" alt=""><span class="nm"><b>${esc(r.d.first)} ${esc(r.d.family||'')}${r.hh?`<span class="hh">@${esc(r.hh)}</span>`:''}</b><small>${CARS[r.c.model].code} · OVR ${Math.round(dskill(r.d)*100)}</small></span><span class="sp">--</span></div>`).join('');box.appendChild(el);runs.replay.lcKey=null}
   function hlCardsTick(){const H=runs&&runs.replay;if(!H)return;runs.list.forEach((r,i)=>{const e=document.getElementById('hc'+i);if(!e)return;e.classList.toggle('on',i===runs.focus);const sp=e.lastElementChild,st=r.state==='run'?'':r.state==='done'&&r.dnf==null?'fin':r.state==='wait'?'':'out';
     const t=r.state==='run'?String(Math.round(r.kmhAt(r.i))):st==='fin'?'FIN':st==='out'?'OUT':'--';if(sp.textContent!==t)sp.textContent=t;sp.className='sp'+(st?' '+st:'')});orderBy('hc',H)}
   function replayStop(){if(runs&&runs.replay){runs.replay=null;runs=null;hud=null;smoke=[];skids=[];sparks=[];document.getElementById('mapwrap').classList.remove('driving');fit()}}
   function replayCopy(){const H=runs&&runs.replay;if(!H||!H.cv||!H.cv.isConnected)return;hlCardsTick();const rc=H.cv,r=rc.getBoundingClientRect(),dp=Math.min(2,devicePixelRatio||1),W=Math.max(2,Math.round(r.width*dp)),Hh=Math.max(2,Math.round(r.height*dp));if(rc.width!==W||rc.height!==Hh){rc.width=W;rc.height=Hh}
     H.aspect=W/Hh;const x=rc.getContext('2d'),a=W/Hh,cw=cv.width,ch=cv.height;let sw=cw,sh=ch;if(cw/ch>a)sw=ch*a;else sh=cw/a;const sx=(cw-sw)/2,sy=(ch-sh)/2;x.imageSmoothingEnabled=false;x.drawImage(cv,sx,sy,sw,sh,0,0,W,Hh);if(cuv)x.drawImage(cuv,sx,sy,sw,sh,0,0,W,Hh)}
   function finishRuns(){if(!runs)return;const cb=onDone,wasRace=runs.mode==='race';if(wasRace){lastRace=runs;lastRace.wid=world.id}runs=null;onDone=null;hud=null;document.getElementById('live').innerHTML='';const f=document.getElementById('feed');if(f)f.innerHTML='';document.getElementById('mapwrap').classList.remove('driving');setFollow(true);if(wasRace)fit();else focusShop();cb&&cb()}
-  function liveCards(list,race){document.getElementById('live').innerHTML=list.map((r,i)=>`<div class="lc${r.ghost?' ghost':''}" id="lc${i}" data-act="focusRun" data-i="${i}" role="button" tabindex="0"><img src="${avatar(r.d.seed)}" alt=""><div class="n">${race?`<span class="dot" style="background:${r.ghost?'#7fe0c0':i===0?'#ffb03b':'#ff4d4d'}"></span>`:`<span class="dot pd" style="background:${r.c.c1}"></span>`}${esc(r.d.first)}${r.hh?`<span class="hh">@${esc(r.hh)}</span>`:''}<span class="cc"> · ${CARS[r.c.model].code}</span></div><div class="spd"><small>staged</small>--</div><div class="bars"><div class="gm" title="Lateral G"><i></i></div>${race?`<span class="ovs" title="Overall rating">OVR <b>${Math.round(dskill(r.d)*100)}</b></span>`:''}${race?'':'<div class="tb" title="Tofu intact"><i style="width:100%"></i></div><span class="tf">100%</span>'}</div></div>`).join('')}
+  function liveCards(list,race){document.getElementById('live').innerHTML=list.map((r,i)=>`<div class="lc${r.ghost?' ghost':''}" id="lc${i}" data-act="focusRun" data-i="${i}" role="button" tabindex="0"><img src="${avatar(r.d.seed,r.d.face)}" alt=""><div class="n">${race?`<span class="dot" style="background:${r.ghost?'#7fe0c0':i===0?'#ffb03b':'#ff4d4d'}"></span>`:`<span class="dot pd" style="background:${r.c.c1}"></span>`}${esc(r.d.first)}${r.hh?`<span class="hh">@${esc(r.hh)}</span>`:''}<span class="cc"> · ${CARS[r.c.model].code}</span></div><div class="spd"><small>staged</small>--</div><div class="bars"><div class="gm" title="Lateral G"><i></i></div>${race?`<span class="ovs" title="Overall rating">OVR <b>${Math.round(dskill(r.d)*100)}</b></span>`:''}${race?'':'<div class="tb" title="Tofu intact"><i style="width:100%"></i></div><span class="tf">100%</span>'}</div></div>`).join('')}
   function runDelivery(list,done){
     if(world.id!=='usuzumi')loadWorld('usuzumi');
     runs={mode:'delivery',T:road,list,lead:null,finished:false,focus:null};onDone=done;
@@ -2239,12 +2328,21 @@ function renderAll(){syncSecret();{const b=document.getElementById('dirBtn');if(
 function carLabel(c){const m=CARS[c.model];return`${m.code} ${m.name}`}
 function carOptions(d){let h=`<option value="0">No car</option>`;S.cars.forEach(c=>{const o=driverOfCar(c.id);h+=`<option value="${c.id}" ${d.carId===c.id?'selected':''}>${esc(CARS[c.model].code)} ${esc(CARS[c.model].name)}${o&&o.id!==d.id?' ('+esc(o.first)+')':''}</option>`});return h}
 function statGrid(st){return`<div class="statgrid">${STATS.map(([k,l])=>`<div class="st"><span>${l}</span><b>${Math.floor(st[k])}</b><i><em style="width:${Math.min(100,st[k])}%"></em></i></div>`).join('')}</div>`}
+/* ---- favourites and sorting for the crew and the garage. Favourites always sit on top. ---- */
+function starBtn(act,id,on,name){return`<button class="star ${on?'on':''}" data-act="${act}" data-id="${id}" aria-pressed="${!!on}" title="${on?'Favourite':'Mark as favourite'}" aria-label="${on?'Remove '+esc(name)+' from favourites':'Mark '+esc(name)+' as a favourite'}">${on?'★':'☆'}</button>`}
+function sortBar(id,cur,opts){return`<div class="sortbar"><label class="fld" for="${id}">Sort</label><select id="${id}" data-chg="${id}">${opts.map(([v,l])=>`<option value="${v}" ${cur===v?'selected':''}>${l}</option>`).join('')}</select><span class="note">★ favourites stay on top</span></div>`}
+function favSort(list,key){const idx=new Map(list.map((x,i)=>[x,i]));return list.slice().sort((a,b)=>(!!b.star-!!a.star)||key(a,b)||idx.get(a)-idx.get(b))}
+function sortedDrivers(){const k=S.sortD||'join',name=d=>(d.first+' '+d.family).toLowerCase();
+  return favSort(S.drivers,{join:()=>0,ovr:(a,b)=>dskill(b)-dskill(a),lv:(a,b)=>(b.xp||0)-(a.xp||0),name:(a,b)=>name(a).localeCompare(name(b)),wins:(a,b)=>(b.wins||0)-(a.wins||0)}[k]||(()=>0))}
+function sortedCars(){const k=S.sortC||'join';
+  return favSort(S.cars,{join:()=>0,pi:(a,b)=>spec(b).pi-spec(a).pi,name:(a,b)=>CARS[a.model].code.localeCompare(CARS[b.model].code),cond:(a,b)=>(a.cond??100)-(b.cond??100),tyre:(a,b)=>b.tyre.wear-a.tyre.wear}[k]||(()=>0))}
 function crewHTML(){
   const n=S.drivers.length,pr=plannedRuns().length;
   let h=`<div><h2>Delivery crew<span class="jp">乗員</span></h2><p class="sub">${n} of 6 drivers. ${pr} run${pr===1?'':'s'} ready for dawn. The shop presses ${S.prod} batch${S.prod>1?'es':''} a day.</p></div>`;
-  S.drivers.forEach(d=>{
+  if(n>1)h+=sortBar('sortD',S.sortD||'join',[['join','Order joined'],['ovr','OVR'],['lv','Level'],['name','Name'],['wins','Wins']]);
+  sortedDrivers().forEach(d=>{
     const L=levelInfo(d.xp);
-    h+=`<div class="card"><div class="drv-top"><img class="av" src="${avatar(d.seed)}" alt="Portrait of ${esc(d.first)}"><div style="min-width:0"><div class="nm">${esc(d.first)} ${esc(d.family)} ${d.son?'<span class="chip amber">Son</span>':d.legend?'<span class="chip legend">Legend</span>':`<span class="chip">ex ${esc(d.team)}</span>`}</div><div class="meta">Lv ${L.lv} · ${d.runs} runs · ${d.wins}W ${d.losses}L</div><div class="xpbar"><i style="width:${L.pct}%"></i></div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(d)*100)}</b></div></div>
+    h+=`<div class="card ${d.star?'fav':''}"><div class="drv-top"><button class="avbtn" data-act="studio" data-id="${d.id}" aria-label="Change ${esc(d.first)}'s look and name"><img class="av" src="${avatar(d.seed,d.face)}" alt="Portrait of ${esc(d.first)}"><span class="avedit" aria-hidden="true">✎</span></button><div style="min-width:0"><div class="nm">${starBtn('starD',d.id,d.star,d.first)}${esc(d.first)} ${esc(d.family)} ${d.son?'<span class="chip amber">Son</span>':d.legend?'<span class="chip legend">Legend</span>':`<span class="chip">ex ${esc(d.team)}</span>`}</div><div class="meta">Lv ${L.lv} · ${d.runs} runs · ${d.wins}W ${d.losses}L</div><div class="xpbar"><i style="width:${L.pct}%"></i></div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(d)*100)}</b></div></div>
     ${statGrid(d.stats)}
     <div class="trait"><span class="chip amber">${TRAITS[d.trait].name}</span> ${TRAITS[d.trait].desc}</div>
     ${d.trait2?`<div class="trait"><span class="chip amber">${TRAITS[d.trait2].name}</span> ${TRAITS[d.trait2].desc}</div>`:''}
@@ -2253,7 +2351,7 @@ function crewHTML(){
     <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<span class="carmini" title="${esc(CARS[c.model].maker+' '+CARS[c.model].name)}"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></span>`:''})()}
     <label class="tog"><input type="checkbox" id="ac${d.id}" data-chg="active" data-id="${d.id}" ${d.active?'checked':''}> Dawn run</label>
     <span class="wage">${d.wage?yen(d.wage)+' per run':d.legend?'Drives for free':'Family, unpaid'}</span></div>
-    ${d.son?'':`<div class="row"><button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button></div>`}
+    <div class="row"><button class="btn sm" data-act="studio" data-id="${d.id}">Look and name</button>${d.son?'':`<button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button>`}</div>
     ${d.active&&carById(d.carId)&&!plannedRuns().some(r=>r.d===d)?`<div class="note" style="color:var(--warn)">Benched tomorrow: no press free for this driver. Add a press in the Shop tab, or untick someone above.</div>`:''}</div>`;
   });
   if(n<6)h+=`<div class="card hint">Win Saturday touge races to build street cred. Beaten rivals sometimes ask to join the crew, and they bring their own car.</div>`;
@@ -2269,11 +2367,12 @@ function progHTML(d){
 function meter(label,val,col,txt){return`<div class="meter"><span>${label}</span><i><em style="width:${clamp(val,0,100)}%;background:${col}"></em></i><b>${txt}</b></div>`}
 function garageHTML(){
   let h=`<div><h2>Garage<span class="jp">車庫</span></h2><p class="sub">${S.cars.length} car${S.cars.length>1?'s':''}. Fresh tyres and a stiff chassis keep the tofu in one piece.</p></div>`;
-  S.cars.forEach(c=>{
+  if(S.cars.length>1)h+=sortBar('sortC',S.sortC||'join',[['join','Order bought'],['pi','PI'],['name','Name'],['cond','Needs work'],['tyre','Tyres worn']]);
+  sortedCars().forEach(c=>{
     const m=CARS[c.model],sp=spec(c),drv=driverOfCar(c.id),wear=c.tyre.wear;
     const wc=wear>75?'var(--brake)':wear>50?'var(--warn)':'var(--good)';
-    h+=`<div class="card"><div class="carhead"><div style="min-width:0"><div class="carname"><span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}${m.legend?' <span class="chip amber">Legend</span>':''}</div><div class="meta"><span class="swatch" style="background:${c.c1}"></span>${esc(c.paint)} · ${Math.round(c.km).toLocaleString('en-US')} km · ${drv?'Driven by '+esc(drv.first):'Unassigned'}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
-    <button class="carthumb" data-act="bodyShop" data-id="${c.id}" aria-label="Open the body shop for the ${esc(m.code)}"><img src="${SPR.url(c,132,84)}" alt="">${drv?`<span class="drv"><img src="${avatar(drv.seed)}" alt=""><span class="t"><b>${esc(drv.first)} ${esc(drv.family)}</b><small>Lv ${levelInfo(drv.xp).lv}</small></span></span>`:'<span class="drv none">No driver</span>'}<span class="bs">Body shop</span></button>
+    h+=`<div class="card ${c.star?'fav':''}"><div class="carhead"><div style="min-width:0"><div class="carname">${starBtn('starC',c.id,c.star,m.code)}<span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}${m.legend?' <span class="chip amber">Legend</span>':''}</div><div class="meta"><span class="swatch" style="background:${c.c1}"></span>${esc(c.paint)} · ${Math.round(c.km).toLocaleString('en-US')} km · ${drv?'Driven by '+esc(drv.first):'Unassigned'}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
+    <button class="carthumb" data-act="bodyShop" data-id="${c.id}" aria-label="Open the body shop for the ${esc(m.code)}"><img src="${SPR.url(c,132,84)}" alt="">${drv?`<span class="drv"><img src="${avatar(drv.seed,drv.face)}" alt=""><span class="t"><b>${esc(drv.first)} ${esc(drv.family)}</b><small>Lv ${levelInfo(drv.xp).lv}</small></span></span>`:'<span class="drv none">No driver</span>'}<span class="bs">Body shop</span></button>
     <div class="specs"><span class="chip">${sp.hp} PS</span><span class="chip">${sp.kg} kg</span><span class="chip amber">${sp.drive}</span><span class="chip">${sp.gears}-speed</span><span class="chip" title="Redline">${redline(c).toLocaleString()} rpm</span><span class="chip">${sp.top} km/h${sp.limited?' limited':''}</span><span class="chip">${TYRES[c.tyre.grade].name} tyres</span></div>
     ${meter('Tyre wear',wear,wc,Math.round(wear)+'%')}
     ${meter('Condition',c.cond,c.cond<70?'var(--brake)':'var(--cyan)',Math.round(c.cond)+'%')}
@@ -2442,9 +2541,9 @@ function finishDelivery(list){
   const fin=rows.filter(r=>r.res.dnf==null),best=fin.length?fin.reduce((a,b)=>a.res.time<b.res.time?a:b):null;
   addLog(`Delivered ${fin.length} of ${list.length} batch${list.length>1?'es':''} for ${yen(rev)}.${best?` Best run ${best.d.first}, ${fmtT(best.res.time)}.`:''}`);
   S.phase='post';MAP.setDark(S.day===6?.05:.12);save();renderAll();if(rev>0)AUDIO.cash();
-  modal(`<div class="eyebrow">${DAYS[S.day]} · Week ${S.week} · ${S.weather}</div><h2>${fin.length===list.length?'Delivered to Grand Hotel Kumoi':fin.length?'Partial delivery':'Nothing reached the hotel'}</h2>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed)}" alt=""><div><b>Bunta Fujiwara</b> · GC8 Type R<br><span>${passed.length?`Came up behind and passed ${esc(passed.map(r=>r.d.first).join(', '))} without breaking a sweat.`:'Was on the pass this morning, but nobody saw him up close.'} He doesn't race for money and he isn't looking for a crew.</span></div></div>`:''}
+  modal(`<div class="eyebrow">${DAYS[S.day]} · Week ${S.week} · ${S.weather}</div><h2>${fin.length===list.length?'Delivered to Grand Hotel Kumoi':fin.length?'Partial delivery':'Nothing reached the hotel'}</h2>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed,gh.d.face)}" alt=""><div><b>Bunta Fujiwara</b> · GC8 Type R<br><span>${passed.length?`Came up behind and passed ${esc(passed.map(r=>r.d.first).join(', '))} without breaking a sweat.`:'Was on the pass this morning, but nobody saw him up close.'} He doesn't race for money and he isn't looking for a crew.</span></div></div>`:''}
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th class="num">Time</th><th class="num">Fresh</th><th class="num">Damage</th><th class="num" title="Water left in the cup on the dashboard">Cup</th><th class="num">Paid</th><th class="num">XP</th><th>Notes</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num ${r.res.dnf!=null?'neg':''}">${r.res.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${r.res.dnf!=null?'-':Math.round(r.res.fresh*100)+'%'}</td><td class="num ${r.res.dmg>8?'neg':r.res.dmg<2?'pos':''}">${r.res.dnf!=null?'Lost':r.res.dmg.toFixed(1)+'%'}</td><td class="num ${r.cup==null?'':r.cup>80?'pos':r.cup<50?'neg':''}">${r.cup==null?'-':r.cup+'%'}</td><td class="num">${yen(r.res.price)}</td><td class="num">+${r.res.xp}</td><td class="tagline">${r.notes.join(' · ')}</td></tr>`).join('')}
+  ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num ${r.res.dnf!=null?'neg':''}">${r.res.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${r.res.dnf!=null?'-':Math.round(r.res.fresh*100)+'%'}</td><td class="num ${r.res.dmg>8?'neg':r.res.dmg<2?'pos':''}">${r.res.dnf!=null?'Lost':r.res.dmg.toFixed(1)+'%'}</td><td class="num ${r.cup==null?'':r.cup>80?'pos':r.cup<50?'neg':''}">${r.cup==null?'-':r.cup+'%'}</td><td class="num">${yen(r.res.price)}</td><td class="num">+${r.res.xp}</td><td class="tagline">${r.notes.join(' · ')}</td></tr>`).join('')}
   </tbody></table></div>
   <div class="tot"><div><span>Hotel paid</span><b>${yen(rev)}</b></div><div><span>Beans and nigari</span><b class="neg">${yen(-prod)}</b></div><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Wages</span><b class="neg">${yen(-wages)}</b></div>${tow?`<div><span>Tow truck</span><b class="neg">${yen(-tow)}</b></div>`:''}<div><span>Net today</span><b class="${net>=0?'pos':'neg'}">${yen(net)}</b></div></div>
   <div class="mact"><button class="btn primary" data-act="close">${S.day===6?'Back to the shop':'Continue'}</button></div>`);
@@ -2475,7 +2574,7 @@ function openRacePlanner(){
   const vs=NET.defaultVs();RP={up:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs},down:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs}};
   MAP.setDark(1);renderPlanner();
 }
-function oppCard(o,mid){const sp=spec(o.car);return`<div class="opp"><img class="av" src="${avatar(o.seed)}" alt=""><div style="min-width:0"><div class="nm">${esc(o.first)} ${esc(o.family)}</div><div class="meta">${esc(o.team)} · ${CARS[o.car.model].code} ${esc(CARS[o.car.model].name)}</div><div class="meta">${TRAITS[o.trait].name} · PI ${sp.pi} · ${TYRES[o.car.tyre.grade].name} tyres${o.car.tyre.gamble?` <span style="color:var(--brake)">(gambling on ${S.raceWeather==='Snow'?'summer tyres in the snow':'slicks in the wet'})</span>`:o.car.tyre.dry!=null&&o.car.tyre.dry!==o.car.tyre.grade?` (swapped for the ${S.raceWeather==='Snow'?'snow':'rain'})`:''}</div><div class="meta">${o.net?'Ghost':'Local'}: knows the pass ${Math.floor(mid?knowOf(o,mid):o.know?Object.values(o.know)[0]||0:0)}%${o.net?' · level '+o.lv:' · moves rank '+ROMAN[o.mmRank||1]}${(o.perks||[]).length?' · '+o.perks.map(p=>PERKS[p].name).join(', '):''}</div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(o)*100)}</b></div></div>`}
+function oppCard(o,mid){const sp=spec(o.car);return`<div class="opp"><img class="av" src="${avatar(o.seed,o.face)}" alt=""><div style="min-width:0"><div class="nm">${esc(o.first)} ${esc(o.family)}</div><div class="meta">${esc(o.team)} · ${CARS[o.car.model].code} ${esc(CARS[o.car.model].name)}</div><div class="meta">${TRAITS[o.trait].name} · PI ${sp.pi} · ${TYRES[o.car.tyre.grade].name} tyres${o.car.tyre.gamble?` <span style="color:var(--brake)">(gambling on ${S.raceWeather==='Snow'?'summer tyres in the snow':'slicks in the wet'})</span>`:o.car.tyre.dry!=null&&o.car.tyre.dry!==o.car.tyre.grade?` (swapped for the ${S.raceWeather==='Snow'?'snow':'rain'})`:''}</div><div class="meta">${o.net?'Ghost':'Local'}: knows the pass ${Math.floor(mid?knowOf(o,mid):o.know?Object.values(o.know)[0]||0:0)}%${o.net?' · level '+o.lv:' · moves rank '+ROMAN[o.mmRank||1]}${(o.perks||[]).length?' · '+o.perks.map(p=>PERKS[p].name).join(', '):''}</div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(o)*100)}</b></div></div>`}
 function oppOf(dir,m){const v=RP[dir].vs;return(v&&v!=='cpu'&&NET.oppVs(v,dir,m))||genOpp(m,dir)}
 function renderPlanner(){
   const open=MTNS.filter(passOpen),ds=S.drivers.filter(raceReady);
@@ -2602,9 +2701,9 @@ function finishRace(){
   const line=win?(Bq.dnf!=null?`${d.first} wins. ${opp.first} ${why(Bq)}.`:`${d.first} beats ${opp.first} by ${margin.toFixed(2)} seconds.`):both?`Neither car finished. ${d.first} ${why(A)}, ${opp.first} ${why(Bq)}.`:A.dnf!=null?`${d.first} ${why(A)}. ${opp.first} takes the win.`:`${opp.first} takes it by ${margin.toFixed(2)} seconds.`;
   NET.hist({r:win?'W':both?'D':'L',k:job.ch?'ch':opp.net?'gh':'cpu',vs:job.ch||opp.net?'@'+opp.h:opp.first+' '+opp.family,m:m.id,dir,line});addLog(`${win?'WIN':'LOSS'} ${job.ch?`challenge vs @${opp.h} `:opp.net?`vs @${opp.h}'s ghost `:''}${m.name} ${dir==='up'?'uphill':'downhill'}: ${line}`);NET.after(job,win,A,Bq,line,CUR.tev);
   RES.push({win,job});save();renderHUD();AUDIO.finish(win);
-  const row=(r,col,name,team)=>`<tr><td><span class="swatch" style="background:${col};border-radius:50%"></span><img class="av" src="${avatar(r.d.seed)}" alt="">${esc(name)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="meta">${esc(team)}</td><td class="num ${r.dnf!=null?'neg':''}">${r.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${Math.round(r.res.prof.vmax)} km/h</td><td class="tagline">${[...(r.mist.length?[r.mist.length+' mistake'+(r.mist.length>1?'s':'')]:[]),...r.incs.map(x=>INC_LABEL[x.type])].join(' · ')||'Clean'}</td></tr>`;
+  const row=(r,col,name,team)=>`<tr><td><span class="swatch" style="background:${col};border-radius:50%"></span><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(name)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="meta">${esc(team)}</td><td class="num ${r.dnf!=null?'neg':''}">${r.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${Math.round(r.res.prof.vmax)} km/h</td><td class="tagline">${[...(r.mist.length?[r.mist.length+' mistake'+(r.mist.length>1?'s':'')]:[]),...r.incs.map(x=>INC_LABEL[x.type])].join(' · ')||'Clean'}</td></tr>`;
   modal(`<div class="eyebrow">${m.jp} ${m.name} · ${dir==='up'?'Uphill':'Downhill'} · ${WXLABEL[tropWx(S.raceWeather||S.weather,m.id)]}</div>
-  <div class="banner ${win?'win':'lose'}">${win?'VICTORY':both?'NO CONTEST':'DEFEAT'}</div>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed)}" alt=""><div><b>YS Khong</b> · ${esc(CARS[gh.c.model].name)}<br><span>Came out of the mist and passed ${esc(gh.passed.join(' and '))||'everyone'} like they were standing still.</span></div></div>`:''}
+  <div class="banner ${win?'win':'lose'}">${win?'VICTORY':both?'NO CONTEST':'DEFEAT'}</div>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed,gh.d.face)}" alt=""><div><b>YS Khong</b> · ${esc(CARS[gh.c.model].name)}<br><span>Came out of the mist and passed ${esc(gh.passed.join(' and '))||'everyone'} like they were standing still.</span></div></div>`:''}
   <p style="text-align:center;margin:0 auto">${esc(line)}</p>
   <div class="hlwrap" id="hlbox"><div class="hl"><canvas id="hlv" aria-label="Slow-motion highlights of the race"></canvas><span class="hlbadge">● REPLAY · SLOW-MO</span><span class="hlnum" id="hlnum"></span></div><div class="hlcap" id="hlcap"></div></div>
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th>Team</th><th class="num">Time</th><th class="num">Top speed</th><th>Incidents</th></tr></thead><tbody>${row(A,'#ffb03b',d.first+' '+d.family,'Kasumi Tofu')}${row(Bq,'#ff4d4d',opp.first+' '+opp.family,opp.team)}</tbody></table></div>
@@ -2680,7 +2779,7 @@ const NET=(()=>{
     (S.log||[]).forEach(l=>{const g=/^(WIN|LOSS) (?:challenge vs @(\S+) |vs @(\S+)'s ghost )?(.+?) (uphill|downhill): (.*)$/.exec(l.m||'');if(!g)return;const m=byName(g[4]);if(!m)return;
       S.hist.unshift({r:g[1]==='WIN'?'W':'L',k:g[2]?'ch':g[3]?'gh':'cpu',vs:g[2]?'@'+g[2]:g[3]?'@'+g[3]:'',m,dir:g[5]==='uphill'?'up':'down',line:g[6],when:l.t||''})});
     if(S.hist.length>30)S.hist.length=30;save()}
-  function roster(){return S.drivers.map(d=>{const c=carById(d.carId);return{first:d.first,family:d.family,seed:d.seed,ovr:Math.round(dskill(d)*100),lv:levelInfo(d.xp||0).lv,trait:d.trait,legend:!!d.legend,
+  function roster(){return S.drivers.map(d=>{const c=carById(d.carId);return{first:d.first,family:d.family,seed:d.seed,face:cleanFace(d.face),ovr:Math.round(dskill(d)*100),lv:levelInfo(d.xp||0).lv,trait:d.trait,legend:!!d.legend,
     car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null}})}
   /* ---- ratings and snapshots ---- */
   function rateOf(d){const c=carById(d.carId);return dskill(d)*100*.65+(c?spec(c).pi/10:0)*.35}
@@ -2689,7 +2788,7 @@ const NET=(()=>{
   const r1=v=>Math.round(v*10)/10;
   function snap(d){const c=d&&carById(d.carId);return c?snapRC(d,c):null}
   function snapRC(d,c){
-    return{first:d.first,family:d.family,seed:d.seed,stats:Object.fromEntries(STATS.map(([k])=>[k,r1(d.stats[k])])),trait:d.trait,trait2:d.trait2||null,perks:(d.perks||[]).slice(0,6),
+    return{first:d.first,family:d.family,seed:d.seed,face:cleanFace(d.face),stats:Object.fromEntries(STATS.map(([k])=>[k,r1(d.stats[k])])),trait:d.trait,trait2:d.trait2||null,perks:(d.perks||[]).slice(0,6),
       know:Object.fromEntries(Object.entries(d.know||{}).map(([k,v])=>[k,Math.round(v)])),mm:Object.assign({},d.mm||{}),lv:levelInfo(d.xp||0).lv,ovr:Math.round(dskill(d)*100),
       car:{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',engine:c.engine,susp:c.susp,brakes:c.brakes,lsd:c.lsd,weight:c.weight,cradle:c.cradle?1:0,tyre:{grade:c.tyre.grade,wear:Math.round(c.tyre.wear)},cond:Math.round(c.cond??100),look:c.look||null,pi:spec(c).pi}}}
   function cleanLook(l){if(!l||typeof l!=='object')return null;const o={};Object.keys(l).slice(0,24).forEach(k=>{if(!/^[a-zA-Z0-9_]{1,16}$/.test(k))return;const v=l[k];if(typeof v==='number'&&isFinite(v))o[k]=v;else if(typeof v==='boolean')o[k]=v;else if(typeof v==='string'&&v.length<=24&&/^[#A-Za-z0-9 _.-]*$/.test(v))o[k]=v});return o}
@@ -2708,13 +2807,13 @@ const NET=(()=>{
     const dry=car.tyre.grade;car.tyre.dry=dry;
     if(keep);else if(wx==='Snow')car.tyre.grade=3;else if(wx==='Wet'&&dry===2)car.tyre.grade=1;else if(wx!=='Snow'&&dry===3)car.tyre.grade=1;
     const seed=Math.floor(num(sn.seed,1,1e9,strHash(key||'x')));
-    const o={first:str(sn.first,16)||'Driver',family:str(sn.family,16),team:'@'+str(h,16),seed,stats,trait,perks,know,mm,car,net:key,h:str(h,16),lv:Math.round(num(sn.lv,1,99,1))};
+    const o={first:str(sn.first,16)||'Driver',family:str(sn.family,16),team:'@'+str(h,16),seed,face:cleanFace(sn.face),stats,trait,perks,know,mm,car,net:key,h:str(h,16),lv:Math.round(num(sn.lv,1,99,1))};
     if(trait2)o.trait2=trait2;o.lvl=dskill(o);return o;
   }
 
   /* ---- reading the store ---- */
   function cleanRoster(a){return(Array.isArray(a)?a:[]).slice(0,8).filter(d=>d&&typeof d==='object').map(d=>{const c=d.car&&typeof d.car==='object'&&CARS[d.car.model]&&!CARS[d.car.model].hidden?{model:d.car.model,c1:col(d.car.c1),c2:col(d.car.c2),paint:str(d.car.paint,24),look:cleanLook(d.car.look)||undefined,pi:Math.round(num(d.car.pi,0,1000,0))}:null;
-    return{first:str(d.first,16),family:str(d.family,16),seed:Math.floor(num(d.seed,1,1e9,7)),ovr:Math.round(num(d.ovr,0,150,0)),lv:Math.round(num(d.lv,1,999,1)),trait:TRAITS[d.trait]?d.trait:null,legend:!!d.legend,car:c}})}
+    return{first:str(d.first,16),family:str(d.family,16),seed:Math.floor(num(d.seed,1,1e9,7)),face:cleanFace(d.face),ovr:Math.round(num(d.ovr,0,150,0)),lv:Math.round(num(d.lv,1,999,1)),trait:TRAITS[d.trait]?d.trait:null,legend:!!d.legend,car:c}})}
   function cleanHist(a){return(Array.isArray(a)?a:[]).slice(0,20).filter(e=>e&&typeof e==='object').map(e=>({r:['W','L','D'].includes(e.r)?e.r:'D',k:['ch','gh','ghd','cpu'].includes(e.k)?e.k:'cpu',vs:str(e.vs,34),m:mtn(e.m)?e.m:'',dir:e.dir==='up'?'up':'down',line:str(e.line,160),when:str(e.when,12)}))}
   function cleanP(id,x){if(!x||typeof x!=='object')return null;return{key:id,roster:cleanRoster(x.roster),hist:cleanHist(x.hist),rw:Math.round(num(x.rw,0,1e6,0)),rl:Math.round(num(x.rl,0,1e6,0)),h:str(x.h||id,16),ovr:Math.round(num(x.ovr,0,150,0)),w:Math.round(num(x.w,0,1e6,0)),l:Math.round(num(x.l,0,1e6,0)),wk:Math.round(num(x.wk,1,1e5,1)),t:num(x.t,0,9e15,0),crew:Array.isArray(x.crew)?x.crew.slice(0,2).filter(c=>c&&typeof c==='object'&&c.car):[]}}
   function cleanCrit(c){c=c||{};const m=mtn(c.m)&&c.m!=='genting'?c.m:'usuzumi';return{m,dir:c.dir==='down'?'down':'up',wx:WXS.includes(c.wx)?c.wx:'night',start:STARTS.includes(c.start)?c.start:'side',wager:WAGERS.includes(+c.wager)?+c.wager:0,pi:PICAPS.includes(+c.pi)?+c.pi:0}}
@@ -3004,7 +3103,7 @@ const NET=(()=>{
   }
   function resultScreen(){const W=watching;if(!W)return;const{x,mine:A,theirs:B,m,dir,w}=W;settle(x);
     const won=x.res.win===S.hkey,lost=x.res.win&&!won,wg=x.crit.wager;
-    const row=(r,col,name,team)=>`<tr><td><span class="swatch" style="background:${col};border-radius:50%"></span><img class="av" src="${avatar(r.d.seed)}" alt="">${esc(name)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="meta">${esc(team)}</td><td class="num ${r.dnf!=null?'neg':''}">${r.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${Math.round(r.res.prof.vmax)} km/h</td><td class="tagline">${[...(r.mist.length?[r.mist.length+' mistake'+(r.mist.length>1?'s':'')]:[]),...r.incs.map(v=>INC_LABEL[v.type])].join(' · ')||'Clean'}</td></tr>`;
+    const row=(r,col,name,team)=>`<tr><td><span class="swatch" style="background:${col};border-radius:50%"></span><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(name)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="meta">${esc(team)}</td><td class="num ${r.dnf!=null?'neg':''}">${r.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${Math.round(r.res.prof.vmax)} km/h</td><td class="tagline">${[...(r.mist.length?[r.mist.length+' mistake'+(r.mist.length>1?'s':'')]:[]),...r.incs.map(v=>INC_LABEL[v.type])].join(' · ')||'Clean'}</td></tr>`;
     modal(`<div class="eyebrow">${m.jp} ${m.name} · ${dir==='up'?'Uphill':'Downhill'} · ${WXLABEL[w]} · vs @${esc(otherH(x))}</div>
     <div class="banner ${won?'win':'lose'}">${won?'VICTORY':lost?'DEFEAT':'NO CONTEST'}</div>
     <p style="text-align:center;margin:0 auto">${esc(x.res.line)}</p><p class="note" style="text-align:center;margin:0 auto">Challenge vs @${esc(otherH(x))} · ${esc(critLine(x.crit))}</p>
@@ -3029,7 +3128,7 @@ const NET=(()=>{
   function prof(k){const p=profOf(k);if(!p){toast('That player is not on Touge Net any more.');return}
     const rk=plList.findIndex(q=>q.key===p.key),f=friends().includes(p.key),canCh=!p.me&&ready&&!ro&&S.hkey&&!S.hpend&&live(players[p.key])&&!openWith(p.key);
     const ds=p.roster.slice().sort((a,b)=>b.ovr-a.ovr);
-    const drv=ds.length?ds.map(d=>`<div class="pdr"><img class="av" src="${avatar(d.seed)}" alt=""><div class="pn"><b>${esc(d.first)} ${esc(d.family)}</b><span class="meta">Level ${d.lv}${d.trait?' · '+TRAITS[d.trait].name:''}</span></div><span class="povr"><small>OVR</small>${d.ovr}</span>
+    const drv=ds.length?ds.map(d=>`<div class="pdr"><img class="av" src="${avatar(d.seed,d.face)}" alt=""><div class="pn"><b>${esc(d.first)} ${esc(d.family)}</b><span class="meta">Level ${d.lv}${d.trait?' · '+TRAITS[d.trait].name:''}</span></div><span class="povr"><small>OVR</small>${d.ovr}</span>
       ${d.car?`<span class="pcar"><img src="${SPR.url(d.car,132,84)}" alt=""><span><b>${esc(CARS[d.car.model].code)}</b> ${esc(CARS[d.car.model].name)}</span></span><span class="povr pi"><small>PI</small>${d.car.pi}</span>`:'<span class="pcar meta">No car</span><span></span>'}</div>`).join(''):'<div class="meta">No drivers shared yet.</div>';
     const hs=p.hist.length?p.hist.map(e=>{const m=mtn(e.m);return`<div class="phr"><span class="res ${e.r}">${e.r==='W'?'WON':e.r==='L'?'LOST':'DRAW'}</span><div><b>${e.vs?'vs '+esc(e.vs):'vs a local challenger'}</b> <span class="meta">${m?esc(m.name):''} ${e.dir==='up'?'uphill':'downhill'} · ${KIND[e.k]}${e.when?' · '+esc(e.when):''}</span><div class="meta">${esc(e.line)}</div></div></div>`}).join(''):`<div class="meta">${p.me?'No races yet.':`No races shared yet. @${esc(p.h)}'s history shows up the next time they play.`}</div>`;
     modal(`<div class="eyebrow">Touge Net profile${p.me?' · you':''}</div><h2 class="phd">@${esc(p.h)}</h2>
@@ -3043,7 +3142,7 @@ const NET=(()=>{
   /* ---- the Rivals tab ---- */
   function prow(p,i){const me=p.key===S.hkey,f=friends().includes(p.key),a=p.crew[0],car=a&&CARS[a.car.model];
     const canCh=ready&&!ro&&S.hkey&&!S.hpend&&!me&&live(p)&&!openWith(p.key);
-    return`<div class="prow ${me?'me':''}">${i!=null?`<span class="rk">${i+1}</span>`:''}<img class="av" src="${avatar(Math.floor(num(a&&a.seed,1,1e9,strHash(p.key))))}" alt=""><div class="pn"><b>${hl(p.key,p.h)}${me?' <span class="chip">You</span>':''}</b><span class="meta">${a?`${esc(str(a.first,16))} · ${car?esc(car.code):''}${p.crew[1]?' + '+esc(str(p.crew[1].first,16)):''}`:'No car yet'} · ${p.w}W ${p.l}L</span></div><span class="povr"><small>OVR</small>${p.ovr}</span>
+    return`<div class="prow ${me?'me':''}">${i!=null?`<span class="rk">${i+1}</span>`:''}<img class="av" src="${avatar(Math.floor(num(a&&a.seed,1,1e9,strHash(p.key))),a&&cleanFace(a.face))}" alt=""><div class="pn"><b>${hl(p.key,p.h)}${me?' <span class="chip">You</span>':''}</b><span class="meta">${a?`${esc(str(a.first,16))} · ${car?esc(car.code):''}${p.crew[1]?' + '+esc(str(p.crew[1].first,16)):''}`:'No car yet'} · ${p.w}W ${p.l}L</span></div><span class="povr"><small>OVR</small>${p.ovr}</span>
       ${me?'':`<div class="pact">${S.hkey&&!S.hpend?`<button class="btn sm ${f?'on':''}" data-act="netFriend" data-k="${esc(p.key)}" aria-pressed="${f}">${f?'Friend ✓':'+ Friend'}</button>`:''}${canCh?`<button class="btn sm race" data-act="netCh" data-k="${esc(p.key)}">Challenge</button>`:''}</div>`}</div>`}
   function chRow(x){const o=otherH(x),inc=x.to===S.hkey;let s,btn='';
     if(x.st==='pending'){s=inc?'Waiting for your answer':'Waiting for their answer';btn=inc?`<button class="btn sm race" data-act="netAcc" data-id="${esc(x.id)}">Answer</button>`:`<button class="btn sm" data-act="netCancel" data-id="${esc(x.id)}">Withdraw</button>`}
@@ -3132,6 +3231,10 @@ const ACT={
     x.perks=(x.perks||[]).concat(d.p);addLog(`${x.first} took the ${PERKS[d.p].name} perk.`);toast(`${x.first}: ${PERKS[d.p].name}`);AUDIO.coin();closeModal();save();renderAll()},
   trait2Take:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||!perkPending(x)||!TRAITS[d.t])return;x.trait2=d.t;x.perks=(x.perks||[]).concat('second');addLog(`${x.first} picked up a second trait: ${TRAITS[d.t].name}.`);toast(`${x.first}: ${TRAITS[d.t].name}`);AUDIO.coin();closeModal();save();renderAll()},
   bodyShop:d=>openBodyShop(+d.id),
+  starD:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
+  starC:d=>{const x=carById(+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
+  studio:d=>openStudio(+d.id),stuSet:d=>{if(!STU)return;const v=d.v;STU.f[d.k]=/^-?\d+$/.test(v)?+v:v==='true'?true:v==='false'?false:v;renderStudio()},
+  stuRand:()=>{if(!STU)return;const r=Math.floor(Math.random()*1e9)+1;STU.f=Object.assign(avatarBase(r),{});renderStudio()},stuReset:()=>{if(!STU)return;STU.f=avatarBase(STU.seed);renderStudio()},stuSave:()=>saveStudio(),
   bsSet:d=>{if(!BS)return;const k=d.k;let v=d.v;if(k==='height')v=+v;BS.look[k]=v;renderBodyShop()},
   bsPaint:d=>{if(!BS)return;BS.c1=d.c;BS.paint=d.n;renderBodyShop()},
   bsFlip:()=>{if(!BS)return;BS.flip=!BS.flip;renderBodyShop()},
@@ -3141,6 +3244,9 @@ const ACT={
   tutNext:()=>TUT.next(),tutSkip:()=>TUT.skip(),tipOk:d=>TUT.tipOk(d.k),tutReplay:()=>{closeModal();TUT.replay()},
 };
 const CHG={
+  stuEar:el=>{if(!STU)return;STU.f.earring=el.checked;renderStudio()},
+  sortD:el=>{S.sortD=el.value;save();renderPanel()},sortC:el=>{S.sortC=el.value;save();renderPanel()},
+  stuCol:el=>{if(!STU||!isHex(el.value))return;STU.f[el.dataset.k]=el.value.toLowerCase();renderStudio()},
   assign:el=>{const d=S.drivers.find(x=>x.id===+el.dataset.id),cid=+el.value;if(cid)S.drivers.forEach(x=>{if(x!==d&&x.carId===cid)x.carId=0});d.carId=cid;save();renderAll()},
   active:el=>{const d=S.drivers.find(x=>x.id===+el.dataset.id);d.active=el.checked;save();renderAll()},
   rpOn:el=>{RP[el.dataset.dir].on=el.checked;renderPlanner()},
@@ -3578,6 +3684,39 @@ function renderBodyShop(){const c=carById(BS.id),m=CARS[c.model];
   if(!document.querySelector('#bsView')){modal(`<div class="eyebrow">Body shop · 板金塗装</div><h2>${esc(m.code)} ${esc(m.name)}</h2><div class="bsw"><div class="bsv"><canvas id="bsView" width="132" height="84" aria-label="Pixel-art view of the car with its current paint and parts"></canvas><button class="bsflip" data-act="bsFlip" aria-label="Flip the car to face the other way">⇆ Flip</button></div><div class="bsc" id="bsCtl"></div></div>`,true)}
   const v=$('#bsView'),lk=Object.assign({},BS.look,{popup:BS.pop?1:0});SPR.draw(v.getContext('2d'),v.width,v.height,c.model,BS.c1,lk,{bg:'#7d8399',flip:!!BS.flip});
   $('#bsCtl').innerHTML=bsCtl()}
+
+/* ================= driver studio: look and name ================= */
+let STU=null;
+function openStudio(id){const d=S.drivers.find(x=>x.id===id);if(!d)return;STU={id,seed:d.seed,first:d.first,family:d.family,f:faceOf(d.seed,d.face)};
+  modal(`<div class="eyebrow">Driver studio · 散髪と仕立て</div><h2 id="stuTitle"></h2><div class="bsw stu"><div class="stuv"><img id="stuPrev" class="av big" alt=""><div class="stun">
+    <label class="fld" for="stuFirst">First name</label><input id="stuFirst" class="tin" maxlength="16" autocomplete="off" spellcheck="false" value="${esc(d.first)}">
+    <label class="fld" for="stuFamily">Family name</label><input id="stuFamily" class="tin" maxlength="16" autocomplete="off" spellcheck="false" value="${esc(d.family)}">
+    <div class="note" id="stuMsg" role="status"></div></div></div><div class="bsc" id="stuCtl"></div></div>`,true);
+  ['stuFirst','stuFamily'].forEach(k=>{const el=$('#'+k);el.addEventListener('input',()=>{STU[k==='stuFirst'?'first':'family']=el.value;stuHead()})});renderStudio()}
+const NAME_RE=/^[\p{L}\p{M}][\p{L}\p{M}' .-]*$/u;
+function stuName(v){return String(v||'').replace(/\s+/g,' ').trim()}
+function stuHead(){const f=stuName(STU.first),fa=stuName(STU.family);$('#stuTitle').textContent=(f||'?')+' '+fa;let m='';
+  if(!f)m='Give them a first name.';else if(!NAME_RE.test(f)||fa&&!NAME_RE.test(fa))m='Names can use letters, spaces, hyphens, dots and apostrophes.';
+  const el=$('#stuMsg');if(el){el.textContent=m;el.style.color=m?'var(--brake)':''}const b=$('#stuSaveBtn');if(b)b.disabled=!!m;return!m}
+function renderStudio(){if(!STU||!$('#stuCtl'))return;const f=STU.f,sd=STU.seed,img=$('#stuPrev');img.src=avatar(sd,f);
+  const thumb=(k,v,label)=>{const g=Object.assign({},f,{[k]:v});return`<button class="avopt ${f[k]===v?'on':''}" data-act="stuSet" data-k="${k}" data-v="${v}" aria-pressed="${f[k]===v}" title="${label}" aria-label="${label}"><img src="${avatar(sd,g)}" alt=""></button>`};
+  const sw=(k,list,custom)=>`<div class="swgrid">${[...new Set(list)].map(h=>`<button class="sw ${f[k]===h?'on':''}" style="background:${h}" data-act="stuSet" data-k="${k}" data-v="${h}" aria-label="${k} ${h}"></button>`).join('')}${custom?`<label class="sw custom" title="Custom colour"><input type="color" value="${f[k]}" data-chg="stuCol" data-k="${k}" aria-label="Custom ${k} colour">+</label>`:''}</div>`;
+  const seg=(k,opts)=>`<div class="seg">${opts.map(([v,l])=>`<button class="${String(f[k])===String(v)?'on':''}" data-act="stuSet" data-k="${k}" data-v="${v}">${l}</button>`).join('')}</div>`;
+  $('#stuCtl').innerHTML=`
+  <div class="bsgrp"><h4>Hair</h4><div class="avopts">${AV_STYLES.map((n,i)=>thumb('style',i,n)).join('')}</div>${sw('hair',AV_HAIR.concat(['#8a5a3a','#e8e4da','#c8262c','#3a7a5a']),true)}</div>
+  <div class="bsgrp"><h4>Face</h4><div class="avopts">${[0,1,2].map(i=>thumb('eyes',i,['Dot eyes','Narrow eyes','Wide eyes'][i])).join('')}${[0,1].map(i=>thumb('brow',i,['Level brows','Raised brow'][i])).join('')}${[0,1,2].map(i=>thumb('mouth',i,['Calm','Flat','Smirk'][i])).join('')}</div>
+    <h4>Skin</h4>${sw('skin',AV_SKIN.concat(['#7a4a2e','#5e3a24']),false)}</div>
+  <div class="bsgrp"><h4>Racing jacket</h4>${sw('jacket',AV_JACKET.concat(['#f2c230','#7fd4ff','#8a1d2b']),true)}<h4>Shoulder stripes</h4>${sw('stripe',AV_STRIPE.concat(['#7fd4ff','#5bd38a']),false)}</div>
+  <div class="bsgrp"><h4>Extras</h4>${seg('acc',Object.entries(AV_ACC))}${['band','cap','scarf'].includes(f.acc)?sw('accCol',AV_BAND.concat(['#111111','#ffb03b','#2e6b45','#3e2659']),true):''}
+    <label class="tog"><input type="checkbox" ${f.earring?'checked':''} data-chg="stuEar"> Earring</label></div>
+  <div class="bsgrp"><h4>Backdrop</h4>${sw('bg',AV_BG.concat(['#0b1020','#4a1d2a']),true)}</div>
+  <div class="bsfoot"><span class="note">Free. Shows on Touge Net too.</span><button class="btn" data-act="stuRand">Surprise me</button><button class="btn" data-act="stuReset">Original look</button><button class="btn" data-act="close">Cancel</button><button class="btn primary" id="stuSaveBtn" data-act="stuSave">Save</button></div>`;
+  stuHead()}
+function saveStudio(){if(!STU||!stuHead())return;const d=S.drivers.find(x=>x.id===STU.id);if(!d)return;
+  const base=avatarBase(STU.seed),diff={};Object.keys(STU.f).forEach(k=>{if(STU.f[k]!==base[k])diff[k]=STU.f[k]});const face=cleanFace(diff);
+  const nf=stuName(STU.first).slice(0,16),nfa=stuName(STU.family).slice(0,16),old=d.first+' '+d.family,renamed=nf!==d.first||nfa!==d.family;
+  if(face)d.face=face;else delete d.face;d.first=nf;d.family=nfa;if(renamed)addLog(`${old} goes by ${nf} ${nfa} now.`);
+  STU=null;save();closeModal();renderAll();toast(renamed?`Say hello to ${nf} ${nfa}`:'Looking sharp')}
 
 /* ================= tutorial ================= */
 const TUT=(()=>{
