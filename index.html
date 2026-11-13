@@ -294,6 +294,20 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .fld{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mute)}
 select{background:#0f1430;border:1px solid var(--line);border-radius:8px;padding:6px 8px;max-width:190px}
+.roster{gap:8px}.roster .rtop{display:flex;flex-direction:column;gap:2px}.roster h3{margin:0}
+.rg{display:grid;gap:4px 4px;align-items:center}
+.rg .rh{font-family:var(--f-dot);font-size:10.5px;color:var(--mute);text-align:center;letter-spacing:.04em;padding:2px 0;border-radius:5px}
+.rg .rh.td{color:var(--sodium);background:rgba(255,176,59,.1)}
+.rg .rn{display:flex;align-items:center;gap:5px;font-size:12px;min-width:0;max-width:110px;padding-right:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rg .rn .av{width:20px;height:20px;flex:none}.rg .rn i{color:var(--brake);font-style:normal;font-size:11px}
+.rg .rf{color:var(--mute);font-size:11px}
+.rg .rc{height:26px;min-width:0;padding:0;border-radius:6px;font-size:11px;color:var(--night);background:rgba(255,255,255,.03)}
+.rg .rc.on{background:var(--sodium);border-color:var(--sodium)}.rg .rc.bench{background:rgba(255,176,59,.25);color:var(--ink);border-style:dashed}
+.rg .rc.td{box-shadow:0 0 0 1px var(--sodium) inset}
+.rg .rcount{font-family:var(--f-dot);font-size:10.5px;text-align:center;color:var(--good)}.rg .rcount.over{color:var(--brake)}.rg .rcount.under{color:var(--warn)}
+.roster .rwarn{color:var(--warn)}
+.dwrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.dw{display:flex;gap:3px;flex-wrap:wrap}
+.dwd{height:26px;min-width:0;padding:0 6px;font-family:var(--f-dot);font-size:10.5px;letter-spacing:.03em;border-radius:6px}
+.dwd.on{background:var(--sodium);border-color:var(--sodium);color:var(--night)}.dwd.td{box-shadow:0 0 0 1px var(--sodium) inset}
 .tog{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mute);cursor:pointer}
 .tog input{accent-color:var(--sodium)}
 .wage{margin-left:auto;font-family:var(--f-dot);font-size:12px;color:var(--mute)}
@@ -2300,12 +2314,38 @@ const MAP=(()=>{
 })();
 
 /* ================= rendering UI ================= */
-function readyDrivers(){return S.drivers.filter(d=>d.active&&carOK(carById(d.carId)))}
-function plannedRuns(){
+/* Dawn roster: each driver has a weekly pattern of days (bit 0 = SUN ... bit 6 = SAT). It repeats every week.
+   Older saves only had the single Dawn run switch, so that becomes "every day" or "never". */
+const dwOf=d=>d.dw!=null?d.dw:(d.active===false?0:127);
+const onDay=(d,day)=>!!(dwOf(d)&(1<<day));
+function setDw(d,v){d.dw=v&127;d.active=d.dw>0}
+function readyDrivers(day=S.day){return S.drivers.filter(d=>onDay(d,day)&&carOK(carById(d.carId)))}
+function plannedRuns(day=S.day){
   const out=[];
-  for(const d of S.drivers){if(out.length>=S.prod)break;if(!d.active)continue;const c=carById(d.carId);if(!carOK(c))continue;out.push({d,c})}
+  for(const d of S.drivers){if(out.length>=S.prod)break;if(!onDay(d,day))continue;const c=carById(d.carId);if(!carOK(c))continue;out.push({d,c})}
   return out;
 }
+/* fill the week: 'rotate' shares the days out evenly, 'top' sends the strongest pairs every day, 'all' puts everyone on every day */
+function autoRoster(mode){const el=S.drivers.filter(d=>carById(d.carId)),P=Math.min(S.prod,el.length);
+  if(mode==='all'){S.drivers.forEach(d=>setDw(d,127));return}
+  const rate=d=>{const c=carById(d.carId);return dskill(d)*65+(c?spec(c).pi/10*.35:0)},idx=new Map(S.drivers.map((d,i)=>[d.id,i])),cnt=new Map(el.map(d=>[d.id,0])),dw=new Map(S.drivers.map(d=>[d.id,0]));let prev=new Set();
+  for(let day=0;day<7;day++){let pick;
+    if(mode==='top')pick=el.slice().sort((a,b)=>rate(b)-rate(a)).slice(0,P);
+    else pick=el.slice().sort((a,b)=>cnt.get(a.id)-cnt.get(b.id)||(prev.has(a.id)-prev.has(b.id))||idx.get(a.id)-idx.get(b.id)).slice(0,P);
+    pick.forEach(d=>{cnt.set(d.id,cnt.get(d.id)+1);dw.set(d.id,dw.get(d.id)|(1<<day))});prev=new Set(pick.map(d=>d.id))}
+  S.drivers.forEach(d=>setDw(d,dw.get(d.id)))}
+function dayNeed(day){const n=S.drivers.filter(d=>onDay(d,day)&&carById(d.carId)).length;return{n,cls:n>S.prod?'over':n<Math.min(S.prod,S.drivers.filter(d=>carById(d.carId)).length)?'under':'ok'}}
+function rosterHTML(){if(S.drivers.length<2)return'';
+  const ds=sortedDrivers(),cols=`minmax(64px,auto) repeat(7,minmax(0,1fr))`;
+  let g=`<div class="rg" style="grid-template-columns:${cols}"><span></span>${DAYS.map((x,i)=>`<span class="rh ${i===S.day?'td':''}">${x}</span>`).join('')}`;
+  ds.forEach(d=>{const c=carById(d.carId);g+=`<span class="rn"><img class="av" src="${avatar(d.seed,d.face)}" alt="">${esc(d.first)}${c?'':' <i>no car</i>'}</span>`+DAYS.map((x,i)=>{const on=onDay(d,i),bench=on&&c&&!plannedRuns(i).some(r=>r.d===d);return`<button class="rc ${on?'on':''} ${bench?'bench':''} ${i===S.day?'td':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${on}" aria-label="${esc(d.first)} on ${x}" title="${bench?'Rostered, but no press is free':''}">${on?(bench?'–':'●'):''}</button>`}).join('')});
+  g+=`<span class="rn rf">Runs</span>${DAYS.map((x,i)=>{const q=dayNeed(i);return`<span class="rcount ${q.cls} ${i===S.day?'td':''}">${Math.min(q.n,S.prod)}/${S.prod}</span>`}).join('')}</div>`;
+  const warn=DAYS.map((x,i)=>{const q=dayNeed(i);return q.cls==='over'?`${x}: ${q.n-S.prod} benched`:q.cls==='under'?`${x}: ${S.prod-q.n>1?S.prod-q.n+' presses':'a press'} idle`:''}).filter(Boolean);
+  const per=S.drivers.filter(d=>carById(d.carId)).map(d=>plannedCount(d)),lo=Math.min(...per),hi=Math.max(...per);
+  return`<div class="card roster"><div class="rtop"><h3>Dawn roster <span class="jp">当番表</span></h3><span class="note">Tap a day to put a driver on or off. The week repeats until you change it.</span></div>${g}
+    <div class="row">${[['rotate','Rotate evenly'],['top','Strongest only'],['all','Everyone, every day']].map(([m,l])=>`<button class="btn sm" data-act="rosAuto" data-m="${m}">${l}</button>`).join('')}</div>
+    <div class="note ${warn.length?'rwarn':''}">${warn.length?warn.join(' · ')+'.':'Every press is busy and nobody is benched.'} ${per.length?`Each driver runs ${lo===hi?lo:lo+' to '+hi} day${hi===1?'':'s'} a week.`:''}</div></div>`}
+function plannedCount(d){let n=0;for(let i=0;i<7;i++)if(plannedRuns(i).some(r=>r.d===d))n++;return n}
 function renderHUD(){
   $('#sMoney').textContent=yen(S.money);$('#sCred').textContent=Math.round(S.cred);$('#sWeek').textContent=S.week;
   $('#days').innerHTML=DAYS.map((d,i)=>`<div class="day ${i<S.day?'past':''} ${i===S.day?'now':''} ${i===6?'sat':''}">${d}<small>${i===6?'TOUGE':'RUN'}</small></div>`).join('');
@@ -2318,7 +2358,7 @@ function renderAction(){
   document.documentElement.classList.toggle('busy',!!busy);const a=$('#actionbar');let h='';
   if(busy)h=`<button class="btn" data-act="skip">Skip to results</button>`;
   else if(S.phase==='pre'){const runs=plannedRuns();
-    if(!runs.length){const why=S.drivers.some(d=>d.active&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>d.active)?'Assign a car to a driver in the Crew tab.':'Put at least one driver on the dawn run.';h=`<span class="why">${why}</span><button class="btn primary big" disabled>Dispatch</button>`}
+    if(!runs.length){const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;h=`<span class="why">${why}</span><button class="btn primary big" disabled>Dispatch</button>`}
     else{const ready=readyDrivers().length,extra=ready-runs.length;
       if(extra>0)h=`<span class="why">${extra} driver${extra>1?'s':''} waiting: only ${S.prod} press${S.prod>1?'es':''}.</span>`+(S.prod<6?`<button class="btn" data-act="tab" data-t="shop">${S.money>=PROD[S.prod]?'Add press '+yenK(PROD[S.prod]):'Press costs '+yenK(PROD[S.prod])}</button>`:'');
       h+=`<button class="btn primary big" data-act="dispatch">Dispatch ${runs.length} run${runs.length>1?'s':''} <small>04:30</small></button>`}}
@@ -2351,6 +2391,7 @@ function sortedCars(){const k=S.sortC||'join';
 function crewHTML(){
   const n=S.drivers.length,pr=plannedRuns().length;
   let h=`<div><h2>Delivery crew<span class="jp">乗員</span></h2><p class="sub">${n} of 6 drivers. ${pr} run${pr===1?'':'s'} ready for dawn. The shop presses ${S.prod} batch${S.prod>1?'es':''} a day.</p></div>`;
+  h+=rosterHTML();
   if(n>1)h+=sortBar('sortD',S.sortD||'join',[['join','Order joined'],['ovr','OVR'],['lv','Level'],['name','Name'],['wins','Wins']]);
   sortedDrivers().forEach(d=>{
     const L=levelInfo(d.xp);
@@ -2361,10 +2402,10 @@ function crewHTML(){
     <div class="mvrow">${movesChips(d)}</div>
     ${progHTML(d)}
     <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<span class="carmini" title="${esc(CARS[c.model].maker+' '+CARS[c.model].name)}"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></span>`:''})()}
-    <label class="tog"><input type="checkbox" id="ac${d.id}" data-chg="active" data-id="${d.id}" ${d.active?'checked':''}> Dawn run</label>
     <span class="wage">${d.wage?yen(d.wage)+' per run':d.legend?'Drives for free':'Family, unpaid'}</span></div>
+    <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${x}</button>`).join('')}</div></div>
     <div class="row"><button class="btn sm" data-act="studio" data-id="${d.id}">Look and name</button>${d.son?'':`<button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button>`}</div>
-    ${d.active&&carById(d.carId)&&!plannedRuns().some(r=>r.d===d)?`<div class="note" style="color:var(--warn)">Benched tomorrow: no press free for this driver. Add a press in the Shop tab, or untick someone above.</div>`:''}</div>`;
+    ${onDay(d,S.day)&&carById(d.carId)&&!plannedRuns().some(r=>r.d===d)?`<div class="note" style="color:var(--warn)">Benched ${S.phase==='pre'?'this morning':'today'}: more drivers are rostered than there are presses. Change the roster, or add a press in the Shop tab.</div>`:''}</div>`;
   });
   if(n<6)h+=`<div class="card hint">Win Saturday touge races to build street cred. Beaten rivals sometimes ask to join the crew, and they bring their own car.</div>`;
   h+=`<h3>Logbook</h3><ul class="log">${S.log.slice(-14).reverse().map(l=>`<li><span>${l.t}</span>${esc(l.m)}</li>`).join('')}</ul>`;
@@ -3248,6 +3289,8 @@ const ACT={
     x.perks=(x.perks||[]).concat(d.p);addLog(`${x.first} took the ${PERKS[d.p].name} perk.`);toast(`${x.first}: ${PERKS[d.p].name}`);AUDIO.coin();closeModal();save();renderAll()},
   trait2Take:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||!perkPending(x)||!TRAITS[d.t])return;x.trait2=d.t;x.perks=(x.perks||[]).concat('second');addLog(`${x.first} picked up a second trait: ${TRAITS[d.t].name}.`);toast(`${x.first}: ${TRAITS[d.t].name}`);AUDIO.coin();closeModal();save();renderAll()},
   bodyShop:d=>openBodyShop(+d.id),
+  rosT:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||busy)return;setDw(x,dwOf(x)^(1<<+d.d));save();renderAll()},
+  rosAuto:d=>{if(busy)return;autoRoster(d.m);save();renderAll();toast({rotate:'Roster shared out evenly across the week',top:'Strongest drivers on every day',all:'Everyone on every day'}[d.m])},
   starD:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
   starC:d=>{const x=carById(+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
   studio:d=>openStudio(+d.id),stuSet:d=>{if(!STU)return;const v=d.v;STU.f[d.k]=/^-?\d+$/.test(v)?+v:v==='true'?true:v==='false'?false:v;renderStudio()},
@@ -3265,7 +3308,7 @@ const CHG={
   sortD:el=>{S.sortD=el.value;save();renderPanel()},sortC:el=>{S.sortC=el.value;save();renderPanel()},
   stuCol:el=>{if(!STU||!isHex(el.value))return;STU.f[el.dataset.k]=el.value.toLowerCase();renderStudio()},
   assign:el=>{const d=S.drivers.find(x=>x.id===+el.dataset.id),cid=+el.value;if(cid)S.drivers.forEach(x=>{if(x!==d&&x.carId===cid)x.carId=0});d.carId=cid;save();renderAll()},
-  active:el=>{const d=S.drivers.find(x=>x.id===+el.dataset.id);d.active=el.checked;save();renderAll()},
+  active:el=>{const d=S.drivers.find(x=>x.id===+el.dataset.id);setDw(d,el.checked?127:0);save();renderAll()},
   rpOn:el=>{RP[el.dataset.dir].on=el.checked;renderPlanner()},
   rpM:el=>{RP[el.dataset.dir].m=el.value;renderPlanner()},
   rpD:el=>{RP[el.dataset.dir].d=+el.value;renderPlanner()},
@@ -3306,7 +3349,7 @@ window.onMapPick=k=>{TAB='shop';renderAll();toast(k==='hotel'?`Grand Hotel Kumoi
 function showHelp(intro){
   modal(`<div class="eyebrow">${intro?'04:30 · Mt. Usuzumi':'How it works'}</div><h2>${intro?'The shop at the bottom of the pass':'Running Kasumi Tofu'}</h2>
   ${intro?`<p>Every morning before dawn, Grand Hotel Kumoi at the summit takes delivery of your tofu. Your son Kenta drives it up in the family AE86 while the pass is empty. The kitchen pays for freshness, and it pays for tofu that arrives in one piece.</p>`:''}
-  <p><b>Weekly cycle.</b> Sunday to Saturday, one dawn delivery a day. Each car carries one batch, so the number of runs is capped by both your crew and your production line.</p>
+  <p><b>Weekly cycle.</b> Sunday to Saturday, one dawn delivery a day. Each car carries one batch, so the number of runs is capped by both your crew and your production line. The dawn roster in the Crew tab sets which days each driver runs. It repeats every week, and Rotate evenly shares the days out when you have more drivers than presses.</p>
   <p><b>Driving.</b> Every run trains braking, cornering, drifting, heel-toe, throttle and focus. Faster runs mean fresher tofu. Smooth inputs and good suspension mean less damage. Both raise what the hotel pays.</p>
   <p><b>Garage.</b> Spend on engine, suspension, brakes, a limited-slip diff, weight reduction and a sprung tofu cradle. Watch tyre wear: bald tyres cost grip and time.</p>
   <p><b>Risk.</b> Bald tyres, a battered car, rain and fog make spins, slides off the road, breakdowns and crashes more likely. A crash or breakdown loses that run and costs a tow, and the damage needs repairing in the Garage. A car below 15% condition can't drive.</p>
@@ -3744,7 +3787,7 @@ const TUT=(()=>{
   let mark=null;
   const STEPS=[
     {t:'Welcome to Kasumi Tofu',b:'You run a small tofu shop at the foot of Mt. Usuzumi. Every dawn a batch goes up the pass to Grand Hotel Kumoi at the summit. Faster, smoother runs mean fresher tofu and a better price. Let\'s do your first delivery together.',btn:'Show me',skipBtn:true,dim:true},
-    {t:'Meet Kenta',target:'#pbody .card',enter:()=>{if(TAB!=='crew'){TAB='crew';renderTabs();renderPanel()}},b:'Your son and first driver. Braking, cornering, drifting, heel-toe, throttle and focus grow with every run, and OVR is his overall rating. Pick a driver\'s car here, and tick Dawn run to put them on the morning delivery.',btn:'Next',dim:true,show:calm},
+    {t:'Meet Kenta',target:'#pbody .card',enter:()=>{if(TAB!=='crew'){TAB='crew';renderTabs();renderPanel()}},b:'Your son and first driver. Braking, cornering, drifting, heel-toe, throttle and focus grow with every run, and OVR is his overall rating. Pick a driver\'s car here, and choose the days they do the morning delivery under Dawn runs.',btn:'Next',dim:true,show:calm},
     {t:'Send the dawn run',target:'#actionbar [data-act="dispatch"]',b:'It\'s 04:30 and the pass is empty. Hit Dispatch to send Kenta up the mountain.',dim:true,show:()=>calm()&&S.phase==='pre',skip:()=>!busy&&S.phase!=='pre',done:()=>busy},
     {t:'On the pass',target:'#live',b:'Top left counts the hairpins to go. The driver card shows speed and the tofu, which takes a knock from rough driving. Drag the map or use Whole pass and Follow to move the camera, or skip straight to the results.',btn:'Got it',show:()=>busy,skip:()=>!busy&&S.phase!=='pre',done:()=>!busy},
     {t:'Payday',target:'#modal .tot',b:'The hotel pays for freshness, which comes from a fast run, and for tofu that arrives in one piece. Beans, fuel and wages come out of that. Press Continue when you\'re done.',show:results,skip:()=>!busy&&!modalOpen(),done:()=>!busy&&!modalOpen()},
@@ -3756,7 +3799,7 @@ const TUT=(()=>{
   ];
   const TIPS=[
     {k:'press',target:'#actionbar',t:'More drivers than presses',b:'Each press makes one batch a day, and every batch needs its own car. Add presses in the Shop tab so the whole crew can run.',when:()=>calm()&&S.phase==='pre'&&readyDrivers().length>plannedRuns().length},
-    {k:'recruit',target:'.tab[data-t="crew"]',t:'New crew member',b:'A rival has joined Kasumi Tofu. In the Crew tab, check they have a car and tick Dawn run. More drivers mean more batches, as long as you have the presses.',when:()=>calm()&&S.drivers.length>1},
+    {k:'recruit',target:'.tab[data-t="crew"]',t:'New crew member',b:'A rival has joined Kasumi Tofu. In the Crew tab, check they have a car and pick their days on the dawn roster. More drivers mean more batches, as long as you have the presses.',when:()=>calm()&&S.drivers.length>1},
     {k:'wet',target:'#clock',t:'Rain on the pass',b:'Grip is down and spins and crashes are more likely. Street tyres and four-wheel drive cope best, and semi-slicks are a gamble. Drivers with Rain Dancer barely notice.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Wet'},
     {k:'fog',target:'#clock',t:'Fog on the pass',b:'Speeds stay low and focus matters most. Drivers with Fog Eyes ignore it. On race night, Lights Out is deadly in the fog.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Fog'},
     {k:'perk',target:'.tab[data-t="crew"]',t:'Perk ready',b:'A driver has reached a perk level. Open the Crew tab and press Choose a perk. Perks keep top drivers improving after their stats max out.',when:()=>calm()&&S.drivers.some(d=>perkPending(d)>0)},
