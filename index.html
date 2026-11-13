@@ -543,7 +543,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v93</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v94</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -1306,7 +1306,7 @@ const MAP=(()=>{
   const WORLDS={};let pats={},built=false;
   let tagK=1,cuv=null,cux=null,cv,ctx,low,lc,lit,lic,vw=1,vh=1,cdpr=1,lowW=1,lowH=1,scan=null,scanFor=0;
   const cam={v:0,u:20,z:20};let zTarget=null,camTarget=null,follow=true,dark=1,darkTarget=1,crt=true;
-  let sparks=[],runs=null,runT0=0,onDone=null,smoke=[],skids=[],rainP=[],snowP=[],fitZ=20,lastHud=0,hud=null;
+  let sparks=[],runs=null,runT0=0,onDone=null,smoke=[],skids=[],btr=[],rainP=[],snowP=[],fitZ=20,lastHud=0,hud=null;
 
   /* ---------- course generator ---------- */
   function pathRoad(def){
@@ -1763,7 +1763,7 @@ const MAP=(()=>{
     return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox,ng:ngKeep,ngw:ngwKeep,season:null};
   }
   function useWorld(W){world=W;({B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox}=W)}
-  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==seasonKey()){WORLDS[id]=buildWorld(id);WORLDS[id].season=seasonKey()}useWorld(WORLDS[id]);skids=[];smoke=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
+  function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==seasonKey()){WORLDS[id]=buildWorld(id);WORLDS[id].season=seasonKey()}useWorld(WORLDS[id]);skids=[];smoke=[];btr=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
   /* ---------- the countryside beyond the pass ----------
      Baked once per world into two canvases the first time the view opens up: ground for the wide margin around the map,
      and a transparent layer of forest canopy, hamlets with their paddies, and (on city passes) blocks of town. Inside the map
@@ -1935,6 +1935,11 @@ const MAP=(()=>{
       c.globalCompositeOperation='lighter';c.setTransform(...WT);lamps.forEach(m=>{c.globalAlpha=a*.8;c.drawImage(SP.head,m.hv-.22,m.hu-.68,.44,.44)});
       c.globalAlpha=1;c.globalCompositeOperation='source-over';
     }
+    if(btr.length){const life=360,gk=.16+.3*Math.min(1,dark);c.setTransform(...WT);c.globalCompositeOperation='lighter';c.lineCap='round';
+      for(let i=btr.length-1;i>=0;i--){const b=btr[i],age=(now-b.t)/life;if(age>=1||age<0){btr.splice(i,1);continue}const f=1-age;
+        c.globalAlpha=gk*f*f*.45;c.strokeStyle='#ff2a1e';c.lineWidth=.05*b.w;c.beginPath();c.moveTo(b.a[0],b.a[1]);c.lineTo(b.b[0],b.b[1]);c.stroke();
+        c.globalAlpha=gk*f*f;c.strokeStyle='#ff5040';c.lineWidth=.016*b.w;c.stroke()}
+      if(btr.length>900)btr.splice(0,btr.length-900);c.globalAlpha=1;c.globalCompositeOperation='source-over';c.lineCap='butt'}
     c.setTransform(...WT);carsNow.forEach(s=>{if(s.wreck)drawBubble(c,s)});
     c.setTransform(1,0,0,1,0,0);
     if(WX()==='Wet'){c.strokeStyle='rgba(190,210,255,.35)';c.lineWidth=1;c.beginPath();rainP.forEach(r=>{r[1]+=.025*r[2];if(r[1]>1){r[1]=0;r[0]=R()}const x=r[0]*lowW,y=r[1]*lowH;c.moveTo(x,y);c.lineTo(x-2,y+7)});c.stroke()}
@@ -2151,12 +2156,12 @@ const MAP=(()=>{
         {const fx=v+Math.cos(ang)*CL*.32,fu=u+Math.sin(ang)*CL*.32;if(R()<(crash?.75:.5))smoke.push({v:fx+(R()-.5)*.06,u:fu-.03,r:.04+R()*.05,a:crash?.55:.45,dv:(R()-.5)*.003,du:-.004-R()*.004,col:crash?(R()<.5?'#4a4a50':'#6a6a70'):'#f4f4f4'});if(!crash&&smoke.length)smoke[smoke.length-1].a=.32}
         const prog=(i+.5)/N;if(prog>leadP&&!race){}}
       else if(tt>=r.dur){if(!r.done){r.done=true;r.rank=runs.list.filter(x=>x.rank!=null).length}r.state='done';if(race){const back=r.rank*CL*1.5/.2,ix=Math.max(0,Math.round(N-2-back)),q=lanePos(ix,r.rank%2?.23:-.23),ks=(tt-r.dur)/1.6;
-          if(ks<1){allDone=false;const e=1-Math.pow(1-ks,2.2),f0=lanePos(N-1,r.laneCur),dir=r.rank%2?-1:1,v=lerp(f0.v,q.v,e),u=lerp(f0.u,q.u,e),ang=T.theta[ix]+dir*Math.PI*2*e;
-            s={v,u,a:ang,lights:dark,brake:ks>.75,steer:dir*.45*(1-e)};r.cy=.9*(1-e);
+          if(ks<1){allDone=false;const e=1-Math.pow(1-ks,2.2),ea=1-Math.pow(1-Math.min(1,ks*1.35),2.6),f0=lanePos(N-1,r.laneCur),dir=r.rank%2?-1:1,v=lerp(f0.v,q.v,e),u=lerp(f0.u,q.u,e),ang=T.theta[ix]+dir*Math.PI/2*ea;
+            s={v,u,a:ang,lights:dark,brake:true,steer:-dir*.4*(1-ea)};r.cy=0;r.slideOn=ks<.8;
             const rw=[[-CL*.32,-CW*.45],[-CL*.32,CW*.45]].map(([x,y])=>[v+Math.cos(ang)*x-Math.sin(ang)*y,u+Math.sin(ang)*x+Math.cos(ang)*y]);
-            if(r.last&&ks<.85){skids.push([r.last[0][0],r.last[0][1],rw[0][0],rw[0][1]]);skids.push([r.last[1][0],r.last[1][1],rw[1][0],rw[1][1]])}r.last=rw;
-            if(ks<.9)rw.forEach(w=>{if(R()<.85)smoke.push({v:w[0],u:w[1],r:.05+R()*.06,a:.5,dv:(R()-.5)*.006,du:(R()-.5)*.006})})}
-          else{r.cy=0;r.last=null;s={v:q.v,u:q.u,a:T.theta[ix],lights:dark,brake:true,steer:0}}}else{const sl=hotelSlots[ri%6];s={v:sl.v,u:sl.u,a:sl.a,lights:0,brake:false,steer:0}}}
+            if(r.last&&ks<.7){skids.push([r.last[0][0],r.last[0][1],rw[0][0],rw[0][1]]);skids.push([r.last[1][0],r.last[1][1],rw[1][0],rw[1][1]])}r.last=rw;
+            if(ks<.6)rw.forEach(w=>{if(R()<.6)smoke.push({v:w[0],u:w[1],r:.05+R()*.06,a:.5,dv:(R()-.5)*.006,du:(R()-.5)*.006})})}
+          else{r.cy=0;r.last=null;r.slideOn=false;s={v:q.v,u:q.u,a:T.theta[ix]+(r.rank%2?-1:1)*Math.PI/2,lights:dark,brake:true,steer:0}}}else{const sl=hotelSlots[ri%6];s={v:sl.v,u:sl.u,a:sl.a,lights:0,brake:false,steer:0}}}
       else{allDone=false;r.state='run';while(r.i<N-2&&r.cum[r.i+1]<tt)r.i++;const i=r.i,f=clamp((tt-r.cum[i])/((r.cum[i+1]-r.cum[i])||1),0,1);
         const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&ra<=w.t1);let tl=lw?lw.lane:r.baseLane,noShrink=false;
         if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='gutter'){tl=sgi*(HW-.02);noShrink=true}else if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
@@ -2190,6 +2195,9 @@ const MAP=(()=>{
         const prog=i/N;if(prog>leadP&&!r.ghost){leadP=prog;lead=r}}
       if(r.ghost&&!r.announced&&tt>.35){r.announced=true;if(!runs.cine){runs.cine={r,until:el+3.2};runs.camK=.08}runs.cutin={custom:true,title:r.cutTitle||'A WILD BUNTA APPEARS!',sub:r.cutSub||'BUNTA FUJIWARA · GC8 TYPE R',col:r.cutCol||'#d4dae2',ok:true,by:1,t0:now,seed:r.d.seed,face:r.d.face};AUDIO.stinger(true)}
       s.c1=r.c1;s.c2=r.c2;s.model=r.model;s.look=r.look;if(race)s.tag=r.ghost?'#7fe0c0':ri===0?'#ffb03b':'#ff4d4d';out.push(s);r.s=s;
+      /* brake-light streaks: while braking on the move, the two tail lights leave a short fading red trail */
+      {const moving=r.state==='run'||(r.state==='done'&&r.slideOn);if(s.brake&&moving&&!s.wreck){const ca=Math.cos(s.a),sa=Math.sin(s.a),tl=[-1,1].map(k=>{const x=-CL/2+.01,y=k*(CW/2-.035);return[s.v+ca*x-sa*y,s.u+sa*x+ca*y]});
+        if(r.lastTail){const d=Math.hypot(tl[0][0]-r.lastTail[0][0],tl[0][1]-r.lastTail[0][1]);if(d>.004&&d<1.2)for(let k=0;k<2;k++)btr.push({a:r.lastTail[k],b:tl[k],t:now,w:s.bigBrake?1.4:1})}r.lastTail=tl}else r.lastTail=null}
     });
     if(smoke.length>500)smoke.splice(0,smoke.length-500);
     if(!race&&S){const busyIds=new Set(runs.list.map(r=>r.c.id));let k=runs.list.length;S.cars.forEach(car=>{if(busyIds.has(car.id)||k>=GARAGE_MAX)return;const sl=shopSlots[k++];out.push({v:sl.v,u:sl.u,a:sl.a,c1:car.c1,c2:car.c2,model:car.model,look:car.look,lights:0,brake:false,steer:0})})}
@@ -2240,7 +2248,7 @@ const MAP=(()=>{
     const fin=Rc.list.map((r,k)=>({r,k})).filter(x=>x.r.dnf==null&&!x.r.ghost).sort((x,y)=>(x.r.delay+x.r.dur)-(y.r.delay+y.r.dur))[0];
     const fe=ev.find(e=>e.tag==='FIN');if(fin){const P=fin.r.delay+fin.r.dur;segs.push({a:Math.max(0,P-.55),b:P+1.9,tag:'FIN',msg:fe?fe.msg:'Across the line!',who:fin.k})}
     return segs}
-  function replayReset(){const H=runs.replay,sg=H.segs[H.k];runs.list.forEach(r=>{r.i=0;r.last=null;r.cy=0;r.shk=undefined});skids=[];smoke=[];sparks=[];runs.cutin=null;runs.cine=null;runs.focus=sg.who;runs.camK=1;runs.snapZ=true;runs.close=false;
+  function replayReset(){const H=runs.replay,sg=H.segs[H.k];runs.list.forEach(r=>{r.i=0;r.last=null;r.cy=0;r.shk=undefined});skids=[];smoke=[];btr=[];sparks=[];runs.cutin=null;runs.cine=null;runs.focus=sg.who;runs.camK=1;runs.snapZ=true;runs.close=false;
     const sc=runs.list[0].sc;runs.ev=runs.events.findIndex(e=>e.t*sc>=sg.a-.02);if(runs.ev<0)runs.ev=runs.events.length;H.onSeg&&H.onSeg(sg,H.k,H.segs.length)}
   function replayEl(now){const H=runs.replay;let sg=H.segs[H.k],el=sg.a+(now-H.t0)/1000*H.slow;if(el>sg.b){H.k=(H.k+1)%H.segs.length;H.t0=now;replayReset();sg=H.segs[H.k];el=sg.a}return el}
   function replayStart(canvas,onSeg,onCut){if(!lastRace)return false;if(runs&&!runs.replay)return false;const segs=buildHL(lastRace);if(!segs.length)return false;
