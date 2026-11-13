@@ -543,7 +543,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v95</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v96</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -2253,9 +2253,23 @@ const MAP=(()=>{
     const cand=ev.filter(e=>sco(e)>0&&e.tag!=='FIN').map(e=>({e,s:sco(e)+Math.random()*.2})).sort((a,b)=>b.s-a.s),pk=[];
     for(const c of cand){if(pk.length>=5)break;if(pk.some(p=>Math.abs(p.e.t-c.e.t)*sc<1.1))continue;pk.push(c)}
     pk.sort((a,b)=>a.e.t-b.e.t);
-    const segs=pk.map(({e})=>{const P=e.t*sc,post=e.cut?(e.cut.move==='lights'?1.15:.95):.85;return{a:Math.max(0,P-.4),b:P+post,tag:e.tag,msg:e.msg,who:e.cut?e.cut.by:(e.who??0)}});
+    /* an overtake plays from the approach to the moment the passer is clear, with a little run-up and run-out either side */
+    const T=Rc.T,N=T.len,L=Rc.list,two=L.length>=2,PAD=.5,MAXLEN=3.4;
+    let stp=0;for(let i=1;i<Math.min(N,400);i++)stp+=Math.hypot(T.pts[i].v-T.pts[i-1].v,T.pts[i].u-T.pts[i-1].u);stp=stp/Math.max(1,Math.min(N,400)-1)||.1;
+    const CLOSE=CL*3/stp;
+    const idxAt=(r,el)=>{const tt=el-r.delay,c=r.cum;if(tt<=0)return 0;if(r.dnf!=null&&tt>=c[r.dnf])return r.dnf;if(tt>=c[N-1])return N-1;let lo=0,hi=N-1;while(hi-lo>1){const m=(lo+hi)>>1;if(c[m]<=tt)lo=m;else hi=m}return lo+(tt-c[lo])/((c[hi]-c[lo])||1)};
+    const dAt=el=>idxAt(L[0],el)-idxAt(L[1],el);
+    const span=(e,P)=>{let a=P-.4,b=P+(e.cut?(e.cut.move==='lights'?1.15:.95):.85);
+      if(e.cut){const rr=L[e.cut.by],fx=(rr&&rr.fx||[]).find(w=>w.type===e.cut.move&&Math.abs(w.t0-e.t)<2);if(fx)b=Math.max(b,fx.t1*sc+.3)}
+      if(two&&(e.cut||['PASS','LEAD','SLIPSTREAM','!!','CONTACT'].includes(e.tag)||/PASS|OVERTAK/i.test(e.msg||''))){
+        const st=.02;let ts=null;for(let k=0;k*st<=1.6;k++){for(const sg of [1,-1]){const t=P+sg*k*st;if(t<st)continue;if(Math.sign(dAt(t))!==Math.sign(dAt(t-st))&&dAt(t)!==0){ts=t;break}}if(ts!=null)break}
+        if(ts!=null){let t0=ts;while(t0>ts-2.4&&Math.abs(dAt(t0))<CLOSE)t0-=st;let t1=ts;while(t1<ts+2.4&&Math.abs(dAt(t1))<CLOSE)t1+=st;a=Math.min(a,t0-PAD);b=Math.max(b,t1+PAD);return{a:Math.max(0,a),b,ts}}
+        else if(e.tag==='LEAD')return null}
+      if(b-a>MAXLEN)a=b-MAXLEN;return{a:Math.max(0,a),b}};
+    let segs=pk.map(({e})=>{const P=e.t*sc,w=span(e,P);return w&&{a:w.a,b:w.b,ts:w.ts,tag:e.tag,msg:e.msg,who:e.cut?e.cut.by:(e.who??0)}}).filter(Boolean);
+    segs=segs.reduce((o,g)=>{const p=o[o.length-1];if(p&&g.a<=p.b+.1&&Math.max(p.b,g.b)-p.a<=4.2){p.b=Math.max(p.b,g.b);if(g.ts!=null&&p.ts==null){p.ts=g.ts;p.tag=g.tag;p.msg=g.msg;p.who=g.who}}else{if(p&&g.a<p.b)g.a=p.b;o.push(g)}return o},[]).filter(g=>g.b-g.a>.3);
     const fin=Rc.list.map((r,k)=>({r,k})).filter(x=>x.r.dnf==null&&!x.r.ghost).sort((x,y)=>(x.r.delay+x.r.dur)-(y.r.delay+y.r.dur))[0];
-    const fe=ev.find(e=>e.tag==='FIN');if(fin){const P=fin.r.delay+fin.r.dur;segs.push({a:Math.max(0,P-.55),b:P+1.9,tag:'FIN',msg:fe?fe.msg:'Across the line!',who:fin.k})}
+    const fe=ev.find(e=>e.tag==='FIN');if(fin){const P=fin.r.delay+fin.r.dur,lp=segs[segs.length-1];if(lp&&lp.b>P-.6)lp.b=Math.min(lp.b,P-.6);segs=segs.filter(g=>g.b-g.a>.3);segs.push({a:Math.max(0,P-.55),b:P+1.9,tag:'FIN',msg:fe?fe.msg:'Across the line!',who:fin.k})}
     return segs}
   function replayReset(){const H=runs.replay,sg=H.segs[H.k];runs.list.forEach(r=>{r.i=0;r.last=null;r.cy=0;r.shk=undefined});skids=[];smoke=[];btr=[];sparks=[];runs.cutin=null;runs.cine=null;runs.focus=sg.who;runs.camK=1;runs.snapZ=true;runs.close=false;
     const sc=runs.list[0].sc;runs.ev=runs.events.findIndex(e=>e.t*sc>=sg.a-.02);if(runs.ev<0)runs.ev=runs.events.length;H.onSeg&&H.onSeg(sg,H.k,H.segs.length)}
