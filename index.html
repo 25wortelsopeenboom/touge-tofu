@@ -543,7 +543,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v94</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v95</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -563,6 +563,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
         <button data-act="fit">Whole pass</button>
         <button data-act="follow" id="followBtn" class="on">Follow</button><button data-act="director" id="dirBtn" class="on" aria-label="Director camera on or off" title="Director camera: cuts between drivers on dawn runs">Director</button>
         <button data-act="crt" id="crtBtn" class="on">CRT</button>
+        <button data-act="slowmo" id="slowBtn" class="on" aria-label="Slow motion on special moves" title="Slow motion when a special move goes off">SLO-MO</button>
         <button data-act="snd" id="sndBtn" class="on" aria-label="Sound on or off">SND</button>
         <button data-act="bgm" id="bgmBtn" class="on" aria-label="Music on or off">BGM</button>
       </div>
@@ -1306,6 +1307,10 @@ const MAP=(()=>{
   const WORLDS={};let pats={},built=false;
   let tagK=1,cuv=null,cux=null,cv,ctx,low,lc,lit,lic,vw=1,vh=1,cdpr=1,lowW=1,lowH=1,scan=null,scanFor=0;
   const cam={v:0,u:20,z:20};let zTarget=null,camTarget=null,follow=true,dark=1,darkTarget=1,crt=true;
+  /* slow motion: when a special move goes off in a live race, the race clock eases down to SLOW_K speed for the length of the move */
+  const SLOW_K=.3;let SLOWMO_ON=true;try{SLOWMO_ON=localStorage.getItem('tougeTofu.slowmo')!=='0'}catch(e){}
+  function clockEl(now){const k=runs.clk||(runs.clk={last:now,el:(now-runT0)/1000,rate:1});const dt=Math.min(.1,Math.max(0,(now-k.last)/1000));k.last=now;
+    const tgt=SLOWMO_ON&&runs.slowTo!=null&&k.el<runs.slowTo?SLOW_K:1;k.rate+=(tgt-k.rate)*Math.min(1,dt*(tgt<k.rate?9:3.5));k.el+=dt*k.rate;return k.el}
   let sparks=[],runs=null,runT0=0,onDone=null,smoke=[],skids=[],btr=[],rainP=[],snowP=[],fitZ=20,lastHud=0,hud=null;
 
   /* ---------- course generator ---------- */
@@ -1962,6 +1967,8 @@ const MAP=(()=>{
   function txt(m,s,x,y,size,fill,align){if(!m)return;m.font=`${size}px "Press Start 2P","DotGothic16",monospace`;m.textAlign=align||'left';m.textBaseline='alphabetic';m.lineJoin='round';m.lineWidth=Math.max(3,size*.32);m.strokeStyle='#0a0a0c';m.strokeText(s,x,y);m.fillStyle=fill;m.fillText(s,x,y)}
   function drawHUD(m,h,now){
     m.setTransform(cdpr,0,0,cdpr,0,0);
+    if(h.slow>.02){const bh=vh*.055*h.slow;m.fillStyle=`rgba(0,0,0,${.75*h.slow})`;m.fillRect(0,0,vw,bh);m.fillRect(0,vh-bh,vw,bh);
+      m.globalAlpha=h.slow;txt(m,'● SLOW-MO',vw/2,vh-bh-10,Math.max(9,Math.round(clamp(vw*.012,9,13))),'#ffd84a','center');m.globalAlpha=1}
     const big=clamp(vw*.055,26,52),fs=clamp(Math.round(vw*.016),10,16);
     txt(m,'HAIRPINS TO GO',14,62,Math.max(8,Math.round(big*.2)),'#b8ffbf');txt(m,String(h.left),14,62+big*1.32,Math.round(big),h.left?'#3dff5a':'#ffd84a');
     if(h.race){
@@ -2141,7 +2148,7 @@ const MAP=(()=>{
     const pct=Math.round(lv/CUP_FILL*100),big=Math.round(clamp(H*.2*(pct>99?.85:1),8,20));txt(m,`${pct}%`,cx,cy+H*.06+big*.4,big,pct>80?'#ffffff':pct>50?'#ffcf3a':'#ff5a5a','center');
     m.restore()}
   function stepRuns(now,out){
-    const el=runs.replay?replayEl(now):(now-runT0)/1000,T=runs.T,N=T.len,race=runs.mode==='race';runs.el=el;let allDone=true,lead=null,leadP=-1,focus=null;hud=null;
+    const el=runs.replay?replayEl(now):runs.mode==='race'?clockEl(now):(now-runT0)/1000,T=runs.T,N=T.len,race=runs.mode==='race';runs.el=el;let allDone=true,lead=null,leadP=-1,focus=null;hud=null;
     runs.list.forEach((r,ri)=>{
       const tt=el-r.delay;let s;const lanePos=(i,lane)=>{const p=T.pts[i],n=T.left[i];return{v:p.v+n.v*lane,u:p.u+n.u*lane}};
       if(tt<0){allDone=false;r.state='wait';if(race){const q=lanePos(0,r.laneCur),bk=r.ghost?3.3:(r.start||0)>0?.48:0;s={v:q.v-Math.cos(T.theta[0])*bk,u:q.u-Math.sin(T.theta[0])*bk,a:T.theta[0],lights:dark,brake:true,steer:0}}else{const sl=shopSlots[ri%8];s={v:sl.v,u:sl.u,a:sl.a,lights:dark,brake:false,steer:0}}}
@@ -2211,7 +2218,9 @@ const MAP=(()=>{
       hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.min(tt,fr.dur)/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:fr.cupT||null,ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
       if(race){const A=runs.list[0],Bq=runs.list[1],ia=A.state==='done'?N-1:A.i,ib=Bq.state==='done'?N-1:Bq.i;const sA=A.start||0,sB=Bq.start||0;let gap;if(ia>=ib)gap=(sB+Bq.cumReal[ia])-(sA+A.cumReal[ia]);else gap=-((sA+A.cumReal[ib])-(sB+Bq.cumReal[ib]));
         Object.assign(hud,{race:true,gap,title:runs.title,dir:runs.dir,count:-el,lead:gap>=0?`${A.d.first.toUpperCase()} LEADS`:`${Bq.d.first.toUpperCase()} LEADS`});
-        const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok)}runs.ev++}}}
+        const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok);
+            if(!runs.replay){const rr=runs.list[e.cut.by],fx=(rr&&rr.fx||[]).find(w=>w.type===e.cut.move&&Math.abs(w.t0-e.t)<2),end=(fx?fx.t1:e.t+2.8)*A.sc;runs.slowTo=Math.max(runs.slowTo||0,el+clamp(end-el,.7,1.1))}}runs.ev++}}
+        hud.slow=runs.clk&&!runs.replay?clamp((1-runs.clk.rate)/(1-SLOW_K),0,1):0}
     runs.audio=null;
     if(fr){const i=fr.i;let rpm,thr;if(fr.state==='run'){rpm=rpmOf(fr,i);thr=thrOf(fr,i)}else if(fr.state==='wait'){thr=race?.4+.4*Math.max(0,Math.sin(now/170)):.1;rpm=race?2800+thr*2600:950}else{rpm=900;thr=0}
       if(fr.state==='out'){rpm=fr.dnfType==='break'?0:900;thr=0}
@@ -2336,7 +2345,7 @@ const MAP=(()=>{
     const slow=profile(mk(16),car('ae86'),'Clear',H.road).time,fast=profile(mk(85),car('fd3s',{engine:1,susp:3,brakes:2,lsd:1,weight:2,tyre:{grade:2,wear:0},cond:100}),'Clear',H.road).time;return H.par={slow,fast}}
   function track(dir){return dir==='down'?rev:road}
   function focusShop(){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');camTarget=[shopRect.v+.9,shopRect.u+1.05];zTarget=clamp(Math.min(vw/4.2,vh/3.4),120,330)}
-  return{homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
+  return{clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
 })();
 
 /* ================= rendering UI ================= */
@@ -3282,6 +3291,7 @@ const ACT={
   director:(d,b)=>{const on=MAP.toggleDirector();b.classList.toggle('on',on);toast(on?'Director camera on':'Director camera off')},
   focusRun:d=>MAP.focusRun(+d.i),
   crt:(d,b)=>{const on=MAP.toggleCRT();b.classList.toggle('on',on)},
+  slowmo:(d,b)=>{const on=MAP.toggleSlow();b.classList.toggle('on',on);toast(on?'Slow motion on for special moves':'Slow motion off')},
   ctlMenu:(d,b)=>{const m=$('#mapctl'),o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)},
   snd:(d,b)=>{const on=AUDIO.toggle();b.classList.toggle('on',on);toast(on?'Sound on':'Sound off')},
   bgm:(d,b)=>{const on=MUSIC.toggle();b.classList.toggle('on',on);toast(on?'Music on':'Music off');if(on&&busy)MUSIC.play(S.phase==='race'?'race':'delivery')},
@@ -3889,7 +3899,7 @@ function boot(data){
   S=(data&&data.S)||load();if(!S){newGame()}normDrivers();if(S.phase==='race')S.phase='post';
   window.claude?.hot?.snapshot?.(()=>({S}));
   const go=()=>{
-    MAP.init($('#map'));{const sb=$('#sndBtn');if(sb)sb.classList.toggle('on',AUDIO.on());const bb=$('#bgmBtn');if(bb)bb.classList.toggle('on',MUSIC.on())}MAP.setDarkNow(S.phase==='post'?.12:1);
+    MAP.init($('#map'));{const sb=$('#sndBtn');if(sb)sb.classList.toggle('on',AUDIO.on());const bb=$('#bgmBtn');if(bb)bb.classList.toggle('on',MUSIC.on());const so=$('#slowBtn');if(so)so.classList.toggle('on',MAP.slowOn())}MAP.setDarkNow(S.phase==='post'?.12:1);
     TUT.init();renderAll();NET.init();
   };
   const fr=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve();
