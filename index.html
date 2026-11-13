@@ -110,6 +110,7 @@ button,select,input{font:inherit;color:inherit}
 .hud{display:flex;align-items:center;gap:14px 18px;flex-wrap:wrap;min-width:0}
 .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
 .brand .k{font-family:var(--f-display);font-size:22px;letter-spacing:.04em;line-height:1}
+.brand .ver{font-family:var(--f-dot);font-size:10.5px;color:var(--mute);border:1px solid var(--line);border-radius:5px;padding:1px 5px;letter-spacing:.06em;align-self:center;white-space:nowrap;flex:none}
 .brand .e{font-family:var(--f-dot);color:var(--mute);font-size:12px;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
 .days{display:flex;gap:4px;flex:1;justify-content:center;min-width:0}
 .day{font-family:var(--f-dot);font-size:12px;padding:5px 0;width:44px;border-radius:6px;color:var(--dim);border:1px solid var(--line);text-align:center;line-height:1.15}
@@ -542,7 +543,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v93</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -878,7 +879,7 @@ function newGame(){
   S=freshState();
   const car={id:S.nid++,model:'ae86',c1:'#f1f0ea',c2:'#17181c',paint:'High Tech Two-Tone',engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:0,wear:22},cond:92,km:118400};
   S.cars.push(car);
-  S.drivers.push({id:S.nid++,first:'Kenta',family:'Kasumi',seed:7731,stats:{brk:16,crn:19,dft:14,ht:12,thr:17,foc:15},xp:0,trait:'natural',carId:car.id,wage:0,active:true,runs:0,wins:0,losses:0,son:true,team:'Kasumi Tofu'});
+  S.drivers.push({id:S.nid++,first:'Kenta',family:'Kasumi',seed:(()=>{try{return 1+crypto.getRandomValues(new Uint32Array(1))[0]%999999999}catch(e){return 1+Math.floor(Math.random()*999999999)}})(),stats:{brk:16,crn:19,dft:14,ht:12,thr:17,foc:15},xp:0,trait:'natural',carId:car.id,wage:0,active:true,runs:0,wins:0,losses:0,son:true,team:'Kasumi Tofu'});
   S.weather='Clear';
   addLog('Week 1. The soybeans soaked overnight. Kenta has the keys.');
 }
