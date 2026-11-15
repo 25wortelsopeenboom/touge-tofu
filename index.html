@@ -159,6 +159,11 @@ html.phone .lc .ovs{display:none}
 .tyreopt.on{border-color:var(--sodium);background:rgba(255,176,59,.06)}
 .tyreopt .wetg{color:var(--cyan)}.tyreopt .dryg{color:var(--sodium)}
 .tyreopt .btn.sm{padding:4px 7px;font-size:11px}
+.kpress{filter:brightness(1.35)}
+kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:rgba(255,255,255,.04);color:var(--ink);white-space:nowrap}
+@media (hover:hover) and (pointer:fine){#tabs .tab[data-key]{position:relative}#tabs .tab[data-key]::after{content:attr(data-key);position:absolute;top:3px;right:4px;font-family:var(--f-dot);font-size:9px;line-height:1;color:var(--dim);opacity:.8}
+  .btn.kspace::after{content:'SPACE';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}
+  .btn.sm.kspace::after{font-size:8px;margin-left:6px;padding:0 3px}}
 .keeph{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mute);margin-top:8px;cursor:pointer}.keeph input{margin-top:2px;accent-color:var(--sodium)}.keeph b{color:var(--ink)}
 .wxnote{color:var(--cyan)!important;font-size:13px}
 #coach{position:fixed;z-index:72;width:min(330px,calc(100vw - 24px));background:rgba(10,14,30,.97);border:1px solid var(--sodium);border-radius:12px;padding:12px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;transition:left .18s ease,top .18s ease}
@@ -543,13 +548,13 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v100</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v103</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
       <div class="stat"><label>Street cred</label><b id="sCred" class="cred">0</b></div>
       <div class="stat"><label>Week</label><b id="sWeek">1</b></div>
-      <button class="iconbtn" data-act="help" aria-label="How to play">?</button>
+      <button class="iconbtn" data-act="help" aria-label="How to play" title="How to play (H)">?</button>
     </div>
   </header>
   <main>
@@ -558,14 +563,14 @@ html.phone.land #app{padding-block:6px;gap:6px}
       <div class="ov clock" id="clock"></div>
       <div class="ov mapctl" id="mapctl">
         <button class="ctlbtn" data-act="ctlMenu" aria-label="Map controls" aria-expanded="false">☰</button>
-        <button data-act="zoomOut" aria-label="Zoom out">−</button>
-        <button data-act="zoomIn" aria-label="Zoom in">+</button>
-        <button data-act="fit">Whole pass</button>
-        <button data-act="follow" id="followBtn" class="on">Follow</button><button data-act="director" id="dirBtn" class="on" aria-label="Director camera on or off" title="Director camera: cuts between drivers on dawn runs">Director</button>
-        <button data-act="crt" id="crtBtn" class="on">CRT</button>
-        <button data-act="slowmo" id="slowBtn" class="on" aria-label="Slow motion on special moves" title="Slow motion when a special move goes off">SLO-MO</button>
-        <button data-act="snd" id="sndBtn" class="on" aria-label="Sound on or off">SND</button>
-        <button data-act="bgm" id="bgmBtn" class="on" aria-label="Music on or off">BGM</button>
+        <button data-act="zoomOut" aria-label="Zoom out" title="Zoom out (−)">−</button>
+        <button data-act="zoomIn" aria-label="Zoom in" title="Zoom in (+)">+</button>
+        <button data-act="fit" title="Whole pass (0)">Whole pass</button>
+        <button data-act="follow" id="followBtn" class="on" title="Follow the car (V)">Follow</button><button data-act="director" id="dirBtn" class="on" aria-label="Director camera on or off" title="Director camera: cuts between drivers on dawn runs (D)">Director</button>
+        <button data-act="crt" id="crtBtn" class="on" title="CRT scanlines (C)">CRT</button>
+        <button data-act="slowmo" id="slowBtn" class="on" aria-label="Slow motion on special moves" title="Slow motion when a special move lands (O)">SLO-MO</button>
+        <button data-act="snd" id="sndBtn" class="on" aria-label="Sound on or off" title="Sound (M)">SND</button>
+        <button data-act="bgm" id="bgmBtn" class="on" aria-label="Music on or off" title="Music (P)">BGM</button>
       </div>
       <div class="ov" id="live"></div>
       <div class="ov" id="feed" aria-live="polite"></div>
@@ -577,12 +582,12 @@ html.phone.land #app{padding-block:6px;gap:6px}
     </div>
     <aside id="panel">
       <nav class="tabs" id="tabs">
-        <button class="tab" data-act="tab" data-t="crew"><span class="jp">乗員</span><span class="en">Crew</span></button>
-        <button class="tab" data-act="tab" data-t="garage"><span class="jp">車庫</span><span class="en">Garage</span></button>
-        <button class="tab" data-act="tab" data-t="dealer"><span class="jp">中古車</span><span class="en">Dealer</span></button>
-        <button class="tab" data-act="tab" data-t="shop"><span class="jp">豆腐</span><span class="en">Shop</span></button>
-        <button class="tab" data-act="tab" data-t="touge"><span class="jp">峠</span><span class="en">Touge</span></button>
-        <button class="tab" data-act="tab" data-t="rivals"><span class="jp">対戦<sup class="beta">beta</sup></span><span class="en">Battle</span></button>
+        <button class="tab" data-act="tab" data-t="crew" data-key="1" title="Shortcut: 1"><span class="jp">乗員</span><span class="en">Crew</span></button>
+        <button class="tab" data-act="tab" data-t="garage" data-key="2" title="Shortcut: 2"><span class="jp">車庫</span><span class="en">Garage</span></button>
+        <button class="tab" data-act="tab" data-t="dealer" data-key="3" title="Shortcut: 3"><span class="jp">中古車</span><span class="en">Dealer</span></button>
+        <button class="tab" data-act="tab" data-t="shop" data-key="4" title="Shortcut: 4"><span class="jp">豆腐</span><span class="en">Shop</span></button>
+        <button class="tab" data-act="tab" data-t="touge" data-key="5" title="Shortcut: 5"><span class="jp">峠</span><span class="en">Touge</span></button>
+        <button class="tab" data-act="tab" data-t="rivals" data-key="6" title="Shortcut: 6"><span class="jp">対戦<sup class="beta">beta</sup></span><span class="en">Battle</span></button>
       </nav>
       <div class="pbody" id="pbody"></div>
     </aside>
@@ -1074,8 +1079,15 @@ function trafficDelivery(list,T){
 /* Saturday's local challengers are matched to the driver and car you send: about the same OVR and PI,
    nudged a little up on the harder passes and down on the easy ones, with a few points of luck either way. */
 const OPP_TUNES=[[0,0,0,0,0],[1,1,0,0,0],[1,1,1,1,0],[2,2,1,1,1],[2,3,2,1,1],[3,3,2,1,2]];
-function oppTarget(m,d){const c=d&&carById(d.carId);if(!c)return null;const off=(m.diff-.45)*8;
-  return{tyre:Math.min(2,c.tyre.dry??c.tyre.grade),d:clamp(dskill(d)*100,10,100)+off,c:Math.round(spec(Object.assign({},c,{cond:100,tyre:{grade:c.tyre.dry??c.tyre.grade,wear:20}})).pi/20)*20+off*10}}
+/* the first weeks are a warm-up: week 1 locals are well below you, week 2 a little closer, and from week 3 they're close to even, with the odd loss.
+   EARLY[w] = [OVR offset, local's pass knowledge vs yours] */
+const EARLY=[null,[-16,-14],[-8,-6],[-3,0],[-1,2]];
+/* and a losing streak against the locals eases the next challenger a little, so a bad run never snowballs */
+const lossRun=()=>{let n=0;for(const h of (S.hist||[])){if(h.k&&h.k!=='cpu')continue;if(h.r==='L')n++;else break}return n};
+const earlyOf=()=>{const b=EARLY[S.week]||[0,4],l=lossRun(),rl=l>=3?[-5,-6]:l>=2?[-3,-3]:[0,0];return[b[0]+rl[0],b[1]+rl[1]]};
+function oppTarget(m,d){const c=d&&carById(d.carId);if(!c)return null;const off=(m.diff-.45)*8+earlyOf()[0];
+  const sp=spec(Object.assign({},c,{cond:100,tyre:{grade:c.tyre.dry??c.tyre.grade,wear:20}})),k=Math.max(off,-6)*.006;
+  return{tyre:Math.min(2,c.tyre.dry??c.tyre.grade),d:clamp(dskill(d)*100,10,100)+off,c:Math.round(sp.pi/20)*20+off*10,pw:sp.powerN+k,hd:sp.handN+k,bk:sp.brakeN,early:earlyOf()[0]}}
 function genOpp(m,dir,drv){
   const r=mulberry32(strHash(m.id)*31+S.week*977+(dir==='up'?13:29)),pick=a=>a[Math.floor(r()*a.length)];
   const ref=drv||S.drivers.filter(raceReady).sort((a,b)=>dskill(b)-dskill(a))[0],tg=oppTarget(m,ref);
@@ -1085,21 +1097,23 @@ function genOpp(m,dir,drv){
   const keys=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&k!=='ae86'&&!GB[k].kei).sort((a,b)=>CARS[a].price-CARS[b].price);
   const legs=Object.keys(CARS).filter(k=>CARS[k].legend&&CARS[k].legend>=300);
   let model,tune;
-  if(tg){const want=clamp(tg.c+(r()-.5)*70,200,995),pool=keys.concat(['ae86','ae86l'],m.id==='kurogane'||m.id==='rokko'?legs:[]),opts=[];
-    pool.forEach(k=>OPP_TUNES.forEach((t,ti)=>{const pi=spec({model:k,engine:t[0],susp:t[1],brakes:t[2],lsd:t[3],weight:t[4],cond:100,tyre:{grade:tg.tyre,wear:20}}).pi;opts.push({k,ti,gap:Math.abs(pi-want)})}));
-    opts.sort((a,b)=>a.gap-b.gap);const best=opts.slice(0,8).filter(o=>o.gap<=opts[0].gap+25),ch=best[Math.floor(r()*best.length)];model=ch.k;tune=ch.ti}
+  if(tg){/* match the car on what it does (power, handling, brakes), not just its PI, so an uphill doesn't throw up a car with far more power */
+    const np=(r()-.5)*.05,nh=(r()-.5)*.05,pool=keys.concat(['ae86','ae86l'],m.id==='kurogane'||m.id==='rokko'?legs:[]),opts=[];
+    pool.forEach(k=>OPP_TUNES.forEach((t,ti)=>{const q=spec({model:k,engine:t[0],susp:t[1],brakes:t[2],lsd:t[3],weight:t[4],cond:100,tyre:{grade:tg.tyre,wear:20}});
+      opts.push({k,ti,gap:Math.abs(q.powerN-tg.pw-np)*1.6+Math.abs(q.handN-tg.hd-nh)+Math.abs(q.brakeN-tg.bk)*.5})}));
+    opts.sort((a,b)=>a.gap-b.gap);const best=opts.slice(0,8).filter(o=>o.gap<=opts[0].gap+.03),ch=best[Math.floor(r()*best.length)];model=ch.k;tune=ch.ti}
   else{const ti=Math.round(lvl*keys.length*.85+(r()-.5)*3)-1;
     if(ti<0)model=r()<.5?'ae86l':'ae86';else model=keys[clamp(ti,0,keys.length-1)];
     if(m.id==='kurogane'||(m.id==='rokko'&&r()<.5))model=pick(legs)}
   const paint=CARS[model].paint||pick(PAINTS),T=tune!=null?OPP_TUNES[tune]:null;
-  const car=T?{id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:T[0],susp:T[1],brakes:T[2],lsd:T[3],weight:T[4],cradle:0,tyre:{grade:tg.tyre,wear:15+r()*25},cond:100,km:Math.round(60000+r()*120000)}
+  const car=T?{id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:T[0],susp:T[1],brakes:T[2],lsd:T[3],weight:T[4],cradle:0,tyre:{grade:tg.tyre,wear:15+r()*25-tg.early*3.2},cond:Math.round(100+tg.early*1.8),km:Math.round(60000+r()*120000)}
     :{id:0,model,c1:paint[1],c2:shade(paint[1],-.4),paint:paint[0],engine:Math.min(3,Math.floor(lvl*2.8+r()*.9-.15)),susp:Math.min(3,Math.floor(lvl*3.4+r()*.6)),brakes:Math.min(2,Math.floor(lvl*2.4+r()*.5)),lsd:lvl>.25||r()<.4?1:0,weight:Math.min(2,Math.floor(lvl*2.2*r())),cradle:0,tyre:{grade:lvl>.58?2:lvl>.28?1:0,wear:15+r()*25},cond:100,km:Math.round(60000+r()*120000)};
   if(model==='ae86'||model==='ae86l'){if(r()<.5){car.c1='#eeede6';car.c2='#17181c';car.paint='High Tech Two-Tone'}}
   const trait=pick(Object.keys(TRAITS).filter(t=>t!=='natural'));
   const wx=S&&tropWx(S.raceWeather,m.id),rw=r(),dry=car.tyre.grade;car.tyre.dry=dry;
   if(wx==='Snow'){if(trait==='hot'&&rw<.2&&dry>0){car.tyre.gamble=true}else car.tyre.grade=rw<(CARS[model].drive==='AWD'||trait==='ice'?.9:.75)?3:0;car.tyre.wear=6+rw*12}
   else if(wx==='Wet'&&dry>0){if(trait==='hot'&&rw<.35){car.tyre.gamble=true}else if(trait==='rain'||CARS[model].drive==='AWD'){car.tyre.grade=rw<.6?0:1}else car.tyre.grade=0;car.tyre.wear=8+rw*15}
-  const o={first:pick(FIRST),family:pick(FAMILY),team:pick(TEAMS),seed:Math.floor(r()*1e9),stats,trait,car,lvl};o.know={[m.id]:Math.round(clamp(tg?((ref.know||{})[m.id]||0)+4+r()*12:25+lvl*45+r()*10,5,95))};o.mmRank=lvl>.9?3:lvl>.6?2:1;o.perks=lvl>.55?[pick(['cool','closer','launch','hunter','tyre'])]:[];return o;
+  const o={first:pick(FIRST),family:pick(FAMILY),team:pick(TEAMS),seed:Math.floor(r()*1e9),stats,trait,car,lvl};o.know={[m.id]:Math.round(clamp(tg?((ref.know||{})[m.id]||0)+earlyOf()[1]+r()*12:25+lvl*45+r()*10,5,95))};o.mmRank=lvl>.9?3:lvl>.6?2:1;o.perks=lvl>.55?[pick(['cool','closer','launch','hunter','tyre'])]:[];return o;
 }
 
 /* race */
@@ -3392,6 +3406,27 @@ const CHG={
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const f=ACT[b.dataset.act];if(f)f(b.dataset,b)});
 document.addEventListener('change',e=>{const el=e.target.closest('[data-chg]');if(el&&CHG[el.dataset.chg])CHG[el.dataset.chg](el)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden&&$('#modal').querySelector('[data-act="close"]'))closeModal()});
+/* desktop shortcuts. Letters used by the secret codes (a b e f g i j n r t u w) are left alone so typing a code never fires a button. */
+(()=>{const vis=el=>el&&!el.disabled&&el.offsetParent!==null&&!el.closest('[hidden]');
+  const press=el=>{if(vis(el)){el.click();el.classList.add('kpress');setTimeout(()=>el.classList.remove('kpress'),160);return true}return false};
+  const primaryIn=root=>{if(!root)return null;const bs=[...root.querySelectorAll('.btn.primary,.btn.race')].filter(vis);return bs[bs.length-1]||null};
+  /* the one button Space and Enter will press right now: a tip's Next, else the main button of an open window, else the main action at the bottom */
+  function spaceTarget(){const coach=$('#coach');if(coach&&!coach.hidden){const c=primaryIn(coach);if(c)return c}
+    if(!$('#modal').hidden)return primaryIn($('#modal'));
+    const bar=$('#actionbar');if(!bar)return null;const bs=[...bar.querySelectorAll('.btn')].filter(vis);
+    return primaryIn(bar)||bs.find(b=>b.classList.contains('race'))||(bs.length===1?bs[0]:null)}
+  /* on desktop, tag that button with a small SPACE badge */
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches)setInterval(()=>{const tg=spaceTarget();document.querySelectorAll('.kspace').forEach(b=>{if(b!==tg)b.classList.remove('kspace')});if(tg&&!tg.classList.contains('kspace'))tg.classList.add('kspace')},250);
+  const KEYS={'-':'zoomOut','_':'zoomOut','=':'zoomIn','+':'zoomIn','0':'fit',v:'follow',d:'director',c:'crt',o:'slowmo',m:'snd',p:'bgm'};
+  document.addEventListener('keydown',e=>{const t=e.target;if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+    if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
+    const k=e.key.length===1?e.key.toLowerCase():e.key,modal=!$('#modal').hidden,coach=$('#coach');
+    if(k===' '||k==='Enter'){if(t&&(t.tagName==='BUTTON'||t.tagName==='A')){let kb=false;try{kb=t.matches(':focus-visible')}catch(x){}if(kb)return;t.blur()}
+      const el=spaceTarget();if(el){e.preventDefault();press(el)}return}
+    if(k==='h'||k==='?'){if(!modal){e.preventDefault();showHelp(false)}return}
+    if(modal)return;
+    if(/^[1-6]$/.test(k)){const tb=document.querySelectorAll('#tabs .tab')[+k-1];if(tb){e.preventDefault();press(tb)}return}
+    const act=KEYS[k];if(act){const b=document.querySelector(`#mapctl [data-act="${act}"]`);if(b){e.preventDefault();b.click();b.classList.add('kpress');setTimeout(()=>b.classList.remove('kpress'),160)}}});})();
 (()=>{let buf='',taps=[];const pay=()=>{if(!S)return;S.money+=100000000;S.weekRev+=0;AUDIO.unlock();AUDIO.cash();save();renderAll();toast('An envelope under the shop door: ¥100,000,000')};
   document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){buf=(buf+e.key.toLowerCase()).slice(-12);if(buf.endsWith('fujiwara')){buf='';pay()}}});
   const legend=()=>{if(!S)return;if(S.drivers.some(x=>x.legend)){toast('Bunta is already on the crew.');return}if(S.drivers.length>=6){toast('The crew is full. Let someone go first.');return}
@@ -3421,7 +3456,8 @@ function showHelp(intro){
   <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
-  <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, PI and tyres, a little tougher on the harder passes, and they always know their home pass a bit better than you. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
+  <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, power, handling and tyres, a little tougher on the harder passes, and they know their home pass a bit better than you. They go easy in your first few weeks, and a losing streak eases the next challenger a little. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
+  ${intro?'':`<p class="keys"><b>Keyboard.</b> <kbd>Space</kbd> or <kbd>Enter</kbd> presses the highlighted button: the main action at the bottom, the main button in a window, or Next on a tip. <kbd>1</kbd> to <kbd>6</kbd> switch tabs. <kbd>−</kbd> <kbd>+</kbd> zoom, <kbd>0</kbd> whole pass, <kbd>V</kbd> follow, <kbd>D</kbd> director, <kbd>C</kbd> CRT, <kbd>O</kbd> slow-mo, <kbd>M</kbd> sound, <kbd>P</kbd> music, <kbd>H</kbd> this help, <kbd>Esc</kbd> closes a window.</p>`}
   <div class="mact">${intro?'':'<button class="btn" data-act="tutReplay">Replay tutorial</button>'}<button class="btn primary" data-act="${intro?'intro':'close'}">${intro?'Hand Kenta the keys':'Got it'}</button></div>`);
 }
 
