@@ -543,7 +543,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v96</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v100</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -1008,7 +1008,7 @@ function traffic(cars,T,race){
     s.c.fx.push({type:mv,t0:t,t1:t+dur,at,ok});ev.push({type:'move',move:mv,ok,t,i:j,at,by:s.k,on:o.k});
     s.mvCool=ok?16:9;s.press=ok?0:s.press;
     if(ok){const inS=-(Math.sign(T.curv[at])||1),lane=mv==='outside'?-inS*.16:inS*.16;startAlong(s,o,lane,-lane);const AL=along.get(key(s.k,o.k));AL.y=o;AL.w=s;AL.slow=mv==='slip'?.8:.66;s.boost={until:t+(mv==='lights'?(FOGGY?5:4)+.5*(MR-1):2.4),k:mv==='slip'?1.08:1.06};return true}
-    const loss={late:.8+R()*.8,gutter:.45+R()*.5,feint:.35+R()*.4,outside:.3+R()*.4,lights:0,slip:0}[mv]*(1-.2*(MR-1));if(loss){s.slowUntil=t+loss/.6;s.slowK=.4}
+    const loss={late:.8+R()*.8,gutter:.45+R()*.5,feint:.35+R()*.4,outside:.3+R()*.4,lights:0,slip:0}[mv]*(1-.2*(MR-1));ev[ev.length-1].loss=loss;if(loss){s.slowUntil=t+loss/.6;s.slowK=.4}
     return false;
   }
   const tEnd=Math.max(...cars.map(c=>c.start))+Math.max(...cars.map(c=>c.cum[c.dnf??N-1]))*3+120;
@@ -1305,7 +1305,7 @@ const MAP=(()=>{
   const WING={grmn86:1,zn6gt:1,s15:1,fd3s:1,gc8:1,cn9a:1,bnr32:1,jza80:1,gc8_22b:1,rar:1,spiritr:1,cp9a:1,bnr34:1,dc2:1,ek9:1,escort:1,st205:1,e30m3:1};
   let HS=4,NG=null,NGW=0,HW=.38,SHW=.5,B={u0:-10,u1:10,v0:-10,v1:10},road=null,rev=null,paths={},statics=[],lamps=[],vends=[],winLights=[],shopSlots=[],hotelSlots=[],groundC=null,shopRect=null,hotelRect=null,hg=null,GW=0,GH=0,dg=null,DGW=0,DGH=0,fitC=[0,0],fitBox=[30,50],Hf=null,world=null;
   const WORLDS={};let pats={},built=false;
-  let tagK=1,cuv=null,cux=null,cv,ctx,low,lc,lit,lic,vw=1,vh=1,cdpr=1,lowW=1,lowH=1,scan=null,scanFor=0;
+  let curWT=null,tagK=1,cuv=null,cux=null,cv,ctx,low,lc,lit,lic,vw=1,vh=1,cdpr=1,lowW=1,lowH=1,scan=null,scanFor=0;
   const cam={v:0,u:20,z:20};let zTarget=null,camTarget=null,follow=true,dark=1,darkTarget=1,crt=true;
   /* slow motion: when a special move goes off in a live race, the race clock eases down to SLOW_K speed for the length of the move */
   const SLOW_K=.3;let SLOWMO_ON=true;try{SLOWMO_ON=localStorage.getItem('tougeTofu.slowmo')!=='0'}catch(e){}
@@ -1891,7 +1891,7 @@ const MAP=(()=>{
     else if(camTarget){cam.v+=(camTarget[0]-cam.v)*.07;cam.u+=(camTarget[1]-cam.u)*.07;if(Math.hypot(camTarget[0]-cam.v,camTarget[1]-cam.u)<.01)camTarget=null}
     if(zTarget!=null){cam.z+=(zTarget-cam.z)*.07;if(Math.abs(zTarget-cam.z)<.05)zTarget=null}
     clampCam();
-    const Zl=cam.z/PX,c=lc,WT=[Zl,0,0,Zl*TILT,lowW/2-cam.v*Zl,lowH/2-cam.u*Zl*TILT];
+    const Zl=cam.z/PX,c=lc,WT=[Zl,0,0,Zl*TILT,lowW/2-cam.v*Zl,lowH/2-cam.u*Zl*TILT];curWT=WT;
     c.setTransform(1,0,0,1,0,0);c.imageSmoothingEnabled=true;c.globalCompositeOperation='source-over';c.globalAlpha=1;
     {const f=BIOMES[world.def.biome].floor;c.fillStyle=`rgb(${f.map(q=>Math.round(q*.8)).join(',')})`}c.fillRect(0,0,lowW,lowH);c.setTransform(...WT);
     const vr={v0:cam.v-vw/2/cam.z-1,v1:cam.v+vw/2/cam.z+1,u0:cam.u-vh/2/(cam.z*TILT)-1,u1:cam.u+vh/2/(cam.z*TILT)+1.6},lod=cam.z>55;
@@ -2007,15 +2007,16 @@ const MAP=(()=>{
     m.strokeStyle=col;m.globalAlpha=aout*.35;m.lineWidth=2;for(let k=0;k<14;k++){const y=cy-bh/2+((k*37+now/6)%bh),x=X0+((k*173+now*1.6)%(VW+200))-100;m.beginPath();m.moveTo(x,y);m.lineTo(x+60+k*6,y-3);m.stroke()}m.globalAlpha=aout;
     const pw=Math.min(bh-26,Math.max(40,VW*.17)),px=X0+Math.min(VW*.08,24+VW*.03),py=cy-pw/2;m.fillStyle=col;m.fillRect(px-4,py-4,pw+8,pw+8);const im=avatarImg(C.seed,C.face);if(im.complete){m.imageSmoothingEnabled=false;m.drawImage(im,px,py,pw,pw)}
     // title sized from its measured width; if one line would get too small it breaks onto two
-    const ttl0=C.custom?C.title:M.name.toUpperCase()+(C.ok?'!':'...'),fam='"Dela Gothic One","Zen Kaku Gothic New",sans-serif',tx=px+pw+20,avail=Math.max(60,X0+VW-tx-14),fmax=clamp(Math.round(bh*.42),20,52);
+    const ttl0=C.custom?C.title:M.name.toUpperCase()+(C.ok?'!':'...'),fam='"Dela Gothic One","Zen Kaku Gothic New",sans-serif',tx=px+pw+20,miss=!C.ok&&!C.custom,avail=Math.max(60,X0+VW-tx-14),fmax=clamp(Math.round(bh*.42),20,52);
     const wAt=(str,f)=>{m.font=`${f}px ${fam}`;return m.measureText(str).width+f*.22};
     let lines=[ttl0],fs1=Math.min(fmax,Math.floor(fmax*avail/wAt(ttl0,fmax)));
     if(fs1<fmax*.7&&ttl0.includes(' ')){const mid=ttl0.length/2,sp=[...ttl0].map((ch,i)=>ch===' '?i:-1).filter(i=>i>0).sort((a,b)=>Math.abs(a-mid)-Math.abs(b-mid))[0],L=[ttl0.slice(0,sp),ttl0.slice(sp+1)];
       const f2=Math.min(fmax,Math.floor(fmax*avail/Math.max(...L.map(q=>wAt(q,fmax)))),Math.floor((bh-20)/2.5));if(f2>fs1){lines=L;fs1=f2}}
-    const sub=C.custom?C.sub:`${C.name.toUpperCase()} · ${C.ok?M.jp:'NO GOOD'}`,sfam='"Press Start 2P","DotGothic16",monospace';let fsS=Math.max(7,Math.round(fs1*(lines.length>1?.4:.34)));m.font=`${fsS}px ${sfam}`;const sw=m.measureText(sub).width;if(sw>avail)fsS=Math.max(6,Math.floor(fsS*avail/sw));
+    const sub=C.custom?C.sub:`${C.name.toUpperCase()} · ${C.ok?M.jp:'MISSED'}`,sfam='"Press Start 2P","DotGothic16",monospace';let fsS=Math.max(7,Math.round(fs1*(lines.length>1?.4:.34)));m.font=`${fsS}px ${sfam}`;const sw=m.measureText(sub).width;if(sw>avail)fsS=Math.max(6,Math.floor(fsS*avail/sw));
     const lh=fs1*1.02,blockH=lines.length*lh+fsS*1.7,top=cy-blockH/2+(lines.length>1?2:fs1*.06);
     lines.forEach((ln,k)=>{m.save();m.translate(tx,top+lh*(k+1)-fs1*.14);m.transform(1,0,-.18,1,0,0);m.font=`${fs1}px ${fam}`;m.textAlign='left';m.textBaseline='alphabetic';m.lineWidth=Math.max(3,fs1*.13);m.lineJoin='round';m.strokeStyle='#0a0a0c';m.strokeText(ln,0,0);m.fillStyle=col;m.fillText(ln,0,0);m.restore()});
-    m.font=`${fsS}px ${sfam}`;m.fillStyle='#f4f4f0';m.textAlign='left';m.fillText(sub,tx+2,top+lines.length*lh+fsS*1.45);
+    m.font=`${fsS}px ${sfam}`;m.fillStyle='#f4f4f0';m.textAlign='left';const sy0=top+lines.length*lh+fsS*1.45;
+    if(miss){const pre=sub.slice(0,sub.length-6);m.fillText(pre,tx+2,sy0);m.fillStyle='#ff4d4d';m.fillText('MISSED',tx+2+m.measureText(pre).width,sy0)}else m.fillText(sub,tx+2,sy0);
     m.restore();
   }
   function drawMini(m,fs){
@@ -2219,7 +2220,7 @@ const MAP=(()=>{
       if(race){const A=runs.list[0],Bq=runs.list[1],ia=A.state==='done'?N-1:A.i,ib=Bq.state==='done'?N-1:Bq.i;const sA=A.start||0,sB=Bq.start||0;let gap;if(ia>=ib)gap=(sB+Bq.cumReal[ia])-(sA+A.cumReal[ia]);else gap=-((sA+A.cumReal[ib])-(sB+Bq.cumReal[ib]));
         Object.assign(hud,{race:true,gap,title:runs.title,dir:runs.dir,count:-el,lead:gap>=0?`${A.d.first.toUpperCase()} LEADS`:`${Bq.d.first.toUpperCase()} LEADS`});
         const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok);
-            if(!runs.replay){const rr=runs.list[e.cut.by],fx=(rr&&rr.fx||[]).find(w=>w.type===e.cut.move&&Math.abs(w.t0-e.t)<2),end=(fx?fx.t1:e.t+2.8)*A.sc;runs.slowTo=Math.max(runs.slowTo||0,el+clamp(end-el,.7,1.1))}}runs.ev++}}
+            if(!runs.replay&&e.cut.ok){const rr=runs.list[e.cut.by],fx=(rr&&rr.fx||[]).find(w=>w.type===e.cut.move&&Math.abs(w.t0-e.t)<2),end=(fx?fx.t1:e.t+2.8)*A.sc;runs.slowTo=Math.max(runs.slowTo||0,el+clamp(end-el,.7,1.1))}}runs.ev++}}
         hud.slow=runs.clk&&!runs.replay?clamp((1-runs.clk.rate)/(1-SLOW_K),0,1):0}
     runs.audio=null;
     if(fr){const i=fr.i;let rpm,thr;if(fr.state==='run'){rpm=rpmOf(fr,i);thr=thrOf(fr,i)}else if(fr.state==='wait'){thr=race?.4+.4*Math.max(0,Math.sin(now/170)):.1;rpm=race?2800+thr*2600:950}else{rpm=900;thr=0}
@@ -2359,7 +2360,7 @@ const MAP=(()=>{
     const slow=profile(mk(16),car('ae86'),'Clear',H.road).time,fast=profile(mk(85),car('fd3s',{engine:1,susp:3,brakes:2,lsd:1,weight:2,tyre:{grade:2,wear:0},cond:100}),'Clear',H.road).time;return H.par={slow,fast}}
   function track(dir){return dir==='down'?rev:road}
   function focusShop(){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');camTarget=[shopRect.v+.9,shopRect.u+1.05];zTarget=clamp(Math.min(vw/4.2,vh/3.4),120,330)}
-  return{clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
+  return{clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null,miss:!!runs.miss,cut:runs.cutin?{ok:runs.cutin.ok,move:runs.cutin.move}:null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
 })();
 
 /* ================= rendering UI ================= */
@@ -2420,6 +2421,7 @@ function renderAction(){
   a.innerHTML=h;
 }
 function renderTabs(){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.t===TAB))}
+function openTab(t){if(TAB!==t){TAB=t;renderTabs();renderPanel()}const pb=$('#pbody');if(pb)pb.scrollTop=0}
 function renderPanel(){
   const pb=$('#pbody');const st=pb.scrollTop;
   pb.innerHTML={crew:crewHTML,garage:garageHTML,dealer:dealerHTML,shop:shopHTML,touge:tougeHTML,rivals:()=>NET.html()}[TAB]();
@@ -2726,7 +2728,7 @@ function raceEvents(A0,B0,T,d,opp,tev){
     if(mk.tv&&mk.tv.type==='move'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an,M=MOVES[e.move];
       const okL={gutter:[`${who} drops the inside wheels into the drain and rails round ${oth}!`,`Into the gutter! ${who} carries impossible speed past ${oth}!`],late:[`${who} brakes so late it looks like a mistake, then dives up the inside!`,`${who} out-brakes ${oth} into the hairpin and steals the line!`],lights:WX()==='Fog'?[`${who} kills the lights and melts into the fog! ${oth} has no idea where they went...`,`A ghost in the fog! ${who} reappears alongside ${oth} out of nowhere!`]:[`${who} kills the headlights! ${oth} has lost them in the mirror...`,`Darkness behind ${oth}. ${who} has vanished, then reappears alongside!`],feint:[`${who} feints left, flicks right and slices through the S-bends past ${oth}!`,`A perfect feint! ${who} steals the line through the esses!`],outside:[`${who} goes around the outside of the sweeper and holds it!`,`Full commitment! ${who} takes ${oth} around the outside!`],slip:[`${who} tucks into the slipstream and slingshots past ${oth}!`,`Out of the tow! ${who} pulls alongside and goes by!`]}[e.move];
       const noL={gutter:`${who} tries the gutter but bounces out and loses ground.`,late:`${who} goes in too deep and runs wide!`,lights:`${who} kills the lights, but ${oth} spots the shadow and covers.`,feint:`${who} tries a feint, but ${oth} doesn't bite.`,outside:`${who} tries the outside line, but ${oth} squeezes them out.`,slip:`${who} pulls out of the slipstream, but there isn't enough to get by.`}[e.move];
-      if(e.ok)add(e.t,M.name.toUpperCase(),pick(okL),true,{move:e.move,by:e.by,ok:true,name:who});else add(e.t,M.name.toUpperCase(),noL,true,e.by===0?{move:e.move,by:e.by,ok:false,name:who}:null);continue}
+      if(e.ok)add(e.t,M.name.toUpperCase(),pick(okL),true,{move:e.move,by:e.by,ok:true,name:who});else add(e.t,M.name.toUpperCase(),noL,true,{move:e.move,by:e.by,ok:false,name:who,loss:+(e.loss||0).toFixed(2)});continue}
     if(mk.tv&&mk.tv.type==='pressure'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an;add(e.t,'PRESSURE',pick([`The pressure tells! ${who} runs wide with ${oth} filling the mirror.`,`${who} cracks under pressure and misses the apex!`,`${oth} has been all over ${who}'s bumper, and ${who} finally slips!`]),true,null,e.by);continue}
     if(mk.tv){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an;if(e.type==='line'){add(e.t,'HAIRPIN',pick([`Side by side into the first hairpin... ${who} brakes later and takes the line!`,`${who} holds the inside and ${oth} has to tuck in behind.`]),true,null,e.by);continue}if(e.type==='pass')add(e.t,'PASS',pick([`${who} pulls alongside on the straight and makes the pass!`,`${who} gets the better exit and sweeps past ${oth}!`,`Side by side... ${who} has the line and takes the place!`]),true,null,e.by);else add(e.t,'BATTLE',pick([`${who} looks up the inside of ${oth} but has to back out.`,`${who} is glued to ${oth}'s bumper, waiting for a gap.`]));continue}
     if(mk.iA){const x=mk.iA,t=A.cumReal[x.i];
@@ -3277,10 +3279,10 @@ const NET=(()=>{
     const cs=allCh().filter(x=>x.st!=='declined').slice(0,8);
     if(cs.length)h+=`<h3>Challenges</h3><div class="card">${cs.map(chRow).join('')}</div>`;
     if(ready&&loaded&&S.hkey&&!S.hpend){const r=rival(),me=myPair(),ms=matches(6).filter(m=>!r||m.p.key!==r.key).slice(0,5);
-      h+=`<h3>Rival of the week</h3>${r?`<div class="card">${prow(r)}${(m=>m?mtags(m):'')(matchOf(r,me))}<div class="meta">Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
-      h+=`<h3>Good matches</h3><div class="card">${me?`<div class="meta">Your race pair: drivers ${me.d} OVR, cars PI ${me.c}. Matched on both, so a great driver in a slow car meets someone similar.</div>`:''}${ms.length?ms.map(m=>`<div class="mrow">${prow(m.p)}${mtags(m)}</div>`).join(''):`<div class="meta">${me?'Nobody else is racing on Touge Net yet. Matches show up here as players join.':'Put a driver in a roadworthy car to get matched.'}</div>`}</div>`;
+      h+=`<h3 id="tnRival">Rival of the week</h3>${r?`<div class="card">${prow(r)}${(m=>m?mtags(m):'')(matchOf(r,me))}<div class="meta">Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
+      h+=`<h3 id="tnMatch">Good matches</h3><div class="card">${me?`<div class="meta">Your race pair: drivers ${me.d} OVR, cars PI ${me.c}. Matched on both, so a great driver in a slow car meets someone similar.</div>`:''}${ms.length?ms.map(m=>`<div class="mrow">${prow(m.p)}${mtags(m)}</div>`).join(''):`<div class="meta">${me?'Nobody else is racing on Touge Net yet. Matches show up here as players join.':'Put a driver in a roadworthy car to get matched.'}</div>`}</div>`;
       const fs=friends().map(k=>players[k]).filter(Boolean);
-      h+=`<h3>Friends</h3><div class="card">${fs.length?fs.map(p=>prow(p)).join(''):'<div class="meta">No friends yet. Add someone by handle, or tap + Friend on the board.</div>'}<div class="hrow"><span class="at">@</span><input id="fIn" class="tin" maxlength="17" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Friend's handle" aria-describedby="fMsg"><button class="btn sm" data-act="netAddF">Add</button></div><div class="note" id="fMsg" role="status"></div></div>`}
+      h+=`<h3 id="tnFriends">Friends</h3><div class="card">${fs.length?fs.map(p=>prow(p)).join(''):'<div class="meta">No friends yet. Add someone by handle, or tap + Friend on the board.</div>'}<div class="hrow"><span class="at">@</span><input id="fIn" class="tin" maxlength="17" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Friend's handle" aria-describedby="fMsg"><button class="btn sm" data-act="netAddF">Add</button></div><div class="note" id="fMsg" role="status"></div></div>`}
     if(ready&&loaded){const top=plList.slice(0,10);h+=`<h3>Top 10</h3><div class="card">${top.length?top.map((p,i)=>prow(p,i)).join(''):'<div class="meta">Nobody on the board yet. Claim a handle and be the first.</div>'}${rk>=10?`<div class="meta">…</div>${prow(plList[rk],rk)}`:''}</div>`}
     return h;
   }
@@ -3362,7 +3364,7 @@ const ACT={
   bsReset:()=>{if(!BS)return;const c=carById(BS.id);BS.look=CV.lookOf(c);BS.c1=c.c1;BS.paint=c.paint;renderBodyShop()},
   bsApply:()=>{if(!BS)return;const c=carById(BS.id);const cost=bodyCost(c,BS.look,BS.c1);if(!cost||S.money<cost)return;S.money-=cost;
     c.c1=BS.c1;c.paint=BS.paint;c.c2=BS.look.two||shade(BS.c1,-.4);c.look=Object.assign({},BS.look);AUDIO.coin();addLog(`Body shop: ${CARS[c.model].code} done for ${yen(cost)}.`);toast(`${CARS[c.model].code} is back from the body shop`);BS=null;closeModal();save();renderAll()},
-  tutNext:()=>TUT.next(),tutSkip:()=>TUT.skip(),tipOk:d=>TUT.tipOk(d.k),tutReplay:()=>{closeModal();TUT.replay()},
+  tutNext:()=>TUT.next(),tutSkip:()=>TUT.skip(),tipOk:d=>TUT.tipOk(d.k),tipNext:d=>TUT.tipNext(d.k),tutReplay:()=>{closeModal();TUT.replay()},
 };
 const CHG={
   stuEar:el=>{if(!STU)return;STU.f.earring=el.checked;renderStudio()},
@@ -3859,8 +3861,24 @@ const TUT=(()=>{
     {t:'Close up',target:'#actionbar .btn.big',b:'That\'s day one. Close up for the day and the next dawn run begins. Tap ? any time to replay this tutorial.',dim:true,show:calm,enter:()=>{mark=S.week*10+S.day},skip:()=>S.phase==='pre'&&!busy,done:()=>S.week*10+S.day!==mark}
   ];
   const TIPS=[
-    {k:'press',target:'#actionbar',t:'More drivers than presses',b:'Each press makes one batch a day, and every batch needs its own car. Add presses in the Shop tab so the whole crew can run.',when:()=>calm()&&S.phase==='pre'&&readyDrivers().length>plannedRuns().length},
+    {k:'press',target:'#actionbar',t:'More drivers than presses',b:'Each press makes one batch a day, and every batch needs its own car. Add presses in the Shop tab, or use the dawn roster in the Crew tab to share the days out.',when:()=>calm()&&S.phase==='pre'&&readyDrivers().length>plannedRuns().length},
     {k:'recruit',target:'.tab[data-t="crew"]',t:'New crew member',b:'A rival has joined Kasumi Tofu. In the Crew tab, check they have a car and pick their days on the dawn roster. More drivers mean more batches, as long as you have the presses.',when:()=>calm()&&S.drivers.length>1},
+    {k:'rosterTour',when:()=>calm()&&S.phase==='pre'&&S.drivers.length>1&&!!S.tut.tips.recruit,steps:[
+      {side:'left',target:'.card.roster',t:'Your dawn roster',b:'With two or more drivers you choose who does the dawn run each day. Rows are drivers and columns are days. Tap a square to put a driver on or off that morning. The week repeats until you change it, and each driver card has the same day buttons under Dawn runs.',enter:()=>openTab('crew')},
+      {side:'left',target:'.card.roster .rg',t:'Runs against presses',b:'The bottom row counts each day\'s runs against your presses. Green means every press is busy. Red means someone is rostered but benched, because each press fills one car. Amber means a press sits idle. "rest" means the shop stays shut that day.',enter:()=>openTab('crew')},
+      {side:'left',target:'.card.roster .row',t:'Quick fills',b:'Rotate evenly shares the days out so everyone gets runs, XP and pass knowledge. Strongest only sends your best driver and car pairs every day. Everyone, every day puts the whole crew on and lets the presses decide.',enter:()=>openTab('crew')},
+      {side:'left',target:'.card.roster .rh.sat',t:'Saturday is race day',b:'Drivers who skip the Saturday dawn run race fresher that night: fewer mistakes and steadier under pressure. Leave your racers off Saturday mornings if the shop can spare them.',enter:()=>openTab('crew')}]},
+    {k:'firstRace',when:()=>calm()&&S.day===6&&S.phase==='post'&&S.week<=2&&!(S.weekRaces||[]).length&&S.cars.length&&S.cars.every(c=>!c.engine&&!c.susp&&!c.brakes&&!c.lsd&&!c.weight&&c.tyre.grade===0),steps:[
+      {target:'#actionbar',t:'Before your first race',b:()=>`The week's deliveries left you with ${yen(S.money)}. That's enough for one upgrade before tonight's touge, and one part makes a real difference on the pass.`},
+      {side:'left',target:'#pbody .card:not(.hint) .tyrerow',t:'Option 1: tyres',b:()=>`Sport tyres (${yen(TYRES[1].cost)}) grip harder in every corner. They're the biggest all-round gain, but they wear faster and are twitchier in the rain.`,enter:()=>openTab('garage')},
+      {side:'left',target:'#pbody .card:not(.hint) .mods',t:'Option 2 or 3: engine or suspension',b:()=>{const c=S.cars[0];return`Intake and exhaust (${yen(modCost(c,'engine',0))}) adds pace, best uphill where power counts. Street coilovers (${yen(modCost(c,'susp',0))}) sharpen the cornering, best downhill. Pick one, or two if the money stretches.`},enter:()=>openTab('garage')},
+      {target:'#actionbar [data-act="raceNight"]',t:'Then race',b:'When you\'re set, open Saturday night touge, pick a pass and a direction, and line up.'}]},
+    {k:'netTour',when:()=>calm()&&NET.isOn()&&!!document.querySelector('.tab[data-t="rivals"]'),steps:[
+      {side:'left',target:'.card.netme',t:'Welcome to Touge Net',b:()=>`You're on the board as @${S.handle}. Your crew OVR comes from your two best race pairs, driver and car together, and it ranks you against every other player.`,enter:()=>openTab('rivals')},
+      {side:'left',target:'#tnRival',t:'Rival of the week',b:'Each week Touge Net picks a rival within about 10 OVR of your crew. On Saturday night you can race their ghost instead of the local challenger.',enter:()=>openTab('rivals')},
+      {side:'left',target:'#tnMatch',t:'Good matches and challenges',b:'Crews close to yours on both driver and car. Send one a challenge any day: you set the pass, direction and rules, and the race runs the moment they accept.',enter:()=>openTab('rivals')},
+      {side:'left',target:'#tnFriends',t:'Friends',b:'Add friends by handle to race their ghosts on any Saturday, whatever their level.',enter:()=>openTab('rivals')},
+      {target:'.tab[data-t="rivals"]',t:'Keep an eye on this tab',b:'A badge appears here when someone challenges you or races your ghost.'}]},
     {k:'wet',target:'#clock',t:'Rain on the pass',b:'Grip is down and spins and crashes are more likely. Street tyres and four-wheel drive cope best, and semi-slicks are a gamble. Drivers with Rain Dancer barely notice.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Wet'},
     {k:'fog',target:'#clock',t:'Fog on the pass',b:'Speeds stay low and focus matters most. Drivers with Fog Eyes ignore it. On race night, Lights Out is deadly in the fog.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Fog'},
     {k:'perk',target:'.tab[data-t="crew"]',t:'Perk ready',b:'A driver has reached a perk level. Open the Crew tab and press Choose a perk. Perks keep top drivers improving after their stats max out.',when:()=>calm()&&S.drivers.some(d=>perkPending(d)>0)},
@@ -3875,12 +3893,13 @@ const TUT=(()=>{
   function els(){if(card)return;card=document.createElement('div');card.id='coach';card.setAttribute('role','dialog');card.setAttribute('aria-live','polite');ring=document.createElement('div');ring.id='coachRing';document.body.append(ring,card)}
   function hide(){if(!card)return;card.hidden=true;ring.hidden=true;key=''}
   function draw(it,k,label,foot){
-    els();const fresh=key!==k;if(fresh){key=k;card.innerHTML=`<div class="ch">${label?`<span class="cn">${label}</span>`:''}<b>${esc(it.t)}</b></div><p>${esc(it.b)}</p><div class="cb">${foot}</div>`}
+    els();const fresh=key!==k;if(fresh){key=k;card.innerHTML=`<div class="ch">${label?`<span class="cn">${label}</span>`:''}<b>${esc(it.t)}</b></div><p>${esc(typeof it.b==='function'?it.b():it.b)}</p><div class="cb">${foot}</div>`}
     card.hidden=false;const el=q(it.target);if(fresh&&el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});const r=el&&el.getBoundingClientRect(),vw=innerWidth,vh=innerHeight,cw=card.offsetWidth,chh=card.offsetHeight;
     let x,y;
     if(r&&r.width>0&&r.height>0){ring.hidden=false;const p=6;Object.assign(ring.style,{left:r.left-p+'px',top:r.top-p+'px',width:r.width+p*2+'px',height:r.height+p*2+'px'});ring.classList.toggle('dim',!!it.dim);ring.classList.remove('bare');
       if(r.bottom+14+chh<vh)y=r.bottom+14;else if(r.top-14-chh>0)y=r.top-14-chh;else y=vh-chh-16;
       x=r.left+r.width/2-cw/2;if(y>=r.top-chh-14&&y<=r.bottom){if(r.right+14+cw<vw){x=r.right+14;y=r.top}else if(r.left-14-cw>0){x=r.left-14-cw;y=r.top}}
+      if(it.side==='left'&&r.left-14-cw>12){x=r.left-14-cw;y=r.top}
     }else{ring.hidden=!it.dim;if(it.dim){ring.classList.add('dim','bare');Object.assign(ring.style,{left:vw/2+'px',top:vh/2+'px',width:'0px',height:'0px'})}x=(vw-cw)/2;y=(vh-chh)/2}
     card.style.left=clamp(x,12,vw-cw-12)+'px';card.style.top=clamp(y,12,vh-chh-12)+'px';card.classList.toggle('center',!(r&&r.width>0));
   }
@@ -3895,6 +3914,9 @@ const TUT=(()=>{
     if(tip&&S.tut.tips[tip.k])tip=null;
     if(!tip)tip=TIPS.find(x=>!S.tut.tips[x.k]&&x.when())||null;
     if(!tip){hide();return}
+    if(tip.steps){if(tip.si==null){if(!tip.when()){tip=null;hide();return}tip.si=0;tip.ent=-1}
+      if(!calm()){hide();return}const st=tip.steps[tip.si];if(tip.ent!==tip.si){tip.ent=tip.si;st.enter&&st.enter()}
+      const last=tip.si>=tip.steps.length-1;draw(st,'t'+tip.k+tip.si,`Tip ${tip.si+1}/${tip.steps.length}`,`<button class="btn sm ghost" data-act="tipOk" data-k="${tip.k}">Skip</button><button class="btn sm primary" data-act="tipNext" data-k="${tip.k}">${last?'Got it':'Next'}</button>`);return}
     if(!tip.when()&&!(tip.k==='race'&&busy)){if(calm()||busy){tip=null}hide();return}
     draw(tip,'t'+tip.k,'Tip',`<button class="btn sm primary" data-act="tipOk" data-k="${tip.k}">Got it</button>`);
   }
@@ -3904,7 +3926,7 @@ const TUT=(()=>{
   }
   setInterval(()=>{try{tick()}catch(e){}},160);
   addEventListener('resize',()=>{key=key&&key+'_'});
-  return{init,next,skip:()=>{S.tut.s=-1;hide();save();toast('Tutorial skipped. Tap ? to replay it.')},tipOk:k=>{S.tut.tips[k]=1;tip=null;hide();save()},
+  return{init,next,skip:()=>{S.tut.s=-1;hide();save();toast('Tutorial skipped. Tap ? to replay it.')},tipOk:k=>{S.tut.tips[k]=1;if(tip)tip.si=null;tip=null;hide();save()},tipNext:k=>{if(!tip||tip.k!==k||!tip.steps)return;if(tip.si>=tip.steps.length-1){S.tut.tips[k]=1;tip.si=null;tip=null;hide();save()}else{tip.si++;key=''}},
     replay:()=>{S.tut={s:0,tips:{}};entered=-1;tip=null;save();if(TAB!=='crew'){TAB='crew';renderAll()}},allTips:()=>Object.fromEntries(TIPS.map(x=>[x.k,1]))};
 })();
 
