@@ -170,7 +170,8 @@ html.phone .lc .ovs{display:none}
 kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:rgba(255,255,255,.04);color:var(--ink);white-space:nowrap}
 @media (hover:hover) and (pointer:fine){#tabs .tab[data-key]{position:relative}#tabs .tab[data-key]::after{content:attr(data-key);position:absolute;top:3px;right:4px;font-family:var(--f-dot);font-size:9px;line-height:1;color:var(--dim);opacity:.8}
   .btn.kspace::after{content:'SPACE';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}
-  .btn.sm.kspace::after{font-size:8px;margin-left:6px;padding:0 3px}}
+  .btn.sm.kspace::after{font-size:8px;margin-left:6px;padding:0 3px}
+.kback::after{content:'ESC';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}}
 .keeph{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mute);margin-top:8px;cursor:pointer}.keeph input{margin-top:2px;accent-color:var(--sodium)}.keeph b{color:var(--ink)}
 .wxnote{color:var(--cyan)!important;font-size:13px}
 .meta.leafy{color:#e0893a}
@@ -556,7 +557,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v116</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v120</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -723,6 +724,8 @@ const GB={
   /* the E10 once every part is maxed: a turbo boxer swapped in under the floor, close-ratio box, proper wheels */
   e10_x:{g:[3.166,1.882,1.296,0.972,0.738],fd:4.111,t:[205,50,15],rl:7800,vmax:240},
 };
+/* factory bonnet scoops (the turbo Imprezas) */
+const SCOOP={gc8:1,gc8_22b:1,rar:1};
 const tyreCirc=t=>Math.PI*(t[2]*25.4+2*t[0]*t[1]/100)/1000;
 /* every part maxed (the tofu cradle doesn't count) */
 const fullSpec=c=>!!c&&MODS.every(md=>md.k==='cradle'||(c[md.k]||0)>=md.max);
@@ -1777,6 +1780,7 @@ const MAP=(()=>{
     const glass='#1a2233',wf=X(P.ws[1]),wb=X(P.ws[0]),wx=WX(),topUp=P.open&&(wx==='Wet'||wx==='Snow');
     /* bonnet creases from the windscreen to the nose */
     if(P.arch!=='van'){c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=.006;c.beginPath();c.moveTo(wf+.015,-CW/2+.03);c.lineTo(CL/2-.02,-CW/2+.035);c.moveTo(wf+.015,CW/2-.03);c.lineTo(CL/2-.02,CW/2-.035);c.stroke()}
+    if(SCOOP[s.model]){const x0=wf+(CL/2-wf)*.16,x1=wf+(CL/2-wf)*.52,hw=CW*.19;rr2(c,x0,-hw,x1-x0,hw*2,.008,shade(s.c1,-.12));rect(c,x1-.009,-hw+.005,.009,hw*2-.01,'#121216');rect(c,x0+.003,-hw+.003,x1-x0-.014,.005,'rgba(255,255,255,.22)')}
     if(P.open&&!topUp){
       /* open top: low windscreen, the cockpit, two seats, the driver on the right (Japanese cars are right-hand drive) */
       c.fillStyle=glass;c.beginPath();c.moveTo(wf,-CW/2+.024);c.lineTo(wb,-CW/2+.028);c.lineTo(wb,CW/2-.028);c.lineTo(wf,CW/2-.024);c.closePath();c.fill();
@@ -3547,22 +3551,29 @@ const CHG={
 };
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const f=ACT[b.dataset.act];if(f)f(b.dataset,b)});
 document.addEventListener('change',e=>{const el=e.target.closest('[data-chg]');if(el&&CHG[el.dataset.chg])CHG[el.dataset.chg](el)});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden&&$('#modal').querySelector('[data-act="close"]'))closeModal()});
+
 /* desktop shortcuts. Letters used by the secret codes (a b e f g i j n r t u w) are left alone so typing a code never fires a button. */
 (()=>{const vis=el=>el&&!el.disabled&&el.offsetParent!==null&&!el.closest('[hidden]');
   const press=el=>{if(vis(el)){el.click();el.classList.add('kpress');setTimeout(()=>el.classList.remove('kpress'),160);return true}return false};
   const primaryIn=root=>{if(!root)return null;const bs=[...root.querySelectorAll('.btn.primary,.btn.race')].filter(vis);return bs[bs.length-1]||null};
   /* the one button Space and Enter will press right now: a tip's Next, else the main button of an open window, else the main action at the bottom */
+  /* Esc: the "no" button of the open window (Cancel, Decline, Later, Keep...), or Skip on a tip */
+  const NEG=/^(cancel|decline|later|not now|decide later|keep\b|turn (them|it) down|back$|close$|no\b|never mind|skip racing|skip tutorial|end tutorial|skip$)/i;
+  function backTarget(){const m=$('#modal');if(m&&!m.hidden)return[...m.querySelectorAll('button')].find(b=>vis(b)&&!b.disabled&&NEG.test((b.textContent||'').trim()))||null;
+    const coach=$('#coach');if(coach&&!coach.hidden)return[...coach.querySelectorAll('button')].find(b=>vis(b)&&NEG.test((b.textContent||'').trim()))||null;return null}
   function spaceTarget(){const coach=$('#coach');if(coach&&!coach.hidden){const c=primaryIn(coach);if(c)return c}
     if(!$('#modal').hidden)return primaryIn($('#modal'));
     const bar=$('#actionbar');if(!bar)return null;const bs=[...bar.querySelectorAll('.btn')].filter(vis);
     return primaryIn(bar)||bs.find(b=>b.classList.contains('race'))||(bs.length===1?bs[0]:null)}
   /* on desktop, tag that button with a small SPACE badge */
-  if(matchMedia('(hover:hover) and (pointer:fine)').matches)setInterval(()=>{const tg=spaceTarget();document.querySelectorAll('.kspace').forEach(b=>{if(b!==tg)b.classList.remove('kspace')});if(tg&&!tg.classList.contains('kspace'))tg.classList.add('kspace')},250);
-  const WORDS=['fujiwara','bunta','genting','spring','summer','autumn','winter'];let kbuf='',kT=0;
+  if(matchMedia('(hover:hover) and (pointer:fine)').matches)setInterval(()=>{const tg=spaceTarget();document.querySelectorAll('.kspace').forEach(b=>{if(b!==tg)b.classList.remove('kspace')});if(tg&&!tg.classList.contains('kspace'))tg.classList.add('kspace');
+    const bk=backTarget();document.querySelectorAll('.kback').forEach(b=>{if(b!==bk)b.classList.remove('kback')});if(bk&&bk!==tg&&!bk.classList.contains('kback'))bk.classList.add('kback')},250);
+  const WORDS=['fujiwara','bunta','genting','spring','summer','autumn','winter','rain','dry','fog'];let kbuf='',kT=0;
   const typingWord=k=>{const n=performance.now();if(n-kT>1500)kbuf='';kT=n;kbuf=(kbuf+k).slice(-9);for(let L=Math.min(kbuf.length,9);L>=2;L--){const tail=kbuf.slice(-L);if(WORDS.some(w=>w.startsWith(tail)))return true}return false};
   const KEYS={'-':'zoomOut','_':'zoomOut','=':'zoomIn','+':'zoomIn','0':'fit',v:'follow',d:'director',c:'crt',o:'slowmo',m:'snd',p:'bgm'};
   document.addEventListener('keydown',e=>{const t=e.target;if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
+    /* Esc works even from a text box, but not while an input method (Chinese, Japanese...) is composing, where Esc cancels the composition */
+    if(e.key==='Escape'){if(e.isComposing||e.keyCode===229||(t&&t.tagName==='SELECT'))return;const el=backTarget();if(el){e.preventDefault();press(el)}else if(!$('#modal').hidden&&$('#modal').querySelector('[data-act="close"]')){e.preventDefault();closeModal()}return}
     if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
     const k=e.key.length===1?e.key.toLowerCase():e.key,modal=!$('#modal').hidden,coach=$('#coach');if(k.length===1&&/[a-z]/.test(k)&&typingWord(k))return;
     if(k===' '||k==='Enter'){if(t&&(t.tagName==='BUTTON'||t.tagName==='A')){let kb=false;try{kb=t.matches(':focus-visible')}catch(x){}if(kb)return;t.blur()}
@@ -3570,7 +3581,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden
     if(k==='h'||k==='?'){if(!modal){e.preventDefault();showHelp(false)}return}
     if(modal)return;
     if(/^[1-6]$/.test(k)){const tb=document.querySelectorAll('#tabs .tab')[+k-1];if(tb){e.preventDefault();press(tb)}return}
-    const act=KEYS[k];if(act){const b=document.querySelector(`#mapctl [data-act="${act}"]`);if(b){e.preventDefault();b.click();b.classList.add('kpress');setTimeout(()=>b.classList.remove('kpress'),160)}}});})();
+    const act=KEYS[k];if(act==='director')window.__kDir=performance.now();if(act){const b=document.querySelector(`#mapctl [data-act="${act}"]`);if(b){e.preventDefault();b.click();b.classList.add('kpress');setTimeout(()=>b.classList.remove('kpress'),160)}}});})();
 (()=>{let buf='',taps=[];const pay=()=>{if(!S)return;S.money+=100000000;S.weekRev+=0;AUDIO.unlock();AUDIO.cash();save();renderAll();toast('An envelope under the shop door: ¥100,000,000')};
   document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){buf=(buf+e.key.toLowerCase()).slice(-12);if(buf.endsWith('fujiwara')){buf='';pay()}}});
   const legend=()=>{if(!S)return;if(S.drivers.some(x=>x.legend)){toast('Bunta is already on the crew.');return}if(S.drivers.length>=6){toast('The crew is full. Let someone go first.');return}
@@ -3589,6 +3600,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden
     S.weather=rollWeather();S.wind=rollWind();if(S.day===6){S.raceWeather=rollWeather(S.weather);S.raceWind=rollWind()}
     const msg={Spring:'Spring arrives overnight. The snow is gone and the first sakura are opening.',Summer:'Summer arrives overnight. Long, hot days and short nights on the pass.',Autumn:'Autumn arrives overnight. The maples turn red and leaves pile up on the corners.',Winter:'Winter arrives overnight. Snow on the passes and cold tyres at dawn.'}[SEASONS[ti].n];
     addLog(msg);MAP.loadWorld('usuzumi');lastView='';AUDIO.unlock();AUDIO.cash();save();renderAll();toast(msg)};
+  // "rain", "dry", "fog": change today's weather (and tonight's race on a Saturday)
+  const setWx=code=>{if(!S)return;if(busy){toast('Wait until the cars are back.');return}const w={rain:'Wet',dry:'Clear',fog:'Fog'}[code],sat=S.day===6;
+    if(S.weather===w&&(!sat||S.raceWeather===w)){toast(`It's already ${WXLABEL[w].toLowerCase()}.`);return}
+    S.weather=w;if(sat)S.raceWeather=w;
+    const msg={Wet:'The sky opens. Rain on the pass.',Clear:'The clouds break. The road is dry.',Fog:'Fog rolls down off the mountain.'}[w]+(sat?' Tonight too.':'');
+    addLog(msg);lastView='';AUDIO.unlock();AUDIO.cash();save();renderAll();toast(msg)};
+  let wbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){wbuf=(wbuf+e.key.toLowerCase()).slice(-6);const w=['rain','dry','fog'].find(x=>wbuf.endsWith(x));if(w){wbuf='';
+    /* the "d" of "dry" also flipped the director camera, so flip it back */
+    if(w==='dry'&&performance.now()-(window.__kDir||0)<3000){const b=document.querySelector('#mapctl [data-act="director"]');if(b)b.click();window.__kDir=0}
+    setWx(w)}}});
   let sbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){sbuf=(sbuf+e.key.toLowerCase()).slice(-10);const w=['spring','summer','autumn','winter'].find(x=>sbuf.endsWith(x));if(w){sbuf='';setSeason(w)}}});
   let gbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){gbuf=(gbuf+e.key.toLowerCase()).slice(-12);if(gbuf.endsWith('genting')){gbuf='';genting()}}});
   let staps=[];document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.pill.season'))return;const n=performance.now();staps=staps.filter(x=>n-x<3000);staps.push(n);if(staps.length>=7){staps=[];genting()}});
@@ -3608,7 +3629,7 @@ function showHelp(intro){
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well. Anyone on the road when Bunta Fujiwara or YS Khong shows up learns a lot about that pass just from watching them.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, power, handling and tyres, a little tougher on the harder passes, and they know their home pass a bit better than you. In your first weeks the downhill locals go easy on you while uphill is close to even, and a losing streak eases the next challenger a little. From week 2, the first local you beat asks to join your crew. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
-  ${intro?'':`<p class="keys"><b>Keyboard.</b> <kbd>Space</kbd> or <kbd>Enter</kbd> presses the highlighted button: the main action at the bottom, the main button in a window, or Next on a tip. <kbd>1</kbd> to <kbd>6</kbd> switch tabs. <kbd>−</kbd> <kbd>+</kbd> zoom, <kbd>0</kbd> whole pass, <kbd>V</kbd> follow, <kbd>D</kbd> director, <kbd>C</kbd> CRT, <kbd>O</kbd> slow-mo, <kbd>M</kbd> sound, <kbd>P</kbd> music, <kbd>H</kbd> this help, <kbd>Esc</kbd> closes a window.</p>`}
+  ${intro?'':`<p class="keys"><b>Keyboard.</b> <kbd>Space</kbd> or <kbd>Enter</kbd> presses the highlighted button: the main action at the bottom, the main button in a window, or Next on a tip. <kbd>Esc</kbd> picks the "no" button in a window, such as Cancel, Decline, Later, Keep or Skip racing tonight, and Skip on a tip. <kbd>1</kbd> to <kbd>6</kbd> switch tabs. <kbd>−</kbd> <kbd>+</kbd> zoom, <kbd>0</kbd> whole pass, <kbd>V</kbd> follow, <kbd>D</kbd> director, <kbd>C</kbd> CRT, <kbd>O</kbd> slow-mo, <kbd>M</kbd> sound, <kbd>P</kbd> music, <kbd>H</kbd> this help, <kbd>Esc</kbd> closes a window.</p>`}
   <div class="mact">${intro?'':'<button class="btn" data-act="tutReplay">Replay tutorial</button>'}<button class="btn primary" data-act="${intro?'intro':'close'}">${intro?'Hand Kenta the keys':'Got it'}</button></div>`);
 }
 
@@ -3893,6 +3914,10 @@ const SPR=(()=>{
     }else{wingDraw()}
     ctop(TY.cw,TY.hf,P[3]);
     {const a=pt(TY.hf[0],TY.hf[1],0),b=pt(TY.hf[0],TY.hf[1],Wd);line([a[0]-1,a[1]],[b[0]-1,b[1]],P[4])}
+    // bonnet scoop: a raised box on the hood, mouth open to the front
+    if(SCOOP[model]){const hx0=TY.cw[0]+(TY.hf[0]-TY.cw[0])*.1,hx1=TY.cw[0]+(TY.hf[0]-TY.cw[0])*.46,zh=x=>TY.cw[1]+(TY.hf[1]-TY.cw[1])*(x-TY.cw[0])/(TY.hf[0]-TY.cw[0]),dz=.075,y0=Wd*.3,y1=Wd*.7;
+      const A=pt(hx0,zh(hx0),y0),B=pt(hx1,zh(hx1),y0),Bt=pt(hx1,zh(hx1)+dz,y0),At=pt(hx0,zh(hx0)+dz*.55,y0),Ct=pt(hx1,zh(hx1)+dz,y1),Dt=pt(hx0,zh(hx0)+dz*.55,y1),C=pt(hx1,zh(hx1),y1);
+      poly([A,B,Bt,At],P[1]);poly([At,Bt,Ct,Dt],P[3]);poly([B,C,Ct,Bt],DARK);line(At,Bt,P[4])}
     // nose top slope and front face
     topQ(TY.hf,TY.ft,0,Wd,P[2]);
     {const A=at('ft'),B=at('fb'),C=at('fb',Wd),D=at('ft',Wd);poly([A,B,C,D],P2[1]);
