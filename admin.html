@@ -86,7 +86,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="15 Nov 10:58"</script>
+<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="15 Nov 11:12"</script>
 <style>
 /* control room: same tokens and type as the game, laid out as a two-pane console */
 html.admin #app,html.admin #modal{display:none!important}
@@ -4130,7 +4130,7 @@ if(!window.TOUGE_ADMIN){window.claude?.hot?.ready?window.claude.hot.ready(boot):
    refuse unless this browser's sign-in is listed in public.admins. */
 const ADMIN=(()=>{
   const X=window.TOUGE_NETX,KIND={ch:'Challenge',gh:'Ghost race',ghd:'Raced your ghost',cpu:'Local race'},DAYMS=864e5;
-  let me={uid:null,admin:false,fn:true},data={handles:{},players:{},ch:[],inbox:{}},bans=[],sel=null,q='',sort='seen',filt='all',tab='players',confirmK=null,loading=true,errMsg='',lastLoad=0,pend={},gmStep=1,gmOn=true;
+  let me={uid:null,admin:false,fn:true},data={handles:{},players:{},ch:[],inbox:{}},bans=[],sel=null,q='',sort='seen',filt='all',tab='players',confirmK=null,loading=true,errMsg='',lastLoad=0,pend={},gmStep=1,gmOn=true,cloud={},cloudOn=null;
   const root=()=>document.getElementById('adm');
   const mt=id=>MTNS.concat(typeof GENTING!=='undefined'?[GENTING]:[]).find(m=>m.id===id);
   const ago=t=>{if(!t)return'never';const d=(Date.now()-t)/DAYMS;return d<1/1440?'just now':d<1/24?Math.round(d*1440)+'m ago':d<1?Math.round(d*24)+'h ago':d<60?Math.round(d)+'d ago':new Date(t).toLocaleDateString()};
@@ -4154,6 +4154,8 @@ const ADMIN=(()=>{
       data.ch=cs.map(d=>Object.assign({id:d.id,upd:tms(d.updated_at)},d.data)).sort((a,b)=>(b.t||0)-(a.t||0));
       ib.forEach(d=>{const k=d.coll.split('/')[1];data.inbox[k]=(data.inbox[k]||0)+1});
       bans=[];if(me.admin){const b=await X.sb.rpc('admin_bans');if(!b.error)bans=b.data||[]}
+      /* when each device last backed its save up (for Play as) */
+      cloud={};cloudOn=null;if(me.admin){const q=await X.sb.from('saves').select('uid,updated_at');if(q.error){cloudOn=!/relation|does not exist|schema cache/i.test(q.error.message||'')?null:false}else{cloudOn=true;(q.data||[]).forEach(r=>cloud[r.uid]=tms(r.updated_at))}}
       /* changes sent to players that their game hasn't picked up yet */
       pend={};if(me.admin){const g=await X.sb.from('gm_ops').select('id,uid,op');if(g.error){gmOn=!/relation|does not exist|schema cache/i.test(g.error.message||'')}else{gmOn=true;const by={};Object.keys(data.handles).forEach(k=>{const o=data.handles[k].owner;if(o)by[o]=k});(g.data||[]).forEach(r=>{const k=by[r.uid];if(k)(pend[k]=pend[k]||[]).push(r.op)})}}
       lastLoad=Date.now();
@@ -4207,7 +4209,7 @@ const ADMIN=(()=>{
     const hist=Array.isArray(P.hist)?P.hist.slice(0,20):[];
     const hs=hist.length?hist.map(e=>{const m=mt(e.m);return`<div class="phr"><span class="res ${e.r}">${e.r==='W'?'WON':e.r==='L'?'LOST':'DRAW'}</span><div><b>${e.vs?'vs '+esc(e.vs):'vs a local challenger'}</b> <span class="meta">${m?esc(m.name):''} ${e.dir==='up'?'uphill':'downhill'} · ${KIND[e.k]||'Race'}${e.when?' · '+esc(e.when):''}</span><div class="meta">${esc(e.line||'')}</div></div></div>`}).join(''):'<div class="meta">No races shared.</div>';
     const conf=confirmK===r.k?confirmBox(r):'';
-    return`<div class="card adetail"><div class="eyebrow">Touge Net profile${r.blocked?' · blocked name':''}${r.banned?' · banned device':''}</div><div class="row" style="justify-content:space-between"><h2 class="phd">@${esc(r.h)}</h2>${me.admin&&!r.blocked?`<button type="button" class="btn sm" data-adm="playas" data-k="${esc(r.k)}" title="Open a copy of this player's latest save in a new tab">Play as @${esc(r.h)}</button>`:''}</div>
+    return`<div class="card adetail"><div class="eyebrow">Touge Net profile${r.blocked?' · blocked name':''}${r.banned?' · banned device':''}</div><div class="row" style="justify-content:space-between"><h2 class="phd">@${esc(r.h)}</h2>${me.admin&&!r.blocked?`<span class="row" style="gap:8px"><span class="meta">${cloudOn===false?'Run the updated setup.sql for cloud saves':r.owner&&cloud[r.owner]?'Cloud save '+ago(cloud[r.owner]):'No cloud save yet'}</span><button type="button" class="btn sm" data-adm="playas" data-k="${esc(r.k)}" title="Open a copy of this player's latest save in a new tab">Play as @${esc(r.h)}</button></span>`:''}</div>
       ${r.eco?`<div class="kv kmoney"><span>Money <b>${yen(nn(r.eco.money))}</b></span><span>Lifetime sales <b>${yen(nn(r.eco.earned))}</b></span><span>Cred <b>${nn(r.eco.cred).toLocaleString()}</b></span><span>Drivers <b>${nn(r.eco.drivers)}</b></span><span>Cars <b>${nn(r.eco.cars)}</b></span></div>`:r.P?'<div class="kv"><span class="meta">Money and full driver stats show after this player\'s game next syncs on the new version.</span></div>':''}
       <div class="kv"><span>Crew OVR <b>${r.P?r.ovr:'–'}</b></span><span>Battles <b>${r.w}W ${r.l}L</b></span><span>All races <b>${r.rw}W ${r.rl}L</b></span><span>Game week <b>${r.wk||'–'}</b></span><span>Last seen <b>${ago(r.seen)}</b></span><span>Joined <b>${day(r.joined)}</b></span><span>Ghost notes <b>${r.inbox}</b></span><span>Device <b title="${esc(r.owner||'')}">${short(r.owner)}</b></span></div>
       ${godPanel(r)}
@@ -4220,13 +4222,13 @@ const ADMIN=(()=>{
   const pendSum=(k,f)=>(pend[k]||[]).filter(f).reduce((a,o)=>a+nn(o.v),0);
   const pmark=n=>n?`<em class="gmp" title="Sent, waiting for the player's game to pick it up">${n>0?'+':''}${n.toLocaleString()}</em>`:'';
   const gbtn=(t,v,extra,lbl)=>`<button type="button" class="gmb" data-adm="gm" data-t="${t}" data-v="${v}" ${extra||''} aria-label="${lbl}">${v>0?'▲':'▼'}</button>`;
-  function godPanel(r){if(!me.admin||!r.eco)return'';if(!gmOn)return`<div class="card agod"><b>God mode</b><span class="meta">Run the updated <code>setup.sql</code> in Supabase to switch this on.</span></div>`;
+  function godPanel(r){if(!me.admin)return'';if(!r.eco)return`<div class="card agod"><b>God mode</b><span class="meta">Appears once @${esc(r.h)} opens the latest version of the game and their profile syncs.</span></div>`;if(!gmOn)return`<div class="card agod"><b>God mode</b><span class="meta">Run the updated <code>setup.sql</code> in Supabase to switch this on.</span></div>`;
     const pm=pendSum(r.k,o=>o.t==='money'),pc=pendSum(r.k,o=>o.t==='cred');
     return`<div class="card agod"><div class="row" style="justify-content:space-between"><b>God mode</b><span class="meta">Changes reach @${esc(r.h)}'s game the next time it's open, usually within 15 seconds.</span></div>
       <div class="gmrow"><span>Money</span><b>${yen(nn(r.eco.money)+pm)}</b>${pmark(pm)}<span class="gmbs">${[-1000000,-100000,100000,1000000].map(v=>`<button type="button" class="btn sm ${v<0?'ghost':''}" data-adm="gm" data-t="money" data-v="${v}">${v>0?'+':'−'}${yenK(Math.abs(v))}</button>`).join('')}</span></div>
       <div class="gmrow"><span>Street cred</span><b>${(nn(r.eco.cred)+pc).toLocaleString()}</b>${pmark(pc)}<span class="gmbs">${[-100,-10,10,100].map(v=>`<button type="button" class="btn sm ${v<0?'ghost':''}" data-adm="gm" data-t="cred" data-v="${v}">${v>0?'+':'−'}${Math.abs(v)}</button>`).join('')}</span></div>
       <div class="gmrow"><span>Stat step</span><span class="gmbs">${[1,5,10].map(v=>`<button type="button" class="chip ${gmStep===v?'on':''}" data-adm="gmstep" data-v="${v}">±${v}</button>`).join('')}</span><span class="meta">Use the ▲▼ next to each driver stat below.</span></div></div>`}
-  function drvX(d){const x=d&&d.x&&typeof d.x==='object'?d.x:null;if(!x)return'';const st=x.st||{};
+  function drvX(d){const x=d&&d.x&&typeof d.x==='object'?d.x:null;if(!x)return me.admin?'<div class="pdx"><div class="meta gmwhy">Full stats and the ▲▼ buttons appear once this player\'s game is on v105 or later and syncs.</div></div>':'';const st=x.st||{};
     const god=me.admin&&gmOn&&x.id!=null&&sel;
     const bars=STATS.map(([k,l])=>{const pd=god?pendSum(sel,o=>o.t==='stat'&&+o.d===+x.id&&o.k===k):0,v=clamp(Math.round(nn(st[k]))+pd,1,130);
       return`<div class="xs"><span>${l}</span><b>${v}${pd?`<em class="gmp">${pd>0?'+':''}${pd}</em>`:''}</b>${god?`<span class="gmud">${gbtn('stat',-gmStep,`data-d="${x.id}" data-k="${k}"`,'Lower '+l)}${gbtn('stat',gmStep,`data-d="${x.id}" data-k="${k}"`,'Raise '+l)}</span>`:''}<i style="--w:${clamp(v,0,100)}%"></i></div>`}).join('');
@@ -4240,7 +4242,8 @@ const ADMIN=(()=>{
     const mm=x.mm&&typeof x.mm==='object'?x.mm:{},mv=(Array.isArray(x.moves)?x.moves:[]).filter(k=>MOVES[k]).map(k=>{const n=nn(mm[k]),rk=n>=10?3:n>=4?2:1;return chip(MOVES[k].name+' '+'★'.repeat(rk),'mv')}).join('');
     const kn=x.know&&typeof x.know==='object'?Object.keys(x.know).map(id=>({m:mt(id),v:nn(x.know[id])})).filter(o=>o.m&&o.v>0).sort((a,b)=>b.v-a.v):[];
     const know=kn.length?kn.map(o=>`<span>${esc(o.m.name)} <b>${Math.round(o.v)}%</b></span>`).join(''):'<span class="meta">No pass knowledge yet</span>';
-    return`<div class="pdx"><div class="xbars ${god?'god':''}">${bars}</div><div class="kv">${kv}${carKv}</div>${tr||pk||mv?`<div class="xchips">${tr}${pk}${mv}</div>`:''}<div class="kv xknow"><span class="meta">Knows</span>${know}</div></div>`}
+    const why=me.admin&&gmOn&&x.id==null?`<div class="meta gmwhy">The ▲▼ stat buttons appear once this player's game is on v105 or later and syncs.</div>`:'';
+    return`<div class="pdx">${why}<div class="xbars ${god?'god':''}">${bars}</div><div class="kv">${kv}${carKv}</div>${tr||pk||mv?`<div class="xchips">${tr}${pk}${mv}</div>`:''}<div class="kv xknow"><span class="meta">Knows</span>${know}</div></div>`}
   function confirmBox(r){return`<div class="card aconfirm" role="group" aria-label="Confirm delete">
       <b>Delete @${esc(r.h)} for good?</b>
       <label class="tog"><input type="checkbox" id="admBlock" checked> Block the name, so nobody can claim @${esc(r.h)} again</label>
@@ -4269,11 +4272,15 @@ const ADMIN=(()=>{
       else if(a==='gmstep'){gmStep=+b.dataset.v;render()}
       else if(a==='gm'){if(!sel)return;const t=b.dataset.t,v=+b.dataset.v,op=t==='stat'?{t,d:+b.dataset.d,k:b.dataset.k,v}:{t,v};b.disabled=true;
         const r=await X.sb.rpc('admin_gm',{k:sel,op});b.disabled=false;if(r.error){note(r.error.message||'That did not work.',true);return}(pend[sel]=pend[sel]||[]).push(op);render()}
-      else if(a==='playas'){const k=b.dataset.k,h=(data.handles[k]||{}).h||k;b.disabled=true;const r=await X.sb.rpc('admin_get_save',{k});b.disabled=false;
-        if(r.error){note(r.error.message||'That did not work.',true);return}
-        if(!r.data||!r.data.code){note(`No cloud save for @${h} yet. It appears once they open the new version of the game.`,true);return}
+      else if(a==='playas'){const k=b.dataset.k,h=(data.handles[k]||{}).h||k;
+        /* open the tab straight away, while the click still counts as a click, or the browser's pop-up blocker stops it after the wait */
+        const w=window.open('about:blank','_blank');if(w){try{w.document.write('<body style="background:#0b0d16;color:#c9cbd6;font:14px sans-serif;padding:24px">Loading @'+esc(h)+'\'s save…</body>')}catch(x){}}
+        b.disabled=true;const r=await X.sb.rpc('admin_get_save',{k});b.disabled=false;
+        const fail=m=>{if(w)w.close();note(m,true)};
+        if(r.error){fail(/admin_get_save|function|schema cache/i.test(r.error.message||'')?'Play as needs the updated setup.sql. Run it once in Supabase.':(r.error.message||'That did not work.'));return}
+        if(!r.data||!r.data.code){fail(`No cloud save for @${h} yet. It appears once they open the new version of the game (v105 or later) and play for a moment.`);return}
         try{localStorage.setItem('tougeTofu.playas',r.data.code);localStorage.setItem('tougeTofu.playasH',h);localStorage.setItem('tougeTofu.playasK',k);localStorage.setItem('tougeTofu.playasT',r.data.updated_at||'');localStorage.removeItem('tougeTofu.sandbox')}catch(x){note('This browser blocked storage, so the copy could not be opened.',true);return}
-        const w=window.open('index.html?playas=1','_blank');if(!w)note('Allow pop-ups for this site to open the copy.',true);else note(`Opened a copy of @${h}'s save from ${ago(Date.parse(r.data.updated_at))}.`)}
+        const url=new URL('index.html?playas=1',location.href).href;if(w){w.location.href=url}else{location.href=url;return}note(`Opened a copy of @${h}'s save from ${ago(Date.parse(r.data.updated_at))}.`)}
       else if(a==='tab'){tab=b.dataset.v;render()}
       else if(a==='reload')load();
       else if(a==='copy'){const t=el.querySelector('#admLine').textContent;try{await navigator.clipboard.writeText(t);note('Copied. Paste it into the SQL Editor and click Run.')}catch(x){const r=document.createRange();r.selectNodeContents(el.querySelector('#admLine'));const s=getSelection();s.removeAllRanges();s.addRange(r);note('Selected. Press Ctrl+C or Cmd+C to copy.')}}
