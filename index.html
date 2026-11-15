@@ -68,6 +68,11 @@ window.TOUGE_NET = window.TOUGE_NET || {
   const db={doc,collection:p=>coll(p)};
   const user={id:async()=>{try{return await session()}catch(e){return null}},can:async()=>true,isOwner:async()=>false,canEdit:async()=>false};
   window.TOUGE_NETX={sb,session};
+  /* cloud saves and admin changes (god mode). Quietly does nothing if the tables aren't set up yet. */
+  window.TOUGE_CLOUD={
+    put:async(code,h)=>{const u=await session();if(!u)return;const{error}=await sb.from('saves').upsert({uid:u,handle:h||null,code},{onConflict:'uid'});if(error&&!/relation|does not exist|schema cache/i.test(error.message||''))console.warn('Cloud save:',error.message)},
+    ops:async()=>{const u=await session();if(!u)return[];const{data,error}=await sb.from('gm_ops').select('id,op').eq('uid',u).order('id');return error?[]:(data||[])},
+    ack:async ids=>{if(!ids.length)return;await sb.from('gm_ops').delete().in('id',ids)}};
   const prev=window.claude||{};
   window.claude=Object.assign({},prev,{use:async n=>{
     if(n==='db'){try{await session();return db}catch(e){console.warn('Touge Net: anonymous sign-in failed, playing offline.',e&&e.message);return null}}
@@ -160,6 +165,7 @@ html.phone .lc .ovs{display:none}
 .tyreopt .wetg{color:var(--cyan)}.tyreopt .dryg{color:var(--sodium)}
 .tyreopt .btn.sm{padding:4px 7px;font-size:11px}
 .kpress{filter:brightness(1.35)}
+.sbxbar{display:inline-flex;align-items:center;gap:6px;align-self:center;background:#2a0f14;border:1px solid var(--brake);color:var(--ink);border-radius:999px;padding:2px 4px 2px 10px;font-family:var(--f-dot);font-size:11px;letter-spacing:.04em;white-space:nowrap;flex:none}.sbxbar b{color:var(--brake);font-weight:400}.sbxbar .btn{padding:2px 8px;font-size:11px;border-radius:999px}
 kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;background:rgba(255,255,255,.04);color:var(--ink);white-space:nowrap}
 @media (hover:hover) and (pointer:fine){#tabs .tab[data-key]{position:relative}#tabs .tab[data-key]::after{content:attr(data-key);position:absolute;top:3px;right:4px;font-family:var(--f-dot);font-size:9px;line-height:1;color:var(--dim);opacity:.8}
   .btn.kspace::after{content:'SPACE';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}
@@ -548,7 +554,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v104</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v106</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -877,7 +883,10 @@ function avatar(seed,face){const k=face?seed+'|'+JSON.stringify(face):seed;if(AV
 function avatarColors(seed,face){const o=faceOf(seed,face);return{skin:o.skin,hair:o.hair,jacket:o.jacket}}
 const AVIMG={};function avatarImg(seed,face){const k=face?seed+'|'+JSON.stringify(face):seed;if(!AVIMG[k]){const im=new Image();im.src=avatar(seed,face);AVIMG[k]=im}return AVIMG[k]}
 /* ================= state ================= */
-const SAVE='tougeTofu.v1';
+/* "Play as" from the control room: index.html?playas=1 opens a copy of another player's save in its own sandbox slot.
+   Touge Net runs as them (admins may write for any handle). Their save only changes if you press "Send", and your own save isn't touched. */
+const SANDBOX=(()=>{try{if(!new URLSearchParams(location.search).get('playas'))return null;const c=localStorage.getItem('tougeTofu.playas');return c?{code:c,h:localStorage.getItem('tougeTofu.playasH')||''}:null}catch(e){return null}})();
+const SAVE=SANDBOX?'tougeTofu.sandbox':'tougeTofu.v1';
 let S=null,TAB='crew',busy=false;
 function freshState(){return{v:1,money:30000,week:1,day:0,cred:0,phase:'pre',prod:1,qual:1,weather:'Clear',drivers:[],cars:[],nid:1,log:[],wins:0,losses:0,weekRev:0,weekCredStart:0,weekRaces:[],seenIntro:false,records:{},batches:0,earned:0}}
 function rollWeather(){const r=R(),t={Spring:[.6,.86,1],Summer:[.52,.92,1],Autumn:[.6,.78,1],Winter:[.42,.52,.64]}[SEASON()];return r<t[0]?'Clear':r<t[1]?'Wet':r<t[2]?'Fog':'Snow'}
@@ -889,7 +898,25 @@ function newGame(){
   S.weather='Clear';
   addLog('Week 1. The soybeans soaked overnight. Kenta has the keys.');
 }
-function save(){try{localStorage.setItem(SAVE,JSON.stringify(S))}catch(e){}window.NETR&&window.NETR.touch()}
+function save(){try{localStorage.setItem(SAVE,JSON.stringify(S))}catch(e){}window.NETR&&window.NETR.touch();if(!SANDBOX)cloudSave()}
+/* hosted copies back the save up to Touge Net (at most every 30 s) so the control room can open it, and pick up any changes an admin sends */
+let cloudT=0,cloudLast=0;
+function cloudSave(now){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S)return;clearTimeout(cloudT);const go=()=>{cloudLast=Date.now();Promise.resolve().then(()=>C.put(saveCode(),S.handle||null)).catch(()=>{})};
+  if(now)go();else cloudT=setTimeout(go,Date.now()-cloudLast>30000?2500:30000-(Date.now()-cloudLast))}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&cloudT){cloudSave(true)}});
+let gmBusy=false;
+async function gmPull(){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S||gmBusy||busy)return;gmBusy=true;
+  try{const ops=await C.ops();if(ops.length){const done=[];
+    let swapped=false;
+    for(const r of ops){const o=r.op||{},v=Math.round(+o.v||0);
+      if(o.t==='replace'&&typeof o.code==='string'){try{const keep={};['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>{if(S[k]!==undefined)keep[k]=S[k]});
+        const n=Object.assign(freshState(),readCode(o.code));delete n.sbx;['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>delete n[k]);S=Object.assign(n,keep);normDrivers();if(S.phase==='race')S.phase='post';closeModal();MAP.loadWorld('usuzumi');lastView='';swapped=true}catch(e){}}
+      else if(o.t==='money')S.money=Math.max(0,S.money+v);
+      else if(o.t==='cred'){S.cred=Math.max(0,S.cred+v)}
+      else if(o.t==='stat'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&STATS.some(([k])=>k===o.k))d.stats[o.k]=clamp((d.stats[o.k]||0)+v,1,130)}
+      done.push(r.id)}
+    save();renderAll();await C.ack(done);if(swapped){toast('Your save was updated by the Touge Net admin.');cloudSave(true)}}}catch(e){}gmBusy=false}
+setInterval(gmPull,15000);
 function load(){try{const t=localStorage.getItem(SAVE);if(t){const s=JSON.parse(t);if(s&&s.v===1)return s}}catch(e){}return null}
 function addLog(m){S.log.push({t:`W${S.week} ${DAYS[S.day]}`,m});if(S.log.length>60)S.log.shift()}
 const carById=id=>S.cars.find(c=>c.id===id);
@@ -2910,7 +2937,7 @@ const NET=(()=>{
     car:c?{model:c.model,c1:c.c1,c2:c.c2,paint:c.paint||'',look:c.look||null,pi:spec(c).pi}:null,x:drvExtra(d,c)}})}
   /* the fuller picture of a driver, read by the control room (admin.html); the game itself ignores it */
   function drvExtra(d,c){const st={};STATS.forEach(([k])=>st[k]=Math.round(d.stats[k]||0));const kn={};Object.keys(d.know||{}).forEach(m=>{const v=Math.round(d.know[m]||0);if(v)kn[m]=v});
-    return{st,xp:Math.round(d.xp||0),runs:d.runs||0,wins:d.wins||0,losses:d.losses||0,wage:d.wage||0,perks:(d.perks||[]).slice(0,8),moves:movesOf(d),mm:Object.assign({},d.mm||{}),know:kn,
+    return{id:d.id,st,xp:Math.round(d.xp||0),runs:d.runs||0,wins:d.wins||0,losses:d.losses||0,wage:d.wage||0,perks:(d.perks||[]).slice(0,8),moves:movesOf(d),mm:Object.assign({},d.mm||{}),know:kn,
       car:c?{cond:Math.round(c.cond||0),km:Math.round(c.km||0),tg:c.tyre?c.tyre.grade:0,tw:c.tyre?Math.round(c.tyre.wear):0}:null}}
   /* ---- ratings and snapshots ---- */
   function rateOf(d){const c=carById(d.carId);return dskill(d)*100*.65+(c?spec(c).pi/10:0)*.35}
@@ -2968,7 +2995,7 @@ const NET=(()=>{
   }
   /* a save may only use a handle its own device token registered; anything else (a copied save, another browser) has to pick its own */
   let verified='',lostH=null;
-  async function verifyOwn(){if(!ready||ro||!S.hkey||S.hpend)return;const k=S.hkey,mark=k+'|'+S.dev;if(verified===mark)return;verified=mark;
+  async function verifyOwn(){if(SANDBOX||!ready||ro||!S.hkey||S.hpend)return;const k=S.hkey,mark=k+'|'+S.dev;if(verified===mark)return;verified=mark;
     try{const dh=await sha(devTok()),g=await db.doc('handles/'+k).get(),x=g.exists?g.data():null;if(S.hkey!==k)return;
       if(!x||!x.h){const r=await claim(S.handle);if(!r.ok){lostH=S.handle;S.handle=null;S.hkey=null;save();asked=false;subscribe();render()}return}
       if(x.dh!==dh){lostH=S.handle;addLog(`@${S.handle} belongs to another player, so this crew needs its own handle.`);S.handle=null;S.hkey=null;save();asked=false;subscribe();render();return}
@@ -3005,7 +3032,7 @@ const NET=(()=>{
     }catch(e){const w=wErr(e);if(ro){S.handle=h;S.hkey=k;S.hpend=true;save();render();return{ok:true,local:true}}return{ok:false,why:w}}
   }
   function suggest(){const d=S.drivers[0];return((d&&d.first)||'Kenta')+(CARS[(carById(d&&d.carId)||{}).model]||{code:'86'}).code.replace(/[^A-Za-z0-9]/g,'').slice(0,4)}
-  function ask(){
+  function ask(){if(SANDBOX)return;
     const old=S.batches>0||S.week>1;
     modal(`<div class="eyebrow">Touge Net · 対戦</div><h2>${old?'The street wants a name':'Pick your handle'}</h2>
     ${lostH?`<p class="note" style="color:var(--brake)">@${esc(lostH)} is already used by another player or another save, so this crew needs its own handle.</p>`:''}<p>${old?'You\'ve been running tofu for a while without a name on the street. ':''}Your handle is how other players find you, add you as a friend and challenge you. One per player, no two alike.</p>
@@ -3971,13 +3998,27 @@ const TUT=(()=>{
     replay:()=>{S.tut={s:0,tips:{}};entered=-1;tip=null;save();if(TAB!=='crew'){TAB='crew';renderAll()}},allTips:()=>Object.fromEntries(TIPS.map(x=>[x.k,1]))};
 })();
 
+/* sandbox: send this copy back as the player's real save (checks they haven't played since the copy was taken) */
+async function sbxSend(force){const X=window.TOUGE_NETX,h=S.sbx||SANDBOX.h;let k='',base='';try{k=localStorage.getItem('tougeTofu.playasK')||'';base=localStorage.getItem('tougeTofu.playasT')||''}catch(e){}
+  if(!X||!k){toast('This copy can only be sent from the hosted control room.');return}
+  if(!force){let newer=false,when='';try{const g=await X.sb.rpc('admin_get_save',{k});if(g.data&&g.data.updated_at&&base&&Date.parse(g.data.updated_at)>Date.parse(base)+2000){newer=true;when=new Date(g.data.updated_at).toLocaleString()}}catch(e){}
+    modal(`<div class="eyebrow">Sandbox</div><h2>Send this save to @${esc(h)}?</h2>
+      ${newer?`<p class="wxnote" style="color:var(--brake)">@${esc(h)} has played since you took this copy (their last save: ${esc(when)}). Sending will overwrite that progress.</p>`:''}
+      <p>Their game swaps to this save the next time it's open, usually within 15 seconds. Their handle and Touge Net record stay as they are.</p>
+      <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn ${newer?'race':'primary'}" id="sbxGo">${newer?'Overwrite their progress':'Send'}</button></div>`);
+    $('#sbxGo').onclick=()=>{closeModal();sbxSend(true)};return}
+  const c=JSON.parse(JSON.stringify(S));delete c.sbx;const b=new TextEncoder().encode(JSON.stringify(c));let bin='';for(let i=0;i<b.length;i+=8192)bin+=String.fromCharCode.apply(null,b.subarray(i,i+8192));
+  const r=await X.sb.rpc('admin_gm',{k,op:{t:'replace',code:'TTT1:'+btoa(bin)}});
+  if(r.error){toast('Could not send: '+(r.error.message||'error'));return}
+  try{localStorage.setItem('tougeTofu.playasT',new Date().toISOString())}catch(e){}toast(`Sent. @${h}'s game switches to this save within about 15 seconds of being open.`)}
 /* ================= boot ================= */
 function boot(data){
-  S=(data&&data.S)||load();if(!S){newGame()}normDrivers();if(S.phase==='race')S.phase='post';
+  if(SANDBOX){try{S=load();if(!S||S.sbx!==(SANDBOX.h||'player')){S=Object.assign(freshState(),readCode(SANDBOX.code));S.sbx=SANDBOX.h||'player'}S.tut={s:-1,tips:TUT.allTips()}}catch(e){S=null}}
+  else S=(data&&data.S)||load();if(!S){newGame()}normDrivers();if(S.phase==='race')S.phase='post';
   window.claude?.hot?.snapshot?.(()=>({S}));
   const go=()=>{
     MAP.init($('#map'));{const sb=$('#sndBtn');if(sb)sb.classList.toggle('on',AUDIO.on());const bb=$('#bgmBtn');if(bb)bb.classList.toggle('on',MUSIC.on());const so=$('#slowBtn');if(so)so.classList.toggle('on',MAP.slowOn())}MAP.setDarkNow(S.phase==='post'?.12:1);
-    TUT.init();renderAll();NET.init();
+    TUT.init();renderAll();if(SANDBOX){const b=document.createElement('span');b.className='sbxbar';b.title='A copy of their save from the cloud. Touge Net runs as them. Their save only changes when you press Send, and your own game is not touched.';b.innerHTML=`Sandbox · <b>@${esc(S.sbx||SANDBOX.h)}</b> <button class="btn sm" id="sbxReset" title="Throw away changes and reload their save">Reload</button><button class="btn sm primary" id="sbxSend" title="Replace their real save with this one">Send to @${esc(S.sbx||SANDBOX.h)}</button>`;b.querySelector('#sbxSend').onclick=e=>{e.stopPropagation();sbxSend(false)};($('.brand')||document.body).appendChild(b);b.querySelector('#sbxReset').onclick=e=>{e.stopPropagation();try{localStorage.removeItem('tougeTofu.sandbox')}catch(x){}location.reload()};document.title='Sandbox: @'+(S.sbx||SANDBOX.h);NET.init()}else{NET.init();setTimeout(gmPull,4000);setTimeout(()=>cloudSave(),8000)}
   };
   const fr=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1500))]):Promise.resolve();
   fr.then(go,go);
