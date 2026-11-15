@@ -173,6 +173,7 @@ kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(
   .btn.sm.kspace::after{font-size:8px;margin-left:6px;padding:0 3px}}
 .keeph{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mute);margin-top:8px;cursor:pointer}.keeph input{margin-top:2px;accent-color:var(--sodium)}.keeph b{color:var(--ink)}
 .wxnote{color:var(--cyan)!important;font-size:13px}
+.meta.leafy{color:#e0893a}
 #coach{position:fixed;z-index:72;width:min(330px,calc(100vw - 24px));background:rgba(10,14,30,.97);border:1px solid var(--sodium);border-radius:12px;padding:12px 14px 12px;box-shadow:0 14px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px;transition:left .18s ease,top .18s ease}
 #coach[hidden],#coachRing[hidden]{display:none}
 #coach.center{width:min(420px,calc(100vw - 24px));padding:18px 20px}
@@ -555,7 +556,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v109</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v116</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -670,6 +671,7 @@ const CARS={
   gc8_22b:{name:'Impreza 22B STi',code:'22B',maker:'Subaru',hp:280,kg:1270,drive:'AWD',hand:79,price:8500000,legend:600,paint:['Sonic Blue Mica','#2b56b8'],note:'400 built for Subaru\'s 40th birthday. Widebody, 2.2-litre boxer, a WRC car for the street.'},
   squattro:{name:'Sport Quattro',code:'SQ',maker:'Audi',hp:306,kg:1300,drive:'AWD',hand:72,price:9000000,legend:700,paint:['Tornado Red','#c62a22'],note:'Short-wheelbase Group B road car. Five-cylinder turbo howl, savage on hairpins.'},
   bnr34:{name:'Skyline GT-R V-Spec II Nur',code:'BNR34',maker:'Nissan',hp:280,kg:1560,drive:'AWD',hand:74,price:9500000,legend:700,paint:['Millennium Jade','#9fb3a2'],note:'The ultimate RB26 with the N1 engine. Heavy, clever and monstrous out of corners.'},
+  e10:{name:'E10',code:'E10',maker:'Subaru',hp:52,kg:880,drive:'AWD',hand:48,price:400000,cargo:4,noCpu:1,modRef:700000,sleeper:{hp:340,hand:76},paint:['Feather White','#ecebe3'],note:'A little cab-over minivan from the Sambar family, with a three-cylinder under the floor and part-time four-wheel drive. Painfully slow, but it carries four times the tofu of anything else. Local rivals never bring one to the touge. The old men at the shop say a fully built one is something else entirely.'},
   nsxr:{name:'NSX-R',code:'NA1',maker:'Honda',hp:280,kg:1230,drive:'MR',hand:86,price:10000000,legend:800,paint:['Championship White','#f2f0e6'],note:'Stripped, stiffened and honed at Suzuka. The sharpest car on any pass.'},
 };
 /* Gearboxes: ratios, final drive, driven tyre, rev limit, approximate top speed with the limiter removed */
@@ -717,15 +719,22 @@ const GB={
   squattro:{g:[3.50,2.08,1.36,0.97,0.76],fd:3.875,t:[225,50,15],rl:6900,vmax:250},
   bnr34:{g:[3.827,2.360,1.685,1.312,1.000,0.793],fd:3.545,t:[245,40,18],rl:8000,vmax:280},
   nsxr:{g:[3.071,1.952,1.400,1.033,0.771],fd:4.235,t:[225,50,16],rl:8000,vmax:270},
+  e10:{g:[3.545,2.111,1.448,1.088,0.825],fd:5.125,t:[155,80,12],rl:6500,vmax:135},
+  /* the E10 once every part is maxed: a turbo boxer swapped in under the floor, close-ratio box, proper wheels */
+  e10_x:{g:[3.166,1.882,1.296,0.972,0.738],fd:4.111,t:[205,50,15],rl:7800,vmax:240},
 };
 const tyreCirc=t=>Math.PI*(t[2]*25.4+2*t[0]*t[1]/100)/1000;
+/* every part maxed (the tofu cradle doesn't count) */
+const fullSpec=c=>!!c&&MODS.every(md=>md.k==='cradle'||(c[md.k]||0)>=md.max);
+const isSleeper=c=>!!(c&&CARS[c.model]&&CARS[c.model].sleeper&&fullSpec(c));
+const gbKey=c=>isSleeper(c)?c.model+'_x':c.model;
 function gearSpeed(model,i,rpm){const b=GB[model];return rpm*tyreCirc(b.t)*60/(b.g[i]*b.fd*1000)}
-function topSpeed(c){const b=GB[c.model];const geared=gearSpeed(c.model,b.g.length-1,b.rl);const free=Math.min(geared,b.vmax*[1,1.03,1.06,1.1][c.engine]);const lim=b.kei?140:180;return{top:Math.round(c.engine>=2?free:Math.min(lim,free)),limited:c.engine<2&&free>lim,free:Math.round(free),lim}}
+function topSpeed(c){const gk=gbKey(c),b=GB[gk];const geared=gearSpeed(gk,b.g.length-1,b.rl);const free=Math.min(geared,b.vmax*[1,1.03,1.06,1.1][c.engine]);const lim=b.kei?140:180;return{top:Math.round(c.engine>=2?free:Math.min(lim,free)),limited:c.engine<2&&free>lim,free:Math.round(free),lim}}
 const PAINTS=[['Super White','#eeede6'],['Super Red','#c8262c'],['Black','#17181c'],['Silver','#aeb3ba'],['Brilliant Blue','#2353ad'],['Sunburst Yellow','#e9c12a'],['Midnight Purple','#3e2659'],['Lime Green','#7fbf3a'],['Rally Blue','#1c3f94'],['Pearl Orange','#e0742a'],['British Green','#1f4a35'],['Gunmetal','#50555e']];
 // turbocharged models (shared by the redline maths and the engine sound)
-const TURBO_CARS={rps13:1,s13:1,fc3s:1,sw20:1,s15:1,cn9a:1,gc8:1,fd3s:1,bnr32:1,jza80:1,escort:1,st205:1,delta:1,cp9a:1,spiritr:1,t16:1,rar:1,gc8_22b:1,squattro:1,bnr34:1,az1:1};
+const TURBO_CARS={e10_x:1,rps13:1,s13:1,fc3s:1,sw20:1,s15:1,cn9a:1,gc8:1,fd3s:1,bnr32:1,jza80:1,escort:1,st205:1,delta:1,cp9a:1,spiritr:1,t16:1,rar:1,gc8_22b:1,squattro:1,bnr34:1,az1:1};
 // redline for one car: the model's real redline, raised by engine work. A built AE86 becomes a high-revving race 4A-GE.
-function redline(c){const b=GB[c.model].rl,e=c.engine||0;if((c.model==='ae86'||c.model==='ae86l')&&e>=3)return 11000;return b+(e>=3?(TURBO_CARS[c.model]?300:500):e>=2?200:0)}
+function redline(c){const b=GB[gbKey(c)].rl,e=c.engine||0;if((c.model==='ae86'||c.model==='ae86l')&&e>=3)return 11000;return b+(e>=3?(TURBO_CARS[c.model]?300:500):e>=2?200:0)}
 const MODS=[
   {k:'engine',name:'Engine',max:3,labels:['Stock','Intake and exhaust','Cams, ECU tune, limiter off','Built motor'],pct:[.07,.16,.32],min:[30000,75000,160000]},
   {k:'susp',name:'Suspension',max:3,labels:['Stock','Street coilovers','Adjustable coilovers','Full touge setup'],pct:[.05,.11,.22],min:[25000,60000,130000]},
@@ -791,7 +800,7 @@ const MOVES={
   late:{name:'Late Brake',jp:'突っ込み',col:'#ff4d4d',where:'hairpins',req:'Braking 70',ok:d=>d.stats.brk>=70||(hasT(d,'latebrake')&&d.stats.brk>=58),desc:'Brakes impossibly late into a hairpin and dives up the inside.'},
   gutter:{name:'Gutter Run',jp:'溝走り',col:'#ffb03b',where:'hairpins with a drain',req:'Cornering 72, Drifting 65',ok:d=>d.stats.crn>=72&&d.stats.dft>=65,desc:'Hooks the inside wheels into the hairpin drain to carry speed no tyre could.'},
   feint:{name:'Feint Drift',jp:'フェイント',col:'#e2b941',where:'S-bends',req:'Drifting 78',ok:d=>d.stats.dft>=78,desc:'Flicks the car the wrong way, then whips through the S-bends on a stolen line.'},
-  lights:{name:'Lights Out',jp:'無灯火',col:'#7fd4ff',where:'hairpin stacks',req:'Focus 78, Cornering 70',ok:d=>d.stats.foc>=78&&d.stats.crn>=70,desc:'Kills the headlights so the leader loses you in the mirror, then strikes. Once a race, needs a run of hairpins. In fog it works at any hairpin, twice a race, and lands far more often.'},
+  lights:{name:'Lights Out',jp:'無灯火',col:'#7fd4ff',where:'hairpin stacks',req:'Focus 78, Cornering 70',ok:d=>d.stats.foc>=78&&d.stats.crn>=70,desc:'Kills the headlights so the leader loses you in the mirror, then strikes. Once a race, needs a run of hairpins. In fog it works at any hairpin, twice a race, and lands far more often. In the wet or the damp, and on autumn leaves, it\'s a gamble: you can learn the road by heart, but not tonight\'s puddles or leaves, and a blind car can spin or go off.'},
   outside:{name:'Around the Outside',jp:'アウトから',col:'#cfeeff',where:'sweepers',req:'Cornering 85',ok:d=>d.stats.crn>=85,desc:'Holds full commitment around the outside of a fast sweeper.'},
   block:{name:'Iron Wall',jp:'鉄壁',col:'#9aa0ff',where:'defence',req:'Focus 82, Braking 72',ok:d=>d.stats.foc>=82&&d.stats.brk>=72,desc:'Covers the inside line so attacks rarely stick.'},
 };
@@ -937,19 +946,19 @@ const driverOfCar=id=>S.drivers.find(d=>d.carId===id);
 
 /* ================= models ================= */
 function spec(c){
-  const m=CARS[c.model];
-  const hp=m.hp*[1,1.12,1.25,1.42][c.engine];
+  const m=CARS[c.model],sl=isSleeper(c);
+  const hp=sl?m.sleeper.hp:m.hp*[1,1.12,1.25,1.42][c.engine];
   const kg=m.kg-[0,45,95][c.weight];
   const pw=hp/kg*1000;
   const condF=.75+.25*(c.cond??100)/100;
   const powerN=clamp((pw-110)/240,0,1)*condF;
-  const handN=clamp(m.hand/100+c.susp*.06+c.lsd*.03+c.weight*.015,0,1)*condF;
+  const handN=clamp((sl?m.sleeper.hand:m.hand)/100+c.susp*.06+c.lsd*.03+c.weight*.015,0,1)*condF;
   const wearF=1-Math.max(0,c.tyre.wear-45)/110;
   const gripN=clamp(TYRES[c.tyre.grade].grip*wearF+c.susp*.025+(m.drive==='AWD'?.04:0),0,1);
   const brakeN=clamp(.42+c.brakes*.17+(1100-kg)/2500,0,1);
   const pi=Math.round((powerN*.38+handN*.24+gripN*.24+brakeN*.14)*1000);
   const ts=topSpeed(c);
-  return{hp:Math.round(hp),kg,pw,powerN,handN,gripN,brakeN,drive:m.drive,lsd:c.lsd,pi,top:ts.top,limited:ts.limited,gears:GB[c.model].g.length};
+  return{hp:Math.round(hp),kg,pw,powerN,handN,gripN,brakeN,drive:m.drive,lsd:c.lsd,pi,top:ts.top,limited:ts.limited,gears:GB[gbKey(c)].g.length,sleeper:sl,cargo:m.cargo||1};
 }
 function dskill(d){const s=d.stats;return(s.brk*.18+s.crn*.22+s.dft*.12+s.ht*.16+s.thr*.18+s.foc*.14)/100}
 function levelInfo(xp){const lv=Math.floor(Math.sqrt(xp/60))+1,a=(lv-1)**2*60,b=lv*lv*60;return{lv,pct:Math.round((xp-a)/(b-a)*100)}}
@@ -965,7 +974,7 @@ function giveXP(d,xp,notes){
   const before=levelInfo(d.xp).lv;d.xp+=xp;const after=levelInfo(d.xp).lv;
   if(after>before){for(let i=0;i<after-before;i++){const ks=STATS.map(s=>s[0]).sort(()=>R()-.5).slice(0,2);ks.forEach(k=>d.stats[k]=Math.max(d.stats[k],Math.min(99,d.stats[k]+(1.5+R()*.8)*LVUP_K*(d.stats[k]>85?.5:1))))}notes.push(`Level ${after}!`);if(PERK_LV.some(l=>l>before&&l<=after)){notes.push('Perk ready');addLog(`${d.first} reached level ${after}. A new perk is ready in the Crew tab.`);toast(`${d.first} can pick a new perk`)}}
 }
-function modCost(c,mk,lvl){const md=MODS.find(m=>m.k===mk);if(mk==='cradle')return 25000;const ref=clamp(CARS[c.model].price,300000,3000000);return Math.round(Math.max(md.min[lvl],ref*md.pct[lvl])/1000)*1000}
+function modCost(c,mk,lvl){const md=MODS.find(m=>m.k===mk);if(mk==='cradle')return 25000;const ref=CARS[c.model].modRef||clamp(CARS[c.model].price,300000,3000000);return Math.round(Math.max(md.min[lvl],ref*md.pct[lvl])/1000)*1000}
 function repairCost(c){const ref=Math.max(CARS[c.model].price,300000);return Math.round((100-c.cond)*Math.max(900,ref*.0012)/100)*100}
 function carValue(c){const m=CARS[c.model];let v=Math.max(m.price*.6,90000);MODS.forEach(md=>{for(let l=0;l<c[md.k];l++)v+=modCost(c,md.k,l)*.4});return Math.round(v*(.6+.4*c.cond/100)/1000)*1000}
 
@@ -1000,6 +1009,7 @@ function simDelivery(d,c,w){
   const perf=drv*.5+car*.5;
   let wt=W.time;if(w==='Wet'&&hasT(d,'rain'))wt=1.02;if(w==='Damp'&&hasT(d,'rain'))wt=1.01;if(w==='Wet'&&sp.drive==='AWD')wt-=.03;if(w==='Damp'&&sp.drive==='AWD')wt-=.015;if(w==='Fog'&&hasT(d,'fog'))wt=1;
   const prof=MAP.profile(d,c,w);let time=prof.time*(1+(R()-.5)*.025);
+  {const gl=MAP.gripLoss(d,c,w);if(gl.leafN&&gl.leaf>=.15)notes.push(`Wet leaves in ${gl.leafN} spot${gl.leafN>1?'s':''} cost ${gl.leaf.toFixed(1)}s`);if(gl.cold>=.15)notes.push(`Cold tyres on the first corners cost ${gl.cold.toFixed(1)}s`)}
   const smooth=(st.ht*.3+st.thr*.3+st.brk*.25+st.foc*.15)/100;
   let dmg=19*Math.pow(Math.max(0,1-smooth),1.6)*(1-.1*c.susp)*(c.cradle?.55:1)*W.dmg*(hasT(d,'steady')?.75:1)*(hasT(d,'hot')?1.15:1)*(.85+R()*.3);
   let mist=.07*(1-st.foc/100)*W.mist*(hasT(d,'ice')?.6:1);
@@ -1010,7 +1020,7 @@ function simDelivery(d,c,w){
   const wear=4.2*TYRES[c.tyre.grade].wear*(.6+sp.powerN)*(1+st.dft/250)*(hasT(d,'gear')?.7:1)*(hasP(d,'tyre')?.75:1);
   const fuel=Math.round(sp.hp*3.2/10)*10;
   const xp=Math.round((30+perf*45)*(hasT(d,'owl')?1.2:1));
-  const res={time:dnf==null?cumReal[cumReal.length-1]:time,dmg,wear,fuel,xp,perf,notes,sp,prof,incs,dnf,cumReal,tow:incs.reduce((s,x)=>s+(x.tow||0),0)};priceOf(res);return res;
+  const res={time:dnf==null?cumReal[cumReal.length-1]:time,dmg,wear,fuel,xp,perf,notes,sp,prof,incs,dnf,cumReal,cargo:CARS[c.model].cargo||1,tow:incs.reduce((s,x)=>s+(x.tow||0),0)};if(res.cargo>1)notes.push(`Carried ${res.cargo} batches`);priceOf(res);return res;
 }
 
 /* ================= traffic: following, passing, contact ================= */
@@ -1034,11 +1044,14 @@ function traffic(cars,T,race){
     [a,b].forEach((s,n)=>{const x={type:'hit',i:Math.floor(s.p),cond:4+R()*8,tofu:5+R()*6,with:(n?a:b).c.d.first};s.stun=.6+R()*1.0;if(n===1&&R()<.2){s.stun+=2.2;x.cond+=4;x.spun=true}if(Math.floor(s.p)>=N-2)x.i=N-3;s.c.incs.push(x)});
     ev.push({type:'hit',t,i,by:a.k,on:b.k});endAlong(key(a.k,b.k));a.behind=-2;b.behind=-2;
   }
+  /* Lights Out in the dark: the driver knows the road by heart, but not tonight's puddles or where the leaves have piled up */
+  function blindRisk(s,j,at){if(!race)return{r:0};const wk=wetK(WX())*(hasT(s.c.d,'rain')?.75:1),LM=MAP.leavesOn(T);let lf=0;if(LM)for(let k=j;k<=Math.min(N-1,at+25);k++)lf+=LM[k];
+    const r=Math.min(.7,.55*wk+(LM?.12:0)+(lf?.2+Math.min(.15,lf*.04):0));return{r,why:lf&&(!wk||R()<.5)?'leaves':wk?'water':'leaves'}}
   function battle(s,o){
     const FOGGY=race&&WX()==='Fog';
     const j=Math.floor(s.p),M=s.c.moves,opts=[],tk=TACTICS[s.c.tac||'bal'];
     const h=T.hair.find(x=>x-j>=5&&x-j<=13);
-    if(h!=null&&!s.tried.has(h)){s.tried.add(h);if(M.has('gutter')&&gset.has(h))opts.push(['gutter',h,1.3]);if(M.has('late'))opts.push(['late',h,1]);if(M.has('lights')&&(s.lightsUsed||0)<(FOGGY?2:1)&&(FOGGY||T.hair.filter(x=>x>=h&&x<h+90).length>=2))opts.push(['lights',h,FOGGY?3.2:1.6])}
+    if(h!=null&&!s.tried.has(h)){s.tried.add(h);if(M.has('gutter')&&gset.has(h))opts.push(['gutter',h,1.3]);if(M.has('late'))opts.push(['late',h,1]);if(M.has('lights')&&(s.lightsUsed||0)<(FOGGY?2:1)&&(FOGGY||T.hair.filter(x=>x>=h&&x<h+90).length>=2))opts.push(['lights',h,(FOGGY?3.2:1.6)*(1-.6*blindRisk(s,j,h).r)])}
     const f=T.feats.find(f=>f.type==='scurve'&&f.i0-j>=2&&f.i0-j<=9);if(f&&!s.tried.has('f'+f.i0)){s.tried.add('f'+f.i0);if(M.has('feint'))opts.push(['feint',(f.i0+f.i1)>>1,1])}
     const sw=T.feats.find(f=>f.type==='sweeper'&&f.i0-j>=2&&f.i0-j<=9);if(sw&&!s.tried.has('s'+sw.i0)){s.tried.add('s'+sw.i0);if(M.has('outside'))opts.push(['outside',(sw.i0+sw.i1)>>1,1])}
     const vO=(o.p-o.pp)/dt*.2*T.mpt;if(maxAhead[j]<.13&&vO>21&&M.has('slip')&&!s.tried.has('st'+(j/45|0))){s.tried.add('st'+(j/45|0));opts.push(['slip',j+18,1])}
@@ -1052,6 +1065,9 @@ function traffic(cars,T,race){
     if(mv==='outside'&&race){const wk=wetK(WX());if(wk)p=clamp(p+.13*wk,.06,.94)}
     if(mv==='slip'){const a=spec(s.c.c).powerN,b=spec(o.c.c).powerN;p*=clamp(.55+a/(b||.01)*.5,.5,1.25)}
     if(mv==='lights')s.lightsUsed=(s.lightsUsed||0)+1;
+    /* blind and fast into a hazard nobody memorised */
+    if(mv==='lights'){const B=blindRisk(s,j,at);if(B.r&&R()<B.r){const bad=R()<.3,x=mkInc(bad?'off':'spin',Math.min(N-3,j+1));x.blind=B.why;s.stun=bad?6+R()*4:3+R()*2.5;x.loss=0;s.c.incs.push(x);
+      s.c.fx.push({type:mv,t0:t,t1:t+2.6,at,ok:false});ev.push({type:'move',move:mv,ok:false,t,i:j,at,by:s.k,on:o.k,blind:B.why,bad});s.mvCool=12;s.press=0;return false}}
     const ok=R()<p,dur={gutter:2.8,late:2.6,lights:6+(MR-1),feint:2.8,outside:3.4,slip:3.2}[mv];
     s.c.fx.push({type:mv,t0:t,t1:t+dur,at,ok});ev.push({type:'move',move:mv,ok,t,i:j,at,by:s.k,on:o.k});
     s.mvCool=ok?16:9;s.press=ok?0:s.press;
@@ -1112,7 +1128,7 @@ function traffic(cars,T,race){
   st.forEach(s=>{const a=s.act,cum=s.c.cum;let last=0;for(let j=0;j<N;j++){if(a[j]<0)a[j]=a[last]+(cum[j]-cum[last]);else last=j}const rel=new Float32Array(N);for(let j=0;j<N;j++)rel[j]=a[j]-s.c.start;s.c.rel=rel});
   return ev;
 }
-function priceOf(res){const par=MAP.par();res.dmg=clamp(res.dmg,.2,res.dnf!=null?100:60);res.fresh=clamp(1.10-.25*(res.time-par.fast)/((par.slow-par.fast)||1),.72,1.12);const credB=1+Math.min(.2,S.cred/1000);let price=QUAL[S.qual-1].price*res.fresh*(1-res.dmg/100)*credB;res.notes=res.notes.filter(n=>n!=="Chef's seal");res.perfect=res.dnf==null&&res.dmg<1.5&&res.time<par.fast*1.06;if(res.perfect){price*=1.15;res.notes.push("Chef's seal")}if(res.dnf!=null)price=0;res.price=Math.round(price)}
+function priceOf(res){const par=MAP.par();res.dmg=clamp(res.dmg,.2,res.dnf!=null?100:60);res.fresh=clamp(1.10-.25*(res.time-par.fast)/((par.slow-par.fast)||1),.72,1.12);const credB=1+Math.min(.2,S.cred/1000);let price=QUAL[S.qual-1].price*res.fresh*(1-res.dmg/100)*credB;res.notes=res.notes.filter(n=>n!=="Chef's seal");res.perfect=res.dnf==null&&res.dmg<1.5&&res.time<par.fast*1.06;if(res.perfect){price*=1.15;res.notes.push("Chef's seal")}if(res.dnf!=null)price=0;res.price=Math.round(price*(res.cargo||1))}
 function trafficDelivery(list,T){
   const N=T.len,cars=list.map(r=>({cum:r.cumReal,start:r.start,dnf:r.dnf,d:r.d,c:r.c,incs:r.incs,ghost:!!r.ghost})),free=list.map(r=>r.cumReal[N-1]);
   const nInc=list.map(r=>r.incs.length);list.tev=traffic(cars,T,false);
@@ -1140,7 +1156,7 @@ function genOpp(m,dir,drv){
   const lvl=tg?clamp((tg.d+(r()-.5)*7)/100,.08,1):clamp(m.diff+Math.min(.24,(S.week-1)*.01)+(r()-.5)*.06,.08,.97);
   const stats={};STATS.forEach(([k])=>stats[k]=clamp(lvl*100+(r()-.5)*22,6,99));
   for(let k=0;k<3;k++){const sh=lvl*100-dskill({stats})*100;STATS.forEach(([q])=>stats[q]=clamp(stats[q]+sh,6,99))}
-  const keys=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&k!=='ae86'&&!GB[k].kei).sort((a,b)=>CARS[a].price-CARS[b].price);
+  const keys=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&!CARS[k].noCpu&&k!=='ae86'&&!GB[k].kei).sort((a,b)=>CARS[a].price-CARS[b].price);
   const legs=Object.keys(CARS).filter(k=>CARS[k].legend&&CARS[k].legend>=300);
   let model,tune;
   if(tg){/* match the car on what it does (power, handling, brakes), not just its PI, so an uphill doesn't throw up a car with far more power */
@@ -1190,7 +1206,7 @@ function sectorTime(type,d,sp,dir,w,rr,isRace,scale){
 const AUDIO=(()=>{
   let ac=null,master=null,noiseBuf=null,muted=false,eng=null,riv=null,sq=null,wh=null,breeze=null,lastThr=0,lastBov=0,nextChirp=0;
   try{muted=localStorage.getItem('tougeTofu.snd')==='0'}catch(e){}
-  const TYPE={zn6g:'boxer',zn6gt:'boxer',zn6gr:'boxer',gr86rc:'boxer',gr86rz:'boxer',grmn86:'boxer',fc3s:'rotary',fd3s:'rotary',spiritr:'rotary',gc8:'boxer',gc8_22b:'boxer',rar:'boxer',bnr32:'six',bnr34:'six',jza80:'six',stratos:'six',rs964:'six',nsxr:'six',squattro:'five',az1:'three',beat:'three'};
+  const TYPE={zn6g:'boxer',zn6gt:'boxer',zn6gr:'boxer',gr86rc:'boxer',gr86rz:'boxer',grmn86:'boxer',fc3s:'rotary',fd3s:'rotary',spiritr:'rotary',gc8:'boxer',gc8_22b:'boxer',rar:'boxer',bnr32:'six',bnr34:'six',jza80:'six',stratos:'six',rs964:'six',nsxr:'six',squattro:'five',az1:'three',beat:'three',e10:'three',e10_x:'boxer'};
   const TURBO=TURBO_CARS;
   function unlock(){
     if(ac){if(ac.state==='suspended')ac.resume().catch(()=>{});return}
@@ -1739,25 +1755,55 @@ const MAP=(()=>{
   /* ---------- cars ---------- */
   function rr2(c,x,y,w,h,r,col){c.fillStyle=col;c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.fill()}
   const CL=.36,CW=.17;
+  /* top-down shapes: proportions from each car's real length and width, and the cabin placed by layout.
+     Positions are fractions of half the length, +1 is the nose. Long-bonnet roadsters sit the cockpit back, mid-engines push it forward, the van is nearly all cabin. */
+  const TOPL={coupe:{ws:[.19,.42],roof:[-.39,.19],rw:[-.61,-.39]},fastback:{ws:[.2,.42],roof:[-.3,.2],rw:[-.74,-.3]},hatch:{ws:[.22,.45],roof:[-.62,.22],rw:[-.84,-.62]},sedan:{ws:[.2,.42],roof:[-.35,.2],rw:[-.56,-.35]},
+    roadster:{ws:[.02,.2],ck:[-.44,.02],open:1},mid:{ws:[.4,.62],roof:[-.12,.4],rw:[-.26,-.12],eng:[-.86,-.3]},rr:{ws:[.22,.44],roof:[-.3,.22],rw:[-.5,-.3],grille:[-.9,-.6]},
+    kei:{ws:[.36,.58],roof:[-.16,.36],rw:[-.3,-.16],eng:[-.82,-.36]},keiopen:{ws:[.3,.48],ck:[-.32,.3],open:1,eng:[-.86,-.42]},van:{ws:[.72,.93],roof:[-.97,.72],rails:1}};
+  const topCache={};
+  function topShape(model){if(topCache[model])return topCache[model];const sh=(typeof CV!=='undefined'&&CV.SH&&CV.SH[model])||['coupe',4.3,1.72],T=TOPL[sh[0]]||TOPL.coupe;
+    const van=sh[0]==='van';return topCache[model]=Object.assign({L:.36*(van?.98:clamp(sh[1]/4.3,.82,1.07)),W:.17*(van?1.04:clamp(sh[2]/1.72,.86,1.06)),arch:sh[0]},T)}
   function drawCar(c,s){
+    const P=topShape(s.model),CL=P.L,CW=P.W,h=CL/2,X=f=>f*h;
     c.save();c.translate(s.v+.035,s.u+.045);c.rotate(s.a);rr2(c,-CL/2-.01,-CW/2-.01,CL+.02,CW+.02,.04,'rgba(0,0,0,.42)');c.restore();
-    c.save();c.translate(s.v,s.u);c.rotate(s.a);const tyre='#121214';
-    c.save();c.translate(CL*.3,-CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.018,.07,.03);c.restore();
-    c.save();c.translate(CL*.3,CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.012,.07,.03);c.restore();
-    c.fillStyle=tyre;c.fillRect(-CL*.3-.035,-CW/2-.018,.07,.03);c.fillRect(-CL*.3-.035,CW/2-.012,.07,.03);
-    rr2(c,-CL/2,-CW/2,CL,CW,.035,s.c2);rr2(c,-CL/2+.006,-CW/2+.012,CL-.012,CW-.024,.03,s.c1);
+    c.save();c.translate(s.v,s.u);c.rotate(s.a);const tyre='#121214',ax=P.arch==='van'?.34:.3;
+    c.save();c.translate(CL*ax,-CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.018,.07,.03);c.restore();
+    c.save();c.translate(CL*ax,CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.012,.07,.03);c.restore();
+    c.fillStyle=tyre;c.fillRect(-CL*ax-.035,-CW/2-.018,.07,.03);c.fillRect(-CL*ax-.035,CW/2-.012,.07,.03);
+    rr2(c,-CL/2,-CW/2,CL,CW,P.arch==='van'?.02:.035,s.c2);rr2(c,-CL/2+.006,-CW/2+.012,CL-.012,CW-.024,P.arch==='van'?.016:.03,s.c1);
     const gr=c.createLinearGradient(0,-CW/2,0,CW/2);gr.addColorStop(0,'rgba(0,0,0,.22)');gr.addColorStop(.3,'rgba(255,255,255,.12)');gr.addColorStop(.55,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.28)');
     c.fillStyle=gr;c.fillRect(-CL/2+.006,-CW/2+.012,CL-.012,CW-.024);
     rect(c,CL/2-.022,-CW/2+.02,.022,CW-.04,s.c2);rect(c,-CL/2,-CW/2+.02,.02,CW-.04,s.c2);
-    c.fillStyle='#1a2233';c.beginPath();c.moveTo(.075,-CW/2+.022);c.lineTo(.035,-CW/2+.03);c.lineTo(.035,CW/2-.03);c.lineTo(.075,CW/2-.022);c.closePath();c.fill();
-    c.beginPath();c.moveTo(-.07,-CW/2+.028);c.lineTo(-.11,-CW/2+.022);c.lineTo(-.11,CW/2-.022);c.lineTo(-.07,CW/2-.028);c.closePath();c.fill();
-    rect(c,-.07,-CW/2+.012,.105,.013,'#1a2233');rect(c,-.07,CW/2-.025,.105,.013,'#1a2233');
-    c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=.008;c.beginPath();c.moveTo(.066,-CW/2+.03);c.lineTo(.045,-.01);c.stroke();
-    rect(c,-.07,-CW/2+.028,.105,CW-.056,s.c1);c.fillStyle='rgba(255,255,255,.1)';c.fillRect(-.07,-CW/2+.03,.105,.02);
-    c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=.006;c.beginPath();c.moveTo(.09,-CW/2+.03);c.lineTo(.16,-CW/2+.035);c.moveTo(.09,CW/2-.03);c.lineTo(.16,CW/2-.035);c.stroke();
-    rect(c,.03,-CW/2-.012,.022,.014,s.c2);rect(c,.03,CW/2-.002,.022,.014,s.c2);
+    const glass='#1a2233',wf=X(P.ws[1]),wb=X(P.ws[0]),wx=WX(),topUp=P.open&&(wx==='Wet'||wx==='Snow');
+    /* bonnet creases from the windscreen to the nose */
+    if(P.arch!=='van'){c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=.006;c.beginPath();c.moveTo(wf+.015,-CW/2+.03);c.lineTo(CL/2-.02,-CW/2+.035);c.moveTo(wf+.015,CW/2-.03);c.lineTo(CL/2-.02,CW/2-.035);c.stroke()}
+    if(P.open&&!topUp){
+      /* open top: low windscreen, the cockpit, two seats, the driver on the right (Japanese cars are right-hand drive) */
+      c.fillStyle=glass;c.beginPath();c.moveTo(wf,-CW/2+.024);c.lineTo(wb,-CW/2+.028);c.lineTo(wb,CW/2-.028);c.lineTo(wf,CW/2-.024);c.closePath();c.fill();
+      const k0=X(P.ck[0]),k1=wb;rr2(c,k0,-CW/2+.022,k1-k0,CW-.044,.018,'#17171b');
+      const sl=Math.min(.07,(k1-k0)*.62),sx=k0+.008,sw=(CW-.06)/2-.006;rr2(c,sx,-CW/2+.028,sl,sw,.012,'#2c2c33');rr2(c,sx,.004,sl,sw,.012,'#2c2c33');
+      rect(c,k0+.004,-CW/2+.03,.008,CW-.06,'#3a3a42');
+      const out=s.wreck&&s.wt>.9;if(!out&&s.d){const dc=s._dc||(s._dc=avatarColors(s.d.seed,s.d.face));const dy=.004+sw/2;ell(c,sx+sl*.45,dy,.022,.03,dc.jacket);circ(c,sx+sl*.62,dy,.019,dc.hair);c.fillStyle='rgba(255,255,255,.15)';c.beginPath();c.arc(sx+sl*.62-.005,dy-.006,.008,0,6.283);c.fill()}
+    }else if(topUp){
+      /* hood up for the rain: windscreen, then a dark fabric roof with a small rear window */
+      c.fillStyle=glass;c.beginPath();c.moveTo(wf,-CW/2+.024);c.lineTo(wb,-CW/2+.028);c.lineTo(wb,CW/2-.028);c.lineTo(wf,CW/2-.024);c.closePath();c.fill();
+      const k0=X(P.ck[0]);rr2(c,k0,-CW/2+.02,wb-k0,CW-.04,.02,'#26272c');c.strokeStyle='rgba(255,255,255,.08)';c.lineWidth=.005;c.beginPath();for(let q=1;q<4;q++){const x=k0+(wb-k0)*q/4;c.moveTo(x,-CW/2+.026);c.lineTo(x,CW/2-.026)}c.stroke();
+      rect(c,k0+.004,-CW/2+.04,.012,CW-.08,'#3a4658');
+    }else{
+      const r0=X(P.roof[0]),r1=X(P.roof[1]);
+      c.fillStyle=glass;c.beginPath();c.moveTo(wf,-CW/2+.022);c.lineTo(wb,-CW/2+.03);c.lineTo(wb,CW/2-.03);c.lineTo(wf,CW/2-.022);c.closePath();c.fill();
+      if(P.rw){const b0=X(P.rw[0]);c.beginPath();c.moveTo(r0,-CW/2+.028);c.lineTo(b0,-CW/2+.022);c.lineTo(b0,CW/2-.022);c.lineTo(r0,CW/2-.028);c.closePath();c.fill()}
+      rect(c,r0,-CW/2+.012,r1-r0,.013,glass);rect(c,r0,CW/2-.025,r1-r0,.013,glass);
+      c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=.008;c.beginPath();c.moveTo(wf-.009,-CW/2+.03);c.lineTo(wb+.01,-.01);c.stroke();
+      rect(c,r0,-CW/2+.028,r1-r0,CW-.056,s.c1);c.fillStyle='rgba(255,255,255,.1)';c.fillRect(r0,-CW/2+.03,r1-r0,.02);
+      if(P.rails){c.fillStyle='rgba(20,20,24,.55)';c.fillRect(r0+.02,-CW/2+.032,r1-r0-.04,.008);c.fillRect(r0+.02,CW/2-.04,r1-r0-.04,.008);c.fillStyle='rgba(0,0,0,.18)';c.fillRect(r0+.03,-.004,r1-r0-.06,.008)}
+    }
+    /* engine behind the cabin: louvres on mid-engines, a grille on the rear-engined 911 */
+    if(P.eng){c.fillStyle='rgba(0,0,0,.32)';const e0=X(P.eng[0]),e1=X(P.eng[1]),n=5;for(let q=0;q<n;q++){const x=e0+(e1-e0)*(q+.3)/n;c.fillRect(x,-CW*.26,.006,CW*.52)}}
+    if(P.grille){c.fillStyle='rgba(0,0,0,.35)';const e0=X(P.grille[0]),e1=X(P.grille[1]);for(let q=0;q<4;q++)c.fillRect(e0+(e1-e0)*q/4,-CW*.18,.005,CW*.36)}
+    rect(c,wb-.004,-CW/2-.012,.022,.014,s.c2);rect(c,wb-.004,CW/2-.002,.022,.014,s.c2);
     const lon=s.lights>.25;
-    if(POPUP[s.model]){if(lon){rect(c,.12,-CW/2+.018,.04,.04,'#141418');rect(c,.12,CW/2-.058,.04,.04,'#141418');rect(c,.15,-CW/2+.022,.012,.032,'#fff4cf');rect(c,.15,CW/2-.054,.012,.032,'#fff4cf')}else{c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=.006;c.strokeRect(.12,-CW/2+.018,.04,.04);c.strokeRect(.12,CW/2-.058,.04,.04)}}
+    if(POPUP[s.model]){if(lon){rect(c,CL/2-.06,-CW/2+.018,.04,.04,'#141418');rect(c,CL/2-.06,CW/2-.058,.04,.04,'#141418');rect(c,CL/2-.03,-CW/2+.022,.012,.032,'#fff4cf');rect(c,CL/2-.03,CW/2-.054,.012,.032,'#fff4cf')}else{c.strokeStyle='rgba(0,0,0,.35)';c.lineWidth=.006;c.strokeRect(CL/2-.06,-CW/2+.018,.04,.04);c.strokeRect(CL/2-.06,CW/2-.058,.04,.04)}}
     else{rect(c,CL/2-.022,-CW/2+.016,.016,.03,lon?'#fff4cf':'#d6d3c8');rect(c,CL/2-.022,CW/2-.046,.016,.03,lon?'#fff4cf':'#d6d3c8')}
     rect(c,-CL/2,-CW/2+.016,.014,.032,s.brake?'#ff3030':'#9a1a1a');rect(c,-CL/2,CW/2-.048,.014,.032,s.brake?'#ff3030':'#9a1a1a');
     {const lk=s.look||{},wg=lk.wing&&lk.wing!=='stock'?lk.wing:(WING[s.model]?'factory':'none');
@@ -1971,9 +2017,11 @@ const MAP=(()=>{
     if(WX()==='Wet'){c.strokeStyle='rgba(20,24,40,.35)';c.lineWidth=HW*2;c.stroke(paths.center);c.strokeStyle='rgba(150,170,210,.1)';c.lineWidth=HW*1.2;c.stroke(paths.center)}
     else if(WX()==='Damp'){c.strokeStyle='rgba(20,24,40,.18)';c.lineWidth=HW*2;c.stroke(paths.center)}
     /* autumn: wet leaves piled on some corners (they cost a little grip there) */
-    if(SEAS()==='Autumn'&&WX()!=='Snow'&&!BIOMES[world.def.biome].trop&&cam.z>9){const L=leafMask(road),T=road,cols=['#c2512a','#d98a2b','#9c3d22','#b8862f','#7a4a22'];
+    if(leafOK(world.id)&&WX()!=='Snow'&&true){const L=leafMask(road),T=road,k=clamp((70-cam.z)/45,0,1);c.save();c.globalAlpha=.28+.47*k;c.strokeStyle='#c8642c';c.lineCap='round';c.lineJoin='round';c.lineWidth=Math.max(HW*(1.7+.6*k),7/cam.z);
+      for(let i=0;i<T.len;i++){if(!L[i])continue;let j=i;while(j+1<T.len&&L[j+1])j++;c.beginPath();const a=Math.max(0,i-1);c.moveTo(T.pts[a].v,T.pts[a].u);for(let k2=a+1;k2<=Math.min(T.len-1,j+1);k2++)c.lineTo(T.pts[k2].v,T.pts[k2].u);c.stroke();i=j}c.restore()}
+    if(leafOK(world.id)&&WX()!=='Snow'&&cam.z>9){const L=leafMask(road),T=road,cols=['#c2512a','#d98a2b','#9c3d22','#b8862f','#7a4a22'];
       for(let i=0;i<T.len;i+=1){if(!L[i])continue;const a=T.pts[i];if(a.v<vr.v0||a.v>vr.v1||a.u<vr.u0||a.u>vr.u1)continue;const n=T.left[i];
-        for(let k=0;k<12;k++){const h1=hash2(i,k,71),h2=hash2(i,k,72),h3=hash2(i,k,73),off=(h1-.5)*HW*1.8,al=(h2-.5)*.1;c.fillStyle=cols[Math.floor(h3*cols.length)];c.globalAlpha=.92;c.fillRect(a.v+n.v*off+Math.cos(T.theta[i])*al-.016,a.u+n.u*off+Math.sin(T.theta[i])*al-.011,.032,.022)}}c.globalAlpha=1}
+        for(let k=0;k<22;k++){const h1=hash2(i,k,71),h2=hash2(i,k,72),h3=hash2(i,k,73),off=(h1-.5)*HW*1.9,al=(h2-.5)*.5;c.fillStyle=cols[Math.floor(h3*cols.length)];c.globalAlpha=.95;c.fillRect(a.v+n.v*off+Math.cos(T.theta[i])*al-.03,a.u+n.u*off+Math.sin(T.theta[i])*al-.02,.06,.04)}}c.globalAlpha=1}
     /* standing water: puddles along the road when it's damp (and a few more in the rain) */
     if((WX()==='Damp'||WX()==='Wet')&&cam.z>9){const P=puddles(),many=WX()==='Wet';c.lineWidth=.006;
       for(const q of P){if(!many&&q.wet)continue;if(q.v<vr.v0||q.v>vr.v1||q.u<vr.u0||q.u>vr.u1)continue;c.save();c.translate(q.v,q.u);c.rotate(q.ang);
@@ -2111,15 +2159,23 @@ const MAP=(()=>{
   /* ---------- physics ---------- */
   /* autumn leaves: a few corners carry a carpet of wet leaves. Decided by position, so uphill and downhill agree, and drawn on the map */
   function leafy(v,u){const h=hash2(Math.floor(v*2),Math.floor(u*2),613);return h<.1}
+  const leafOK=id=>SEASON()==='Autumn'&&!!GEN[id]&&!GEN[id].summer&&!BIOMES[GEN[id].biome].trop;
+  /* separate leafy patches on a pass */
+  function leafRuns(T){const L=leafMask(T),G=Math.ceil(60/T.mpt);let n=0,last=-1e9;for(let i=0;i<T.len;i++)if(L[i]){if(i-last>G)n++;last=i}return n}
+  /* how many leafy corners a pass has this autumn (builds the pass quietly if it isn't loaded yet) */
+  function leafCorners(id,w){if(!leafOK(id)||w==='Snow')return 0;let W=WORLDS[id];if(!W||W.season!==seasonKey()){const cur=world;try{W=WORLDS[id]=buildWorld(id);W.season=seasonKey()}finally{if(cur)useWorld(cur)}}return leafRuns(W.road)}
+  /* what the leaves and cold tyres cost this run, in seconds, by running the numbers again without them */
+  function gripLoss(d,c,w,T,race){T=T||home().road;const out={leafN:0,leaf:0,cold:0};const leafy=leafOK(T.id)&&w!=='Snow',cold=!race&&SEASON()==='Winter'&&w!=='Snow';if(!leafy&&!cold)return out;
+    const base=profile(d,c,w,T,race).time;if(leafy){out.leafN=leafRuns(T);out.leaf=Math.max(0,base-profile(d,c,w,T,race,{leaf:1}).time)}if(cold)out.cold=Math.max(0,base-profile(d,c,w,T,race,{cold:1}).time);return out}
   function leafMask(T){if(T._leaf)return T._leaf;const N=T.len,m=new Uint8Array(N);for(let i=0;i<N;i++){if(Math.abs(T.curv[i])>.07&&leafy(T.pts[i].v,T.pts[i].u))m[i]=1}return T._leaf=m}
-  function profile(d,c,w,T,race){
+  function profile(d,c,w,T,race,off){
     T=T||home().road;
     const sp=spec(c),N=T.len,mpt=T.mpt,st=d.stats,g=9.81,kn=knowOf(d,T.id)/100,wk=wetK(w),wet=wk>0,snow=w==='Snow',fog=w==='Fog'&&!hasT(d,'fog'),push=race?1.03*(hasT(d,'hot')?1.02:1):1;
     const down=T.pts[N-1].z<T.pts[0].z,heavy=clamp((sp.kg-1100)/500,-.6,1);
     const mass=sp.kg+75,P=sp.hp*735.5*.85*(.64+.36*st.thr/100)*(.75+.25*(c.cond??100)/100)*(down?.82:1);
     let mu=(.7+.6*TYRES[c.tyre.grade].grip)*(1-Math.max(0,c.tyre.wear-45)/160);const fW=Math.min(1,TYRES[c.tyre.grade].wet*WET_DRIVE[sp.drive]*(hasT(d,'rain')?1.12:1));if(snow)mu*=TYRES[c.tyre.grade].snow*SNOW_DRIVE[sp.drive]*(hasT(d,'ice')?1.06:1);
     /* grip can change along the road: a wet race that dries out, leaves on autumn corners, cold tyres in the first corners of a winter dawn */
-    const q=new Float32Array(N).fill(1),DRY=race&&w==='Wet'?RACE_DRY:null,leaves=!snow&&SEAS()==='Autumn'&&world&&world.def&&!BIOMES[world.def.biome].trop?leafMask(T):null,cold=!race&&SEASON()==='Winter'&&!snow;
+    const q=new Float32Array(N).fill(1),DRY=race&&w==='Wet'?RACE_DRY:null,leaves=!snow&&!(off&&off.leaf)&&leafOK(T.id)?leafMask(T):null,cold=!race&&SEASON()==='Winter'&&!snow&&!(off&&off.cold);
     for(let i=0;i<N;i++){const x=i/N;let wi=wk;if(DRY&&x>DRY.a)wi=1-(1-DRY.e)*Math.min(1,(x-DRY.a)/(1-DRY.a));if(wi>0)q[i]*=1-(1-fW)*wi;
       if(leaves&&leaves[i])q[i]*=1-(1-fW)*(wet?.35:.5);if(cold&&x<.12)q[i]*=1-.13*(1-x/.12)*(c.tyre.grade===2?1.4:1)}
     if(down)mu*=1-.07*heavy+.03*(sp.handN-.7);
@@ -2176,7 +2232,7 @@ const MAP=(()=>{
     const incs=r.incs||r.res.incs||[],dnf=r.dnf??r.res.dnf??null,dI=incs.find(x=>x.dnf),sc=commonScale||clamp(cumReal[N-1]/9,22,36)/cumReal[N-1],total=dnf!=null?cumReal[dnf]+(dI&&dI.type==='crash'?5.2:4.4)/sc:cumReal[N-1];for(let i=0;i<N;i++){cum[i]=cumReal[i]*sc;stress[i]/=st||1}
     r.incs=incs;r.dnf=dnf;r.dnfType=dI?dI.type:null;
     const base=isRace?0:.1,l0=isRace&&r.side?(ri===0?-.15:.15):base;
-    Object.assign(r,{cum,cumReal,vel,vA,stress,yaw,dur:total*sc,sc,delay:(r.start||0)*sc,i:0,cy:0,kmhAt:i=>vA[i]*3.6,mpt,lane:l0,laneCur:l0,baseLane:base,lanes:r.lanes||[],c1:r.c.c1,c2:r.c.c2,model:r.c.model,rl:redline(r.c),look:r.c.look,last:null,rlA:pro?1:Math.pow(clamp((lineSk-.15)/.7,0,1),1.2),rlB:1,line:racingLine(T),wander,lnShift,mistAt,saw:pro?0:Math.pow(1-lineSk,1.4)*.03,sawPh:rng()*6.28});
+    Object.assign(r,{cum,cumReal,vel,vA,stress,yaw,dur:total*sc,sc,delay:(r.start||0)*sc,i:0,cy:0,kmhAt:i=>vA[i]*3.6,mpt,lane:l0,laneCur:l0,baseLane:base,lanes:r.lanes||[],c1:r.c.c1,c2:r.c.c2,model:r.c.model,gbm:gbKey(r.c),rl:redline(r.c),look:r.c.look,last:null,rlA:pro?1:Math.pow(clamp((lineSk-.15)/.7,0,1),1.2),rlB:1,line:racingLine(T),wander,lnShift,mistAt,saw:pro?0:Math.pow(1-lineSk,1.4)*.03,sawPh:rng()*6.28});
     if(!isRace&&!r.ghost)r.cupT=buildCup(r,T);
   }
   /* ---------- the cup of water on the dashboard (display only, no effect on the game) ----------
@@ -2284,7 +2340,7 @@ const MAP=(()=>{
           if(R()<.9)rw.forEach(w=>smoke.push({v:w[0],u:w[1],r:.04+R()*.04,a:.42,dv:(R()-.5)*.004-Math.cos(ang)*.003,du:(R()-.5)*.004-Math.sin(ang)*.003}))}else r.last=null;
         const prog=i/N;if(prog>leadP&&!r.ghost){leadP=prog;lead=r}}
       if(r.ghost&&!r.announced&&tt>.35){r.announced=true;if(!runs.cine){runs.cine={r,until:el+3.2};runs.camK=.08}runs.cutin={custom:true,title:r.cutTitle||'A WILD BUNTA APPEARS!',sub:r.cutSub||'BUNTA FUJIWARA · GC8 TYPE R',col:r.cutCol||'#d4dae2',ok:true,by:1,t0:now,seed:r.d.seed,face:r.d.face};AUDIO.stinger(true)}
-      s.c1=r.c1;s.c2=r.c2;s.model=r.model;s.look=r.look;if(race)s.tag=r.ghost?'#7fe0c0':ri===0?'#ffb03b':'#ff4d4d';out.push(s);r.s=s;
+      s.c1=r.c1;s.c2=r.c2;s.model=r.model;s.look=r.look;s.d=r.d;if(race)s.tag=r.ghost?'#7fe0c0':ri===0?'#ffb03b':'#ff4d4d';out.push(s);r.s=s;
       /* brake-light streaks: while braking on the move, the two tail lights leave a short fading red trail */
       {const moving=r.state==='run'||(r.state==='done'&&r.slideOn);if(s.brake&&moving&&!s.wreck){const ca=Math.cos(s.a),sa=Math.sin(s.a),tl=[-1,1].map(k=>{const x=-CL/2+.01,y=k*(CW/2-.035);return[s.v+ca*x-sa*y,s.u+sa*x+ca*y]});
         if(r.lastTail){const d=Math.hypot(tl[0][0]-r.lastTail[0][0],tl[0][1]-r.lastTail[0][1]);if(d>.004&&d<1.2)for(let k=0;k<2;k++)btr.push({a:r.lastTail[k],b:tl[k],t:now,w:s.bigBrake?1.4:1})}r.lastTail=tl}else r.lastTail=null}
@@ -2296,9 +2352,9 @@ const MAP=(()=>{
     let fr=runs.focus!=null?runs.list[runs.focus]:null;if(!race&&(!fr||(fr.state!=='run'&&!(fr.state==='out'&&el-fr.delay<fr.dur))))fr=lead||runs.list.find(r=>r.state==='out'&&el-r.delay<r.dur)||null;if(race&&!fr)fr=runs.list[0];
     if(runs.cine){if(el<runs.cine.until)fr=runs.cine.r;else{runs.cine=null;zTarget=driveZ();runs.camK=.06}}
     if(race&&!runs.cine&&fr&&fr.state==='out'){const o=runs.list.find(r=>r!==fr&&r.state==='run');if(o)fr=o}
-    if(fr&&(fr.state==='run'||fr.state==='out'||race)){focus=fr.s;const i=fr.i,kmh=fr.state==='run'?fr.kmhAt(i):0,gb=GB[fr.model],rl=fr.rl||gb.rl,nG=gb.g.length;let g=0;while(g<nG-1&&gearSpeed(fr.model,g,rl*.96)<kmh)g++;
+    if(fr&&(fr.state==='run'||fr.state==='out'||race)){focus=fr.s;const i=fr.i,kmh=fr.state==='run'?fr.kmhAt(i):0,gb=GB[fr.gbm||fr.model],rl=fr.rl||gb.rl,nG=gb.g.length;let g=0;while(g<nG-1&&gearSpeed(fr.gbm||fr.model,g,rl*.96)<kmh)g++;
       const rpm=fr.state==='run'?clamp(kmh*1000*gb.g[g]*gb.fd/(60*tyreCirc(gb.t)),1000,rl):(fr.state==='wait'?3500+Math.sin(now/90)*900:900),tt=Math.max(0,el-fr.delay);
-      hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.min(tt,fr.dur)/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:fr.cupT||null,ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
+      hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.max(0,Math.min(tt,fr.dur))/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:fr.cupT||null,ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
       if(race){const A=runs.list[0],Bq=runs.list[1],ia=A.state==='done'?N-1:A.i,ib=Bq.state==='done'?N-1:Bq.i;const sA=A.start||0,sB=Bq.start||0;let gap;if(ia>=ib)gap=(sB+Bq.cumReal[ia])-(sA+A.cumReal[ia]);else gap=-((sA+A.cumReal[ib])-(sB+Bq.cumReal[ib]));
         Object.assign(hud,{race:true,gap,title:runs.title,dir:runs.dir,count:-el,lead:gap>=0?`${A.d.first.toUpperCase()} LEADS`:`${Bq.d.first.toUpperCase()} LEADS`});
         const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok);
@@ -2307,7 +2363,7 @@ const MAP=(()=>{
     runs.audio=null;
     if(fr){const i=fr.i;let rpm,thr;if(fr.state==='run'){rpm=rpmOf(fr,i);thr=thrOf(fr,i)}else if(fr.state==='wait'){thr=race?.4+.4*Math.max(0,Math.sin(now/170)):.1;rpm=race?2800+thr*2600:950}else{rpm=900;thr=0}
       if(fr.state==='out'){rpm=fr.dnfType==='break'?0:900;thr=0}
-      runs.audio={active:(fr.state!=='done'&&!(fr.state==='out'&&fr.dnfType==='break'))||race,model:fr.model,rpm,rl:fr.rl||GB[fr.model].rl,thr,slip:fr.state==='run'?(fr.pausing?.9:Math.abs(fr.cy)):0};
+      runs.audio={active:(fr.state!=='done'&&!(fr.state==='out'&&fr.dnfType==='break'))||race,model:fr.gbm||fr.model,rpm,rl:fr.rl||GB[fr.gbm||fr.model].rl,thr,slip:fr.state==='run'?(fr.pausing?.9:Math.abs(fr.cy)):0};
       if(race){const o=runs.list.find(r=>r!==fr);if(o&&o.s&&fr.s){const oi=o.i;runs.audio.rival={model:o.model,rpm:o.state==='run'?rpmOf(o,oi):(o.state==='wait'?3200:900),thr:o.state==='run'?thrOf(o,oi):.4,dist:Math.hypot(o.s.v-fr.s.v,o.s.u-fr.s.u)}}
         const n=el<0&&!runs.replay?Math.ceil(-el):0;if(runs.cd===undefined)runs.cd=-1;if(n!==runs.cd){if(n>0&&n<=3)AUDIO.beep(false);else if(n===0&&runs.cd>0)AUDIO.beep(true);runs.cd=n}}}
     runs.lead=lead;
@@ -2315,7 +2371,7 @@ const MAP=(()=>{
     if(allDone&&!runs.finished){runs.finished=true;setTimeout(()=>finishRuns(),race?1600:900)}
     return focus;
   }
-  function rpmOf(r,i){const kmh=r.state==='run'?r.kmhAt(i):0,gb=GB[r.model],rl=r.rl||gb.rl,nG=gb.g.length;let g=0;while(g<nG-1&&gearSpeed(r.model,g,rl*.96)<kmh)g++;return clamp(kmh*1000*gb.g[g]*gb.fd/(60*tyreCirc(gb.t)),900,rl)}
+  function rpmOf(r,i){const kmh=r.state==='run'?r.kmhAt(i):0,gb=GB[r.gbm||r.model],rl=r.rl||gb.rl,nG=gb.g.length;let g=0;while(g<nG-1&&gearSpeed(r.gbm||r.model,g,rl*.96)<kmh)g++;return clamp(kmh*1000*gb.g[g]*gb.fd/(60*tyreCirc(gb.t)),900,rl)}
   function thrOf(r,i){const N=r.vA.length,a=r.vA[i],b=r.vA[Math.min(N-1,i+4)];return b>a*1.004?1:b<a*.97?0:.45}
   function pushFeed(e){const f=document.getElementById('feed');if(!f)return;
     if(window.PHONE){const big=e.cut||['YS KHONG','GO','PASS','LEAD','CONTACT','DNF','!!','PRESSURE','FIN'].includes(e.tag)||(e.tag==='HAIRPIN'&&e.who!=null);if(!big)return;f.innerHTML='';const d=document.createElement('div');d.className='pf';d.innerHTML=`<span>${esc(e.tag)}</span>${esc(e.msg)}`;f.appendChild(d);clearTimeout(f._t);f._t=setTimeout(()=>{if(d.parentNode)d.classList.add('gone')},3600);return}
@@ -2441,8 +2497,10 @@ const MAP=(()=>{
   function par(){const H=home();if(H.par)return H.par;const mk=v=>({stats:{brk:v,crn:v,dft:v,ht:v,thr:v,foc:v},trait:'natural'}),car=(m,o)=>Object.assign({model:m,engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:0,wear:20},cond:92},o||{});
     const slow=profile(mk(16),car('ae86'),'Clear',H.road).time,fast=profile(mk(85),car('fd3s',{engine:1,susp:3,brakes:2,lsd:1,weight:2,tyre:{grade:2,wear:0},cond:100}),'Clear',H.road).time;return H.par={slow,fast}}
   function track(dir){return dir==='down'?rev:road}
+  /* swing the camera onto the leafy corner nearest the shop (for the autumn tip) */
+  function focusLeaf(){if(runs)return false;if(!world||!world.def.home)loadWorld('usuzumi');if(!leafOK('usuzumi'))return false;const L=leafMask(road);let i=0;while(i<road.len&&!L[i])i++;if(i>=road.len)return false;const a=road.pts[i];setFollow(false);camTarget=[a.v,a.u];zTarget=clamp(Math.min(vw/9,vh/7),40,90);return true}
   function focusShop(){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');camTarget=[shopRect.v+.9,shopRect.u+1.05];zTarget=clamp(Math.min(vw/4.2,vh/3.4),120,330)}
-  return{clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null,miss:!!runs.miss,cut:runs.cutin?{ok:runs.cutin.ok,move:runs.cutin.move}:null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
+  return{clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null,miss:!!runs.miss,cut:runs.cutin?{ok:runs.cutin.ok,move:runs.cutin.move}:null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,gripLoss,leafCorners,focusLeaf,leavesOn:T=>leafOK(T.id)&&WX()!=='Snow'?leafMask(T):null,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
 })();
 
 /* ================= rendering UI ================= */
@@ -2562,7 +2620,7 @@ function garageHTML(){
     const wc=wear>75?'var(--brake)':wear>50?'var(--warn)':'var(--good)';
     h+=`<div class="card ${c.star?'fav':''}"><div class="carhead"><div style="min-width:0"><div class="carname">${starBtn('starC',c.id,c.star,m.code)}<span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}${m.legend?' <span class="chip amber">Legend</span>':''}</div><div class="meta"><span class="swatch" style="background:${c.c1}"></span>${esc(c.paint)} · ${Math.round(c.km).toLocaleString('en-US')} km · ${drv?'Driven by '+esc(drv.first):'Unassigned'}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
     <button class="carthumb" data-act="bodyShop" data-id="${c.id}" aria-label="Open the body shop for the ${esc(m.code)}"><img src="${SPR.url(c,132,84)}" alt="">${drv?`<span class="drv"><img src="${avatar(drv.seed,drv.face)}" alt=""><span class="t"><b>${esc(drv.first)} ${esc(drv.family)}</b><small>Lv ${levelInfo(drv.xp).lv}</small></span></span>`:'<span class="drv none">No driver</span>'}<span class="bs">Body shop</span></button>
-    <div class="specs"><span class="chip">${sp.hp} PS</span><span class="chip">${sp.kg} kg</span><span class="chip amber">${sp.drive}</span><span class="chip">${sp.gears}-speed</span><span class="chip" title="Redline">${redline(c).toLocaleString()} rpm</span><span class="chip">${sp.top} km/h${sp.limited?' limited':''}</span><span class="chip">${TYRES[c.tyre.grade].name} tyres</span></div>
+    <div class="specs"><span class="chip">${sp.hp} PS</span><span class="chip">${sp.kg} kg</span><span class="chip amber">${sp.drive}</span>${sp.cargo>1?`<span class="chip good" title="Carries ${sp.cargo} batches of tofu per run">${sp.cargo}× tofu</span>`:''}${sp.sleeper?'<span class="chip" style="color:var(--brake);border-color:var(--brake)">Swapped</span>':''}<span class="chip">${sp.gears}-speed</span><span class="chip" title="Redline">${redline(c).toLocaleString()} rpm</span><span class="chip">${sp.top} km/h${sp.limited?' limited':''}</span><span class="chip">${TYRES[c.tyre.grade].name} tyres</span></div>
     ${meter('Tyre wear',wear,wc,Math.round(wear)+'%')}
     ${meter('Condition',c.cond,c.cond<70?'var(--brake)':'var(--cyan)',Math.round(c.cond)+'%')}
     ${c.cond<15?'<div class="note" style="color:var(--brake)">Wrecked. Repair it before it can drive again.</div>':c.cond<50?'<div class="note" style="color:var(--warn)">Rough shape. Breakdowns get likely below 60%.</div>':''}${c.tyre.wear>80?'<div class="note" style="color:var(--warn)">Tyres nearly bald. Expect slides and spins.</div>':''}
@@ -2581,7 +2639,7 @@ function dealerHTML(){
   const full=S.cars.length>=GARAGE_MAX;
   ks.forEach(k=>{const m=CARS[k];const sp=spec({model:k,engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:1,wear:0},cond:100});
     h+=`<div class="card"><div class="carhead"><div style="min-width:0"><div class="carname"><span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}</div><div class="note">${esc(m.note)}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
-    <div class="row"><div class="specs"><span class="chip">${m.hp} PS</span><span class="chip">${m.kg} kg</span><span class="chip amber">${m.drive}</span><span class="chip">${sp.gears}-speed</span><span class="chip" title="Japanese-market cars are limited to 180 km/h, kei cars to 140 km/h. An ECU tune removes it.">${sp.top} km/h${sp.limited?' limited':''}</span></div><button class="btn sm ${S.money>=m.price&&!full?'primary':''}" style="margin-left:auto" data-act="buy" data-k="${k}" ${S.money<m.price||full?'disabled':''}>Buy ${yenK(m.price)}</button></div></div>`});
+    <div class="row"><div class="specs"><span class="chip">${m.hp} PS</span><span class="chip">${m.kg} kg</span><span class="chip amber">${m.drive}</span>${m.cargo?`<span class="chip good" title="Carries ${m.cargo} batches of tofu per run">${m.cargo}× tofu</span>`:''}<span class="chip">${sp.gears}-speed</span><span class="chip" title="Japanese-market cars are limited to 180 km/h, kei cars to 140 km/h. An ECU tune removes it.">${sp.top} km/h${sp.limited?' limited':''}</span></div><button class="btn sm ${S.money>=m.price&&!full?'primary':''}" style="margin-left:auto" data-act="buy" data-k="${k}" ${S.money<m.price||full?'disabled':''}>Buy ${yenK(m.price)}</button></div></div>`});
   if(full)h+=`<div class="card hint">The lot holds ${GARAGE_MAX} cars. Sell one of yours to make room.</div>`;
   h+=`<div style="margin-top:8px"><h2>Legends<span class="jp">名車</span></h2><p class="sub">Rare cars that only reach the lot once your name carries weight on the passes. One of each, and the sellers want serious money.</p></div>`;
   Object.keys(CARS).filter(k=>CARS[k].legend).sort((a,b)=>CARS[a].legend-CARS[b].legend||CARS[a].price-CARS[b].price).forEach(k=>{const m=CARS[k],open=S.cred>=m.legend,own=S.cars.some(c=>c.model===k);const sp=spec({model:k,engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:1,wear:0},cond:100});
@@ -2718,7 +2776,7 @@ function finishDelivery(list){
     addLog(S.buntaSeen===1?`A grey Impreza GC8 Type R came out of the dark and passed ${passed.length?passed.map(r=>r.d.first).join(', '):'everyone'} like they were parked. Down at the shop, someone says the name: Bunta Fujiwara.`:`Bunta Fujiwara's grey GC8 was on the pass again. ${passed.length} of the crew got passed.`)}
   let rev=0,prod=0,fuel=0,wages=0;
   const rows=list.map(r=>{const{d,c,res}=r;const notes=res.notes.slice(),cup=r.cupT?Math.round(r.cupT.final/.84*100):null;
-    rev+=res.price;prod+=PROD_COST;fuel+=res.fuel;wages+=d.wage;
+    rev+=res.price;prod+=PROD_COST*(res.cargo||1);fuel+=res.fuel;wages+=d.wage;
     const emph={};if(S.weather==='Wet'){emph.thr=1.5;emph.foc=1.3}if(S.weather==='Fog')emph.foc=1.7;if(S.weather==='Snow'){emph.foc=1.5;emph.thr=1.4;emph.brk=1.3}if(CARS[c.model].drive!=='FF'&&c.lsd)emph.dft=1.3;
     const mb=movesOf(d),mk=mentorK(d);grow(d,emph,mk);giveXP(d,Math.round(res.xp*mk),notes);learnCheck(d,mb);learnPass(d,'usuzumi',3.5);
     c.tyre.wear=Math.min(100,c.tyre.wear+res.wear);c.km+=14.4;d.runs++;
@@ -2778,10 +2836,11 @@ function renderPlanner(){
     <div class="row"><label class="fld" for="rp-${dir}-s">Start</label><select id="rp-${dir}-s" data-chg="rpS" data-dir="${dir}"><option value="side" ${s.start==='side'?'selected':''}>Side by side</option><option value="toss" ${s.start==='toss'?'selected':''}>Coin toss: leader and chaser</option><option value="chase" ${s.start==='chase'?'selected':''}>Chase (+25% cred if you win)</option></select></div>
     <div class="row"><label class="fld" for="rp-${dir}-ty">Tyres</label><select id="rp-${dir}-ty" style="max-width:min(300px,100%)" data-chg="rpTy" data-dir="${dir}">${tyreOptions(c).map(o=>`<option value="${o.g}" ${o.kind==='fitted'?'selected':''} ${o.kind!=='fitted'&&!o.ok?'disabled':''}>${o.label}</option>`).join('')}</select></div>${RW==='Wet'&&c.tyre.grade===2?'<div class="note" style="color:var(--brake)">Semi-slicks in the rain: slow and spin-prone.</div>':''}${RW==='Snow'&&c.tyre.grade!==3?'<div class="note" style="color:var(--brake)">No studless tyres on snow: very slow and likely to spin.</div>':''}
     <div class="meta">You: OVR ${Math.round(dskill(d)*100)} · PI ${sp.pi} · ${CARS[c.model].drive} · knows ${m.name.replace(/^Mt\. /,'')} ${Math.floor(knowOf(d,m.id))}%${(d.perks||[]).length?' · '+d.perks.map(p=>PERKS[p].name).join(', '):''}</div>
+    ${(n=>n?`<div class="meta leafy">Wet leaves in ${n} spot${n>1?'s':''} on this pass tonight</div>`:'')(MAP.leafCorners(m.id,RW))}
     <div class="mvrow">${movesChips(d,'No special moves yet.')}</div>
     ${vo.length>1?`<div class="row"><label class="fld" for="rp-${dir}-v">Opponent</label><select id="rp-${dir}-v" data-chg="rpV" data-dir="${dir}" style="max-width:min(300px,100%)">${vo.map(x=>`<option value="${esc(x.v)}" ${x.v===(s.vs||'cpu')?'selected':''}>${esc(x.l)}</option>`).join('')}</select></div>`:''}<div class="meta">${o.net?`@${esc(o.h)}'s ghost · their real driver and car, raced on your Saturday`:"Tonight's challenger"}</div>${oppCard(o,m.id)}<div class="mvrow">${movesChips(o,'No special moves.')}</div>
     <div class="kv"><span>Purse <b>${yenK(Math.round(m.prize*(dir==='down'?1.15:1)))}</b></span><span>Cred <b>+${Math.round(m.credW*(dir==='down'?1.2:1))}</b></span></div></div>`};
-  modal(`<div class="eyebrow">Saturday · Week ${S.week} · Tonight: ${WXLABEL[RW]} · wind ${(S.raceWind||windNow()).kmh} km/h ${compass((S.raceWind||windNow()).from)}</div><h2>Race night</h2>${(S.raceWind||windNow()).kmh>=14&&S.drivers.some(x=>movesOf(x).includes('slip'))?`<p class="wxnote">A ${(S.raceWind||windNow()).kmh} km/h wind from the ${compass((S.raceWind||windNow()).from)} tonight. Slipstream passes land far more often on straights that run into it, and hardly ever with it at your back.</p>`:''}${RW==='Wet'?'<p class="wxnote">Rain tonight. Semi-slicks lose half their grip and spin easily in the wet. Street tyres and four-wheel drive are the safe bet. Sometimes the rain stops partway and a dry line appears for the final stretch.</p>':RW==='Snow'?'<p class="wxnote">Snow tonight. Grip is the worst it gets. Studless tyres are the only safe choice, four-wheel drive is king and rear-drive cars will struggle.</p>':RW==='Fog'?'<p class="wxnote">Fog tonight. Speeds stay low and focus matters. Fog Eyes drivers see through it. Lights Out is deadly in the fog.</p>':RW==='Damp'?'<p class="wxnote">Damp tonight: no rain, but puddles and a greasy surface after the wet. Grip is down a little. Sport tyres cope fine, street tyres lose almost nothing, and semi-slicks get nervous in the standing water.</p>':''}
+  modal(`<div class="eyebrow">Saturday · Week ${S.week} · Tonight: ${WXLABEL[RW]} · wind ${(S.raceWind||windNow()).kmh} km/h ${compass((S.raceWind||windNow()).from)}</div><h2>Race night</h2>${S.drivers.some(x=>movesOf(x).includes('lights'))&&((RW==='Wet'||RW==='Damp')||(SEASON()==='Autumn'&&RW!=='Snow'))?`<p class="wxnote" style="color:var(--brake)!important">Lights Out is a gamble tonight. Your drivers know these roads by heart, but nobody can memorise ${RW==='Wet'||RW==='Damp'?"tonight's puddles":'where the leaves have piled up'}. Blind into one, the car can spin or go off.</p>`:''}${SEASON()==='Autumn'&&RW!=='Snow'?`<p class="wxnote">Autumn leaves: some corners carry a carpet of wet leaves, shown in orange on the map. They cost grip, more on a dry night than a wet one, and tyres that are good in the wet lose the least.</p>`:''}${(S.raceWind||windNow()).kmh>=14&&S.drivers.some(x=>movesOf(x).includes('slip'))?`<p class="wxnote">A ${(S.raceWind||windNow()).kmh} km/h wind from the ${compass((S.raceWind||windNow()).from)} tonight. Slipstream passes land far more often on straights that run into it, and hardly ever with it at your back.</p>`:''}${RW==='Wet'?'<p class="wxnote">Rain tonight. Semi-slicks lose half their grip and spin easily in the wet. Street tyres and four-wheel drive are the safe bet. Sometimes the rain stops partway and a dry line appears for the final stretch.</p>':RW==='Snow'?'<p class="wxnote">Snow tonight. Grip is the worst it gets. Studless tyres are the only safe choice, four-wheel drive is king and rear-drive cars will struggle.</p>':RW==='Fog'?'<p class="wxnote">Fog tonight. Speeds stay low and focus matters. Fog Eyes drivers see through it. Lights Out is deadly in the fog.</p>':RW==='Damp'?'<p class="wxnote">Damp tonight: no rain, but puddles and a greasy surface after the wet. Grip is down a little. Sport tyres cope fine, street tyres lose almost nothing, and semi-slicks get nervous in the standing water.</p>':''}
   <p class="rules">Touge rules: first to the finish wins. Side by side starts are decided by a braking duel into the first corner. With a coin toss, one car leads and the other chases. The car behind has to find a way past with special moves, slipstream and pressure. All-out attack tries more moves but wears tyres and invites mistakes.</p>
   <div class="slots">${slot('up')}${slot('down')}</div>
   <div class="mact"><button class="btn" data-act="skipRaces">Skip racing tonight</button><button class="btn race" data-act="startRaces" ${RP.up.on||RP.down.on?'':'disabled'}>Start race night</button></div>`,true);
@@ -2805,13 +2864,14 @@ function raceEvents(A0,B0,T,d,opp,tev){
   const endA=A.dnf??N-1,endB=Bq.dnf??N-1,live=i=>i<=Math.min(endA,endB);
   const marks=[];
   T.feats.forEach(f=>marks.push({i:f.i1,f}));T.cps.forEach((i,k)=>marks.push({i,cp:k+1}));A.mist.forEach(i=>marks.push({i,mA:1}));Bq.mist.forEach(i=>marks.push({i,mB:1}));
-  A.incs.forEach(x=>marks.push({i:x.i,iA:x}));Bq.incs.forEach(x=>{if(x.type!=='hit')marks.push({i:x.i,iB:x})});
+  A.incs.forEach(x=>{if(!x.blind)marks.push({i:x.i,iA:x})});Bq.incs.forEach(x=>{if(x.type!=='hit'&&!x.blind)marks.push({i:x.i,iB:x})});
   (tev||[]).forEach(e=>{if(e.type!=='hit')marks.push({i:e.i,tv:e})});
   marks.sort((x,y)=>x.i-y.i);
   for(const mk of marks){
     if(mk.tv&&mk.tv.type==='move'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an,M=MOVES[e.move];
       const okL={gutter:[`${who} drops the inside wheels into the drain and rails round ${oth}!`,`Into the gutter! ${who} carries impossible speed past ${oth}!`],late:[`${who} brakes so late it looks like a mistake, then dives up the inside!`,`${who} out-brakes ${oth} into the hairpin and steals the line!`],lights:WX()==='Fog'?[`${who} kills the lights and melts into the fog! ${oth} has no idea where they went...`,`A ghost in the fog! ${who} reappears alongside ${oth} out of nowhere!`]:[`${who} kills the headlights! ${oth} has lost them in the mirror...`,`Darkness behind ${oth}. ${who} has vanished, then reappears alongside!`],feint:[`${who} feints left, flicks right and slices through the S-bends past ${oth}!`,`A perfect feint! ${who} steals the line through the esses!`],outside:[`${who} goes around the outside of the sweeper and holds it!`,`Full commitment! ${who} takes ${oth} around the outside!`],slip:[`${who} tucks into the slipstream and slingshots past ${oth}!`,`Out of the tow! ${who} pulls alongside and goes by!`]}[e.move];
       const noL={gutter:`${who} tries the gutter but bounces out and loses ground.`,late:`${who} goes in too deep and runs wide!`,lights:`${who} kills the lights, but ${oth} spots the shadow and covers.`,feint:`${who} tries a feint, but ${oth} doesn't bite.`,outside:`${who} tries the outside line, but ${oth} squeezes them out.`,slip:`${who} pulls out of the slipstream, but there isn't enough to get by.`}[e.move];
+      if(e.blind){const sp=e.bad?'runs off the road':'spins';add(e.t,M.name.toUpperCase(),e.blind==='leaves'?`${who} kills the lights and hits a carpet of wet leaves blind! ${who} ${sp}!`:`${who} kills the lights and finds standing water nobody could see! ${who} ${sp}!`,true,{move:e.move,by:e.by,ok:false,name:who});continue}
       if(e.ok)add(e.t,M.name.toUpperCase(),pick(okL),true,{move:e.move,by:e.by,ok:true,name:who});else add(e.t,M.name.toUpperCase(),noL,true,{move:e.move,by:e.by,ok:false,name:who,loss:+(e.loss||0).toFixed(2)});continue}
     if(mk.tv&&mk.tv.type==='pressure'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an;add(e.t,'PRESSURE',pick([`The pressure tells! ${who} runs wide with ${oth} filling the mirror.`,`${who} cracks under pressure and misses the apex!`,`${oth} has been all over ${who}'s bumper, and ${who} finally slips!`]),true,null,e.by);continue}
     if(mk.tv){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an;if(e.type==='line'){add(e.t,'HAIRPIN',pick([`Side by side into the first hairpin... ${who} brakes later and takes the line!`,`${who} holds the inside and ${oth} has to tuck in behind.`]),true,null,e.by);continue}if(e.type==='pass')add(e.t,'PASS',pick([`${who} pulls alongside on the straight and makes the pass!`,`${who} gets the better exit and sweeps past ${oth}!`,`Side by side... ${who} has the line and takes the place!`]),true,null,e.by);else add(e.t,'BATTLE',pick([`${who} looks up the inside of ${oth} but has to back out.`,`${who} is glued to ${oth}'s bumper, waiting for a gap.`]));continue}
@@ -3143,7 +3203,7 @@ const NET=(()=>{
   function defaultVs(){return rival()?'rival':'cpu'}
   function oppVs(vs,dir,m){const p=vs==='rival'?rival():vs&&vs.startsWith('f:')?players[vs.slice(2)]:null;if(!live(p))return null;
     const mine=typeof RP!=='undefined'&&RP&&RP[dir]?S.drivers.find(x=>x.id===RP[dir].d):null,mc=mine&&carById(mine.carId);
-    const rate=(ovr,pi)=>ovr*.65+pi/10*.35,cr=p.crew.filter(x=>x&&x.car);let sn=dir==='up'?(cr[1]||cr[0]):cr[0];
+    const rate=(ovr,pi)=>ovr*.65+pi/10*.35,cr=p.crew.filter(x=>x&&x.car);if(!cr.length)return null;let sn=dir==='up'?(cr[1]||cr[0]):cr[0];
     if(mine&&mc&&cr.length>1){const my=rate(dskill(mine)*100,spec(mc).pi);sn=cr.slice().sort((a,b)=>Math.abs(rate(num(a.ovr,0,150,0),num(a.car.pi,0,1000,0))-my)-Math.abs(rate(num(b.ovr,0,150,0),num(b.car.pi,0,1000,0))-my))[0]}
     return oppFrom(sn,p.h,p.key,tropWx(S.raceWeather||S.weather,m.id))}
   function toggleFriend(k){S.friends=friends();const i=S.friends.indexOf(k);if(i>=0){S.friends.splice(i,1);toast(`@${(players[k]||{}).h||k} removed from friends`)}else{if(S.friends.length>=40){toast('Friends list is full (40).');return}S.friends.push(k);toast(`@${(players[k]||{}).h||k} added to friends`)}save();render()}
@@ -3405,7 +3465,9 @@ const ACT={
   ctlMenu:(d,b)=>{const m=$('#mapctl'),o=m.classList.toggle('open');b.setAttribute('aria-expanded',o)},
   snd:(d,b)=>{const on=AUDIO.toggle();b.classList.toggle('on',on);toast(on?'Sound on':'Sound off')},
   bgm:(d,b)=>{const on=MUSIC.toggle();b.classList.toggle('on',on);toast(on?'Music on':'Music off');if(on&&busy)MUSIC.play(S.phase==='race'?'race':'delivery')},
-  mod:d=>{const c=carById(+d.id),md=MODS.find(x=>x.k===d.m);if(!c||c[md.k]>=md.max)return;const cost=modCost(c,md.k,c[md.k]);if(S.money<cost)return;AUDIO.coin();S.money-=cost;c[md.k]++;addLog(`${CARS[c.model].code}: ${md.labels[c[md.k]]} fitted for ${yen(cost)}.`);toast(`${md.labels[c[md.k]]} fitted`);save();renderAll()},
+  mod:d=>{const c=carById(+d.id),md=MODS.find(x=>x.k===d.m);if(!c||c[md.k]>=md.max)return;const cost=modCost(c,md.k,c[md.k]);if(S.money<cost)return;AUDIO.coin();S.money-=cost;const was=isSleeper(c);c[md.k]++;addLog(`${CARS[c.model].code}: ${md.labels[c[md.k]]} fitted for ${yen(cost)}.`);toast(`${md.labels[c[md.k]]} fitted`);save();renderAll();
+    if(!was&&isSleeper(c)){const sp=spec(c);addLog(`The ${CARS[c.model].code} is fully built. A turbo boxer now sits under the floor: ${sp.hp} PS in a tofu van.`);
+      modal(`<div class="eyebrow">Garage · ${esc(CARS[c.model].maker)} ${esc(CARS[c.model].code)}</div><h2>That's no tofu van any more</h2><p>With the last part fitted, the mechanic pulls the little three-cylinder out and drops a turbo boxer in under the floor, with a close-ratio gearbox and proper wheels to match. It still carries four times the tofu.</p><div class="specs"><span class="chip">${sp.hp} PS</span><span class="chip">${sp.kg} kg</span><span class="chip amber">${sp.drive}</span><span class="chip">${sp.top} km/h</span><span class="chip">PI ${sp.pi}</span></div><div class="mact"><button class="btn primary" data-act="close">Oh no</button></div>`)}},
   tyre:d=>{const c=carById(+d.id),t=TYRES[+d.g];if(!fitNew(c,+d.g))return;toast(`New ${t.name.toLowerCase()} tyres on the ${CARS[c.model].code}`);save();renderAll()},
   swapTyre:d=>{const c=carById(+d.id),t=TYRES[+d.g];if(!fitSpare(c,+d.g))return;toast(`Swapped to the spare ${t.name.toLowerCase()} set`);save();renderAll()},
   repair:d=>{const c=carById(+d.id),k=repairCost(c);if(S.money<k)return;AUDIO.coin();S.money-=k;c.cond=100;toast('Panels straightened');save();renderAll()},
@@ -3542,7 +3604,7 @@ function showHelp(intro){
   <p><b>Risk.</b> Bald tyres, a battered car, rain and fog make spins, slides off the road, breakdowns and crashes more likely. A crash or breakdown loses that run and costs a tow, and the damage needs repairing in the Garage. A car below 15% condition can't drive.</p>
   <p><b>Traffic.</b> Cars leave the shop about 12 seconds apart in crew order. A faster car that catches a slower one has to follow until a straight, then pass. Rushed passes and sudden stops can end in contact, and both cars take damage.</p>
   <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. The day after rain is often damp: no rain, but puddles and a slightly greasy road, which costs street tyres almost nothing and sport tyres only a little. Each day also has a wind, shown next to the weather: a headwind costs top speed on the straights and a tailwind gives a little back. A wet race night can dry out partway, leaving a dry line for the last part of the run. In autumn some corners carry wet leaves, and on winter dawns the tyres are cold for the first few corners, semi-slicks most of all. Downhill, weight and nimbleness count for more than power.</p>
-  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Slipstream works best into a headwind, and Around the Outside works best in the wet, where less steering lock means more speed. Tyres wear through a race, so a patient approach can win late.</p>
+  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Slipstream works best into a headwind, and Around the Outside works best in the wet. Lights Out is a gamble on wet or damp nights and on autumn leaves: nobody can memorise where the puddles and leaves are, so a blind car can spin or go off, where less steering lock means more speed. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well. Anyone on the road when Bunta Fujiwara or YS Khong shows up learns a lot about that pass just from watching them.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, power, handling and tyres, a little tougher on the harder passes, and they know their home pass a bit better than you. In your first weeks the downhill locals go easy on you while uphill is close to even, and a losing streak eases the next challenger a little. From week 2, the first local you beat asks to join your crew. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
@@ -3562,6 +3624,7 @@ const CV=(()=>{
     mid:{body:[[0,.3],[.02,.38],[.07,.44],[.16,.48],[.24,.51],[.29,.53],[.5,.56],[.7,.6],[.88,.625],[.96,.62],[.99,.59],[1,.53]],cab:[.27,.44,.58,.86],cw:.88,ax:[.17,.8],rexp:1.3,bar:1},
     rr:{body:[[0,.36],[.03,.45],[.1,.49],[.2,.52],[.32,.555],[.45,.6],[.62,.62],[.82,.6],[.94,.55],[.99,.5],[1,.46]],cab:[.32,.47,.6,.985],cw:.86,ax:[.17,.82],rexp:.85,bar:1},
     kei:{body:[[0,.38],[.03,.48],[.08,.53],[.2,.55],[.3,.57],[.6,.6],[.85,.62],[.96,.62],[.99,.6],[1,.55]],cab:[.29,.44,.64,.9],cw:.9,ax:[.16,.82],rexp:1.2},
+    van:{body:[[0,.4],[.025,.49],[.06,.515],[.2,.525],[.6,.53],[.93,.53],[.985,.515],[1,.47]],cab:[.035,.165,.965,.997],cw:.95,ax:[.2,.83],rexp:.6,cq:.12},
     keiopen:{body:[[0,.36],[.03,.46],[.08,.51],[.2,.54],[.34,.57],[.6,.6],[.85,.62],[.96,.62],[.99,.6],[1,.54]],cab:[.34,.41,.41,.7],cw:.86,ax:[.16,.82],open:true},
   };
   /* per-car: archetype, length, width, height (metres), pop-up lights */
@@ -3570,7 +3633,7 @@ const CV=(()=>{
     ap1:['roadster',4.135,1.75,1.285],fd3s:['fastback',4.28,1.76,1.23,1],bnr32:['coupe',4.545,1.755,1.34],jza80:['fastback',4.52,1.81,1.275],zn6g:['coupe',4.24,1.775,1.32],zn6gt:['coupe',4.24,1.775,1.32],zn6gr:['coupe',4.24,1.775,1.32],
     gr86rc:['coupe',4.265,1.775,1.31],gr86rz:['coupe',4.265,1.775,1.31],grmn86:['coupe',4.24,1.775,1.32],dc2:['fastback',4.38,1.695,1.32],ek9:['hatch',4.18,1.695,1.36],aw11:['mid',3.925,1.665,1.25,1],az1:['kei',3.295,1.395,1.15],
     beat:['keiopen',3.295,1.395,1.175],e30m3:['sedan',4.345,1.68,1.37],escort:['hatch',4.21,1.74,1.42],st205:['fastback',4.42,1.75,1.305],delta:['hatch',3.9,1.77,1.36],cp9a:['sedan',4.35,1.77,1.405],spiritr:['fastback',4.28,1.76,1.23,1],
-    stratos:['mid',3.71,1.75,1.11,1],t16:['hatch',3.82,1.70,1.35],rs964:['rr',4.275,1.65,1.27],rar:['sedan',4.465,1.74,1.425],gc8_22b:['sedan',4.365,1.77,1.39],squattro:['coupe',4.16,1.78,1.345],bnr34:['coupe',4.6,1.785,1.36],nsxr:['mid',4.43,1.81,1.16,1],s13:['coupe',4.47,1.69,1.29]};
+    stratos:['mid',3.71,1.75,1.11,1],t16:['hatch',3.82,1.70,1.35],rs964:['rr',4.275,1.65,1.27],rar:['sedan',4.465,1.74,1.425],gc8_22b:['sedan',4.365,1.77,1.39],squattro:['coupe',4.16,1.78,1.345],bnr34:['coupe',4.6,1.785,1.36],nsxr:['mid',4.43,1.81,1.16,1],s13:['coupe',4.47,1.69,1.29],e10:['van',3.42,1.43,1.9]};
   const FACTORY_WING={grmn86:1,zn6gt:1,s15:1,fd3s:1,gc8:1,cn9a:1,bnr32:1,jza80:1,gc8_22b:1,rar:1,spiritr:1,cp9a:1,bnr34:1,dc2:1,ek9:1,escort:2,st205:1,e30m3:1};
   const DEF={finish:'solid',two:'',wheel:'stock',wheelCol:'#c9ccd2',wing:'stock',kit:0,fenders:0,height:0,tint:0,livery:'none',livCol:'#f4f4f0',num:86};
   const lookOf=c=>Object.assign({},DEF,!c.look&&c.paint==='High Tech Two-Tone'?{two:'#17181c'}:{},c.look||{});
@@ -3764,7 +3827,8 @@ const SPR=(()=>{
     mid:{tb:[.004,.2],dr:[.01,.6],db:[.07,.63],rr:[.3,.97],rf:[.55,1],cw:[.7,.55],hf:[.955,.45],ft:[1,.36],fb:[.993,.15],ax:[.19,.81]},
     rr:{tb:[.004,.2],dr:[.008,.47],db:[.04,.55],rr:[.31,.95],rf:[.56,1],cw:[.66,.6],hf:[.955,.53],ft:[1,.44],fb:[.993,.17],ax:[.18,.82]},
     kei:{tb:[.004,.2],dr:[.01,.6],db:[.07,.65],rr:[.21,1],rf:[.6,1],cw:[.7,.63],hf:[.955,.58],ft:[1,.48],fb:[.993,.18],ax:[.17,.83]},
-    keiopen:{tb:[.004,.2],dr:[.01,.6],db:[.34,.63],rf:[.46,.92],cw:[.53,.64],hf:[.955,.58],ft:[1,.47],fb:[.993,.18],ax:[.17,.83],open:1}
+    keiopen:{tb:[.004,.2],dr:[.01,.6],db:[.34,.63],rf:[.46,.92],cw:[.53,.64],hf:[.955,.58],ft:[1,.47],fb:[.993,.18],ax:[.17,.83],open:1},
+    van:{tb:[.004,.13],dr:[.006,.86],db:[.012,.93],rr:[.03,1],rf:[.85,1],cw:[.955,.5],hf:[.985,.46],ft:[1,.4],fb:[.996,.13],ax:[.19,.82]}
   };
   const OUT=0xff170f0f;// ABGR #0f0f17
   const pack=(r,g,b,a=255)=>((a<<24)|(b<<16)|(g<<8)|r)>>>0;
@@ -4010,6 +4074,11 @@ const TUT=(()=>{
       {target:'.tab[data-t="rivals"]',t:'Keep an eye on this tab',b:'A badge appears here when someone challenges you or races your ghost.'}]},
     {k:'wet',target:'#clock',t:'Rain on the pass',b:'Grip is down and spins and crashes are more likely. Street tyres and four-wheel drive cope best, and semi-slicks are a gamble. Drivers with Rain Dancer barely notice.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Wet'},
     {k:'fog',target:'#clock',t:'Fog on the pass',b:'Speeds stay low and focus matters most. Drivers with Fog Eyes ignore it. On race night, Lights Out is deadly in the fog.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Fog'},
+    {k:'damp',target:'#clock',t:'Damp roads',b:'It rained yesterday, so the road is still damp: no rain, but puddles and a slightly greasy surface. Grip is down a little. Street tyres lose almost nothing, sport tyres only a little, and semi-slicks get nervous in standing water.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Damp'},
+    {k:'windTip',target:'#clock .wind',t:'Wind on the pass',b:()=>{const W=windNow();return`A ${W.kmh} km/h wind today, from the ${compass(W.from)}. The arrow shows which way it blows. On the straights a headwind costs top speed and a tailwind gives a little back. It changes every day, and Slipstream passes work best into a headwind.`},when:()=>calm()&&S.phase==='pre'&&windNow().kmh>=14&&!!document.querySelector('#clock .wind')},
+    {k:'leaves',target:'#mapwrap',t:'Autumn leaves',b:'Wet leaves have piled up in corners all along every pass. They\'re the orange patches on the road, like this one. Grip drops on those corners, more on a dry road than a wet one, and tyres that are good in the wet lose the least. Tap Whole pass to see them all. The results after each run show the time they cost.',enter:()=>MAP.focusLeaf(),when:()=>calm()&&S.phase==='post'&&SEASON()==='Autumn'&&S.weather!=='Snow'&&MAP.leafCorners('usuzumi')>0},
+    {k:'coldTyres',target:'#clock',t:'Cold tyres',b:'Winter dawns are freezing, so the tyres are cold for the first few corners of every delivery and grip is down until they warm up. Semi-slicks suffer most. It only affects the dawn runs, and the results show what it cost.',when:()=>calm()&&S.phase==='pre'&&SEASON()==='Winter'&&S.weather!=='Snow'},
+    {k:'lightsRisk',target:'#clock',t:'Lights Out is risky tonight',b:()=>{const d=S.drivers.find(x=>movesOf(x).includes('lights')),w=S.raceWeather||S.weather,wet=w==='Wet'||w==='Damp';return`${d.first} can drive the pass with the lights off because they know every corner by heart. But nobody can memorise ${wet?'puddles':'where the autumn leaves pile up'}. ${wet?'On a wet or damp night':'With leaves on the road'}, Lights Out can put the car into one blind, and it spins or goes off. It's a big gamble tonight. Choose Patient to try fewer moves.`},when:()=>calm()&&S.day===6&&S.drivers.some(x=>movesOf(x).includes('lights'))&&(((S.raceWeather||S.weather)==='Wet'||(S.raceWeather||S.weather)==='Damp')||(SEASON()==='Autumn'&&(S.raceWeather||S.weather)!=='Snow'))},
     {k:'perk',target:'.tab[data-t="crew"]',t:'Perk ready',b:'A driver has reached a perk level. Open the Crew tab and press Choose a perk. Perks keep top drivers improving after their stats max out.',when:()=>calm()&&S.drivers.some(d=>perkPending(d)>0)},
     {k:'snow',target:'#clock',t:'Snow on the pass',b:'Grip is the worst it gets. Studless winter tyres from the Garage are the only safe choice, four-wheel drive is king and rear-drive cars will struggle.',when:()=>calm()&&S.phase==='pre'&&S.weather==='Snow'},
     {k:'season',target:'#clock',t:'The seasons turn',b:'Each season lasts a few weeks and changes the weather: a rainy early summer, foggy autumns and snowy winters. Shiga-Kusatsu closes for winter, just like the real Route 292.',when:()=>calm()&&S.phase==='pre'&&S.week>SEASON_WEEKS},
@@ -4047,6 +4116,7 @@ const TUT=(()=>{
       if(!calm()){hide();return}const st=tip.steps[tip.si];if(tip.ent!==tip.si){tip.ent=tip.si;st.enter&&st.enter()}
       const last=tip.si>=tip.steps.length-1;draw(st,'t'+tip.k+tip.si,`Tip ${tip.si+1}/${tip.steps.length}`,`<button class="btn sm ghost" data-act="tipOk" data-k="${tip.k}">Skip</button><button class="btn sm primary" data-act="tipNext" data-k="${tip.k}">${last?'Got it':'Next'}</button>`);return}
     if(!tip.when()&&!(tip.k==='race'&&busy)){if(calm()||busy){tip=null}hide();return}
+    if(tip.enter&&!tip.entd){tip.entd=1;tip.enter()}
     draw(tip,'t'+tip.k,'Tip',`<button class="btn sm primary" data-act="tipOk" data-k="${tip.k}">Got it</button>`);
   }
   function init(){
@@ -4055,7 +4125,7 @@ const TUT=(()=>{
   }
   setInterval(()=>{try{tick()}catch(e){}},160);
   addEventListener('resize',()=>{key=key&&key+'_'});
-  return{init,next,skip:()=>{S.tut.s=-1;hide();save();toast('Tutorial skipped. Tap ? to replay it.')},tipOk:k=>{S.tut.tips[k]=1;if(tip)tip.si=null;tip=null;hide();save()},tipNext:k=>{if(!tip||tip.k!==k||!tip.steps)return;if(tip.si>=tip.steps.length-1){S.tut.tips[k]=1;tip.si=null;tip=null;hide();save()}else{tip.si++;key=''}},
+  return{init,next,skip:()=>{S.tut.s=-1;hide();save();toast('Tutorial skipped. Tap ? to replay it.')},tipOk:k=>{S.tut.tips[k]=1;if(tip){tip.si=null;tip.entd=0}tip=null;if(k==='leaves')MAP.focusShop();hide();save()},tipNext:k=>{if(!tip||tip.k!==k||!tip.steps)return;if(tip.si>=tip.steps.length-1){S.tut.tips[k]=1;tip.si=null;tip=null;hide();save()}else{tip.si++;key=''}},
     replay:()=>{S.tut={s:0,tips:{}};entered=-1;tip=null;save();if(TAB!=='crew'){TAB='crew';renderAll()}},allTips:()=>Object.fromEntries(TIPS.map(x=>[x.k,1]))};
 })();
 
