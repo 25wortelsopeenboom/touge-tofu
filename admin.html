@@ -86,7 +86,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="15 Nov 11:12"</script>
+<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="15 Nov 19:50"</script>
 <style>
 /* control room: same tokens and type as the game, laid out as a two-pane console */
 html.admin #app,html.admin #modal{display:none!important}
@@ -178,6 +178,7 @@ html.admin body{background:var(--night);color:var(--ink);font-family:var(--f-bod
 #adm .xs{grid-template-columns:minmax(0,1fr) auto auto}
 #adm .xbars.god{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 18px}
 #adm .xs span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#adm .hidtag{font-family:var(--f-dot);font-size:10px;letter-spacing:.06em;color:var(--cyan);border:1px solid currentColor;border-radius:4px;padding:0 4px}
 #adm .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 #adm :focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
 .toast.bad{border-color:var(--brake)}
@@ -234,14 +235,15 @@ main{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:12px;min-height:
 #map{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab}
 #map.drag{cursor:grabbing}
 .ov{position:absolute;z-index:2}
-.clock{top:12px;left:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.clock{top:12px;left:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(50% - 18px)}
 .pill{font-family:var(--f-dot);font-size:12px;padding:5px 10px;border-radius:999px;background:rgba(10,14,30,.78);border:1px solid var(--line);white-space:nowrap}
 .pill.amber{color:var(--sodium);border-color:rgba(255,176,59,.4)}
 .pill.wet{color:var(--cyan)}
 .pill.fog{color:#c9cbd6}
+.pill.damp{color:#9fc4d8}.pill .wind{display:inline-flex;align-items:center;gap:3px;margin-left:7px;padding-left:7px;border-left:1px solid var(--line);color:#cfd6e6}.pill .wind small{font-size:.8em;opacity:.7}.pill .wind .warr{display:inline-block;font-style:normal;font-size:12px;line-height:1;color:var(--cyan)}
 .pill.snow{color:#f2f6ff}
 .pill.season.s0{color:#f4a9c0}.pill.season.s1{color:#8fd46a}.pill.season.s2{color:#f0913a}.pill.season.s3{color:#cfe3ff}
-.mapctl{top:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 200px)}
+.mapctl{top:12px;right:12px;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:calc(50% - 18px)}
 .mapctl button{min-width:32px;height:32px;padding:0 9px;border-radius:8px;background:rgba(10,14,30,.8);border:1px solid var(--line);cursor:pointer;font-family:var(--f-dot);font-size:12px}
 .mapctl button.on{border-color:var(--sodium);color:var(--sodium)}
 #live{top:54px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-height:calc(100% - 250px);overflow:hidden}
@@ -651,7 +653,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v106</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v109</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -837,10 +839,11 @@ const SEASON_WEEKS=4;
 const SEASONS=[{n:'Spring',jp:'春'},{n:'Summer',jp:'夏'},{n:'Autumn',jp:'秋'},{n:'Winter',jp:'冬'}];
 /* grip of a fresh set on one scale, 100 = semi-slicks on a dry road, so dry, wet and snow compare directly */
 const tyreGrip=t=>{const mu=.7+.6*t.grip,top=.7+.6*Math.max(...TYRES.map(x=>x.grip)),f=v=>Math.round(v/top*100);return{dry:f(mu),wet:f(mu*t.wet),snow:f(mu*t.snow)}};
-const seasonIdx=w=>Math.floor(((w||1)-1)/SEASON_WEEKS)%4;
+/* S.sOff shifts the calendar's season (set by the season codes), the week number itself never changes */
+const seasonIdx=w=>((Math.floor(((w||1)-1+((typeof S!=='undefined'&&S&&S.sOff)||0))/SEASON_WEEKS)%4)+4)%4;
 const SEASON=()=>SEASONS[seasonIdx(S?S.week:1)].n;
 /* Sakura: across spring the blossom spreads week by week, peaks, then the petals fall as the leaves come in. 0..1 through the season. */
-const springP=()=>SEASON()!=='Spring'?-1:((((S?S.week:1)-1)%SEASON_WEEKS)+.5)/SEASON_WEEKS;
+const springP=()=>SEASON()!=='Spring'?-1:(((((S?S.week:1)-1+((S&&S.sOff)||0))%SEASON_WEEKS+SEASON_WEEKS)%SEASON_WEEKS)+.5)/SEASON_WEEKS;
 const bloomOf=p=>p<0?null:{pink:p>.75?.6:clamp(.12+p*1.35,0,1),late:p>.75,petals:p<.5?0:p>.75?1:.55};
 const seasonKey=()=>{const p=springP();return p<0?SEASON():'Spring'+Math.floor(p*SEASON_WEEKS)};
 const WINTER_CLOSED=['shiga'];
@@ -849,7 +852,7 @@ const passOpen=m=>S.cred>=m.cred&&!passClosed(m.id);
 const SWAP_FEE=2000,WET_DRIVE={AWD:1,FF:.93,FR:.86,MR:.86,RR:.88};
 let WX_OVR=null; // weather forced while watching a race that was run on another player's Saturday
 const WX=()=>WX_OVR||(S?(S.phase==='race'&&S.raceWeather?tropWx(S.raceWeather,RACE_M):S.weather):'Clear');
-const WXLABEL={Clear:'Clear, dry',Wet:'Wet road',Fog:'Mountain fog',Snow:'Snow on the road'};
+const WXLABEL={Clear:'Clear, dry',Damp:'Damp, puddles',Wet:'Wet road',Fog:'Mountain fog',Snow:'Snow on the road'};
 const TRAITS={
   natural:{name:'Natural',desc:'Learns 35% faster from every run.'},
   steady:{name:'Steady Cup',desc:'Silky inputs. 25% less tofu damage.'},
@@ -894,7 +897,7 @@ const movesOf=d=>Object.keys(MOVES).filter(k=>MOVES[k].ok(d));
 function movesChips(d,empty){const ms=movesOf(d);if(!ms.length){const nx=Object.keys(MOVES).find(k=>!MOVES[k].ok(d));return`<span class="note">${empty||'No special moves yet.'}${nx?` Next: ${MOVES[nx].name} at ${MOVES[nx].req}.`:''}</span>`}return ms.map(k=>{const r=k==='block'?0:mrank(d,k),n=(d.mm&&d.mm[k])||0;return`<span class="chip mv" style="color:${MOVES[k].col};border-color:${MOVES[k].col}55" title="${esc(MOVES[k].desc)}${r&&!d.mmRank?` Rank ${ROMAN[r]}: landed ${n} time${n===1?'':'s'}.${r<3?` Rank ${ROMAN[r+1]} at ${r===1?4:10}.`:''}`:''}">${MOVES[k].name}${r?' '+ROMAN[r]:''}</span>`}).join(' ')}
 function learnCheck(d,before){movesOf(d).forEach(k=>{if(!before.includes(k)){addLog(`${d.first} learned ${MOVES[k].name}!`);toast(`${d.first} learned ${MOVES[k].name}`)}})}
 const TACTICS={agg:{name:'All-out attack',k:1,mist:1.3,deg:1.3,pace:.994},bal:{name:'Balanced',k:.6,mist:1,deg:1,pace:1},pat:{name:'Patient',k:.32,mist:.7,deg:.7,pace:1.005}};
-const WEATHER={Clear:{time:1,dmg:1,mist:1},Wet:{time:1.08,dmg:1.3,mist:1.6},Fog:{time:1.06,dmg:1.1,mist:1.4},Snow:{time:1.16,dmg:1.45,mist:2.1}};
+const WEATHER={Clear:{time:1,dmg:1,mist:1},Damp:{time:1.035,dmg:1.12,mist:1.25},Wet:{time:1.08,dmg:1.3,mist:1.6},Fog:{time:1.06,dmg:1.1,mist:1.4},Snow:{time:1.16,dmg:1.45,mist:2.1}};
 const QUAL=[
   {name:'Village recipe',price:12000,cost:0,desc:'Tap water, supermarket soybeans. Honest tofu.'},
   {name:'Summit spring water',price:16000,cost:200000,desc:'Hauled down from the spring behind the hotel.'},
@@ -986,7 +989,18 @@ const SANDBOX=(()=>{try{if(!new URLSearchParams(location.search).get('playas'))r
 const SAVE=SANDBOX?'tougeTofu.sandbox':'tougeTofu.v1';
 let S=null,TAB='crew',busy=false;
 function freshState(){return{v:1,money:30000,week:1,day:0,cred:0,phase:'pre',prod:1,qual:1,weather:'Clear',drivers:[],cars:[],nid:1,log:[],wins:0,losses:0,weekRev:0,weekCredStart:0,weekRaces:[],seenIntro:false,records:{},batches:0,earned:0}}
-function rollWeather(){const r=R(),t={Spring:[.6,.86,1],Summer:[.52,.92,1],Autumn:[.6,.78,1],Winter:[.42,.52,.64]}[SEASON()];return r<t[0]?'Clear':r<t[1]?'Wet':r<t[2]?'Fog':'Snow'}
+/* the day after rain often stays damp: no rain, but standing water and a greasy surface */
+function rollWeather(prev){const r=R(),t={Spring:[.6,.86,1],Summer:[.52,.92,1],Autumn:[.6,.78,1],Winter:[.42,.52,.64]}[SEASON()],w=r<t[0]?'Clear':r<t[1]?'Wet':r<t[2]?'Fog':'Snow';
+  return w==='Clear'&&(prev==='Wet'||prev==='Snow')&&R()<.6?'Damp':w}
+const wetK=w=>w==='Wet'?1:w==='Damp'?.45:0;
+/* wind: a direction it blows from (compass degrees, map north is up) and a speed. Slipstream works best into a headwind. */
+const COMPASS=['N','NE','E','SE','S','SW','W','NW'],compass=deg=>COMPASS[Math.round(((deg%360)+360)%360/45)%8];
+function rollWind(){const pv={Spring:270,Summer:140,Autumn:20,Winter:310}[SEASON()],r=R();return{from:Math.round(((pv+(R()-.5)*140)%360+360)%360),kmh:Math.round(r<.3?2+R()*6:r<.75?8+R()*10:r<.95?18+R()*12:30+R()*14)}}
+function windOfSeed(n){const r=mulberry32(n>>>0);r();const a=r(),b=r();return{from:Math.round(a*359),kmh:Math.round(b<.3?2+r()*6:b<.75?8+r()*10:b<.95?18+r()*12:30+r()*14)}}
+const windNow=()=>(S.phase==='race'||S.phase==='raced')&&S.raceWind?S.raceWind:S.wind||(S.wind=rollWind());
+let RACE_WIND=null,RACE_DRY=null;
+/* how much of the wind is in the driver's face for a road heading (radians, map coords): + headwind, - tailwind, in km/h */
+function headwind(theta,W){if(!W)return 0;const c=W.from*Math.PI/180,af=Math.atan2(-Math.cos(c),Math.sin(c));return W.kmh*Math.cos(theta-af)}
 function newGame(){
   S=freshState();
   const car={id:S.nid++,model:'ae86',c1:'#f1f0ea',c2:'#17181c',paint:'High Tech Two-Tone',engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:0,wear:22},cond:92,km:118400};
@@ -1057,9 +1071,9 @@ function carValue(c){const m=CARS[c.model];let v=Math.max(m.price*.6,90000);MODS
 const INC_LABEL={spin:'Spun out',off:'Off the road',crash:'Crashed',break:'Broke down',hit:'Contact'};
 function incidentRisk(d,c,w){
   const tyre=Math.max(0,c.tyre.wear-55)/45,cond=Math.max(0,70-c.cond)/70;
-  const dr=CARS[c.model].drive,wx=w==='Wet'?(hasT(d,'rain')?1.2:1.7)*TYRES[c.tyre.grade].wetRisk*(dr==='AWD'?.75:dr==='FF'?.9:1.1):w==='Fog'?(hasT(d,'fog')?1:1.25):w==='Snow'?(hasT(d,'ice')?1.4:2)*TYRES[c.tyre.grade].snowRisk*(dr==='AWD'?.65:dr==='FF'?.85:1.2):1;
+  const dr=CARS[c.model].drive,wx=w==='Wet'||w==='Damp'?1+((hasT(d,'rain')?1.2:1.7)*TYRES[c.tyre.grade].wetRisk*(dr==='AWD'?.75:dr==='FF'?.9:1.1)-1)*wetK(w):w==='Fog'?(hasT(d,'fog')?1:1.25):w==='Snow'?(hasT(d,'ice')?1.4:2)*TYRES[c.tyre.grade].snowRisk*(dr==='AWD'?.65:dr==='FF'?.85:1.2):1;
   const foc=(1.35-.7*d.stats.foc/100)*(hasT(d,'ice')?.65:1);
-  return{slide:(.012+tyre*.3+cond*.12)*wx*foc,brk:c.cond<60?.004+(60-c.cond)/60*.22:.002,tyreBad:c.tyre.wear>80,wet:w==='Wet'||w==='Snow'};
+  return{slide:(.012+tyre*.3+cond*.12)*wx*foc,brk:c.cond<60?.004+(60-c.cond)/60*.22:.002,tyreBad:c.tyre.wear>80,wet:w==='Wet'||w==='Snow'||(w==='Damp'&&R()<.5)};
 }
 function rollIncidents(d,c,T,w,race,rng){
   rng=rng||R;const k=incidentRisk(d,c,w),N=T.len,out=[];
@@ -1082,7 +1096,7 @@ function simDelivery(d,c,w){
   const drv=(st.crn*.22+st.brk*.18+st.ht*.18+st.thr*.2+st.dft*.1+st.foc*.12)/100;
   const car=sp.powerN*.4+sp.handN*.3+sp.gripN*.3;
   const perf=drv*.5+car*.5;
-  let wt=W.time;if(w==='Wet'&&hasT(d,'rain'))wt=1.02;if(w==='Wet'&&sp.drive==='AWD')wt-=.03;if(w==='Fog'&&hasT(d,'fog'))wt=1;
+  let wt=W.time;if(w==='Wet'&&hasT(d,'rain'))wt=1.02;if(w==='Damp'&&hasT(d,'rain'))wt=1.01;if(w==='Wet'&&sp.drive==='AWD')wt-=.03;if(w==='Damp'&&sp.drive==='AWD')wt-=.015;if(w==='Fog'&&hasT(d,'fog'))wt=1;
   const prof=MAP.profile(d,c,w);let time=prof.time*(1+(R()-.5)*.025);
   const smooth=(st.ht*.3+st.thr*.3+st.brk*.25+st.foc*.15)/100;
   let dmg=19*Math.pow(Math.max(0,1-smooth),1.6)*(1-.1*c.susp)*(c.cradle?.55:1)*W.dmg*(hasT(d,'steady')?.75:1)*(hasT(d,'hot')?1.15:1)*(.85+R()*.3);
@@ -1131,11 +1145,16 @@ function traffic(cars,T,race){
     const [mv,at]=pk,D=o.c.d.stats,A=s.c.d.stats,def=(D.foc+D.brk)/2+(o.c.moves.has('block')?14:0)+(o.c.fresh?REST_K.def:0);
     const fit={gutter:(A.crn+A.dft)/2+6,late:A.brk+(hasT(s.c.d,'latebrake')?10:0),lights:(A.foc+A.crn)/2+14+(FOGGY?(hasT(o.c.d,'fog')?6:18):0),feint:A.dft+4,outside:A.crn,slip:A.thr}[mv]+(mrank(s.c.d,mv)-1)*7+(hasP(s.c.d,'hunter')?8:0)+(mv==='gutter'?8*knowOf(s.c.d,T.id)/100:0),MR=mrank(s.c.d,mv);
     let p=clamp(.4+(fit-def)/55,.12,.88)*(hasT(s.c.d,'hot')?1.08:1);
+    /* slipstream: a headwind makes the tow far stronger, a tailwind kills it. Around the outside: in the wet, the car carries more speed on less steering lock than the inside line allows */
+    if(mv==='slip'){const hw=headwind(T.theta[Math.min(N-1,j+8)],RACE_WIND||windNow());p=clamp(p+clamp(hw/35,-1,1)*.16,.06,.94)}
+    if(mv==='outside'&&race){const wk=wetK(WX());if(wk)p=clamp(p+.13*wk,.06,.94)}
     if(mv==='slip'){const a=spec(s.c.c).powerN,b=spec(o.c.c).powerN;p*=clamp(.55+a/(b||.01)*.5,.5,1.25)}
     if(mv==='lights')s.lightsUsed=(s.lightsUsed||0)+1;
     const ok=R()<p,dur={gutter:2.8,late:2.6,lights:6+(MR-1),feint:2.8,outside:3.4,slip:3.2}[mv];
     s.c.fx.push({type:mv,t0:t,t1:t+dur,at,ok});ev.push({type:'move',move:mv,ok,t,i:j,at,by:s.k,on:o.k});
     s.mvCool=ok?16:9;s.press=ok?0:s.press;
+    /* a slipstream that works: tuck in nose-to-tail right behind the rival for a second (max tow), then pull out and slingshot past */
+    if(ok&&mv==='slip'){const TW=1.0;s.tow={o,until:t+TW};s.c.lanes.push({t0:t,t1:t+TW+.1,lane:0});o.c.lanes.push({t0:t,t1:t+TW+.1,lane:0});s.boost={until:t+TW+2.6,k:1.09};s.c.fx[s.c.fx.length-1].t1+=TW;return true}
     if(ok){const inS=-(Math.sign(T.curv[at])||1),lane=mv==='outside'?-inS*.16:inS*.16;startAlong(s,o,lane,-lane);const AL=along.get(key(s.k,o.k));AL.y=o;AL.w=s;AL.slow=mv==='slip'?.8:.66;s.boost={until:t+(mv==='lights'?(FOGGY?5:4)+.5*(MR-1):2.4),k:mv==='slip'?1.08:1.06};return true}
     const loss={late:.8+R()*.8,gutter:.45+R()*.5,feint:.35+R()*.4,outside:.3+R()*.4,lights:0,slip:0}[mv]*(1-.2*(MR-1));ev[ev.length-1].loss=loss;if(loss){s.slowUntil=t+loss/.6;s.slowK=.4}
     return false;
@@ -1144,7 +1163,8 @@ function traffic(cars,T,race){
   while(t<tEnd&&st.some(s=>!s.done&&!s.out)){
     const order=st.filter(s=>!s.done&&!s.out&&t>=s.c.start).sort((a,b)=>b.p-a.p);
     for(const s of order){
-      s.pp=s.p;if(s.stun>0){s.stun-=dt;s.km=.15;continue}if(!(s.slowUntil>t))s.soft=false;
+      s.pp=s.p;if(s.tow&&t>=s.tow.until){const q=s.tow.o;s.tow=null;if(!q.done&&!q.out&&q.p>s.p-.5&&!along.has(key(s.k,q.k))){const j0=Math.floor(s.p),inS=-(Math.sign(T.curv[Math.min(N-1,j0+6)])||1),ln=inS*.16;startAlong(s,q,ln,-ln);const AL=along.get(key(s.k,q.k));AL.y=q;AL.w=s;AL.slow=.8}}
+      if(s.stun>0){s.stun-=dt;s.km=.15;continue}if(!(s.slowUntil>t))s.soft=false;
       const cum=s.c.cum;let p=s.p,rem=dt;
       let tg=s.boost&&t<s.boost.until?s.boost.k:1;
       if(race){const tw=st.find(q=>q!==s&&!q.done&&!q.out&&q.p>s.p&&q.p-s.p<FOL+12);if(tw){const jj=Math.floor(s.p),nh=T.hair.find(x=>x>=jj);if(tw.p-s.p>fol(tw)+.6&&(nh==null||nh-jj>6))tg*=1.03;if(maxAhead[jj]<.15)tg*=1.02}}
@@ -1155,14 +1175,14 @@ function traffic(cars,T,race){
       let o=null,og=1e9;
       for(const q of st){if(q===s||q.done||q.out||t<q.c.start||q.offIdx.has(Math.floor(q.p)))continue;const g=q.p-s.p,AQ=along.get(key(s.k,q.k));if(g<-.01||(AQ&&(AQ.ng||t-AQ.t0>1.1)))continue;if(g<og){og=g;o=q}}
       if(o&&og>FOL+4)s.cool=false;
-      const FO=o?fol(o):FOL;
+      const FO=o?(s.tow&&s.tow.o===o?1.05:fol(o)):FOL;
       if(o&&des>o.p-FO){
         const vS=(des-s.p)/dt,vO=(o.p-o.pp)/dt,close=(vS-vO)*.2*T.mpt,oStop=(o.stun>0&&!o.soft)||vO*.2*T.mpt<4;
         if(oStop&&og<FOL+2.5&&close>11&&!s.cool){s.cool=true;const pc=(race?.25:.2)*(1.25-s.c.d.stats.brk/100)*(hasT(s.c.d,'ice')?.6:1);if(R()<pc){contact(s,o);continue}}
         s.behind+=dt;
       }else s.behind=Math.max(s.behind<0?s.behind:0,s.behind-dt*.25);
       if(race&&o&&og<FOL+4&&!along.has(key(s.k,o.k))){s.press+=dt;if(s.mvCool>0)s.mvCool-=dt;else if(o.stun<=0)battle(s,o)}else if(race)s.press=Math.max(0,s.press-dt*2);
-      if(o&&og<FOL+3&&s.behind>(race?4:1)&&o.stun<=0&&!along.has(key(s.k,o.k))){
+      if(o&&og<FOL+3&&s.behind>(race?4:1)&&o.stun<=0&&!s.tow&&!along.has(key(s.k,o.k))){
         const j=Math.floor(s.p),j2=Math.min(N-1,j+40),jo=Math.floor(o.p),jo2=Math.min(N-1,jo+40),mine=(cum[j2]-cum[j])/((j2-j)||1),theirs=(o.c.cum[jo2]-o.c.cum[jo])/((jo2-jo)||1);
         if(maxAhead[j]<.25&&mine<theirs*.985){
           s.behind=race?-8:-1.2;
@@ -1905,6 +1925,9 @@ const MAP=(()=>{
     const ngKeep=NG,ngwKeep=NGW;hg=null;dg=null;NG=null;bSeason=null;
     return{id,def,B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox,ng:ngKeep,ngw:ngwKeep,season:null};
   }
+  function puddles(){if(world.pud)return world.pud;const T=road,R2=mulberry32(strHash(String(world.def.name||world.def.biome||'w'))+77),P=[];
+    for(let i=6;i<T.len-6;i+=5){if(R2()<.36){const off=(R2()-.5)*HW*1.5,a=T.pts[i],n=T.left[i];P.push({v:a.v+n.v*off,u:a.u+n.u*off,rx:.07+R2()*.12,ry:.035+R2()*.05,ang:T.theta[i]+(R2()-.5)*.6,wet:R2()<.35})}}
+    return world.pud=P}
   function useWorld(W){world=W;({B,HW,SHW,road,rev,paths,statics,lamps,vends,winLights,shopSlots,hotelSlots,groundC,shopRect,hotelRect,fitC,fitBox}=W)}
   function loadWorld(id){if(!WORLDS[id]||WORLDS[id].season!==seasonKey()){WORLDS[id]=buildWorld(id);WORLDS[id].season=seasonKey()}useWorld(WORLDS[id]);skids=[];smoke=[];btr=[];if(vw>1){computeFit();cam.z=fitZ;cam.v=fitC[0];cam.u=fitC[1];zTarget=null;camTarget=null}return WORLDS[id]}
   /* ---------- the countryside beyond the pass ----------
@@ -2044,6 +2067,16 @@ const MAP=(()=>{
     c.strokeStyle=cam.z>30?pats.gravel:'#d8cfb8';c.lineWidth=Math.max(SHW*2,4/Zl);c.stroke(paths.center);
     c.strokeStyle=cam.z>30?pats.asphalt:'#34363c';c.lineWidth=Math.max(HW*2,2.2/Zl);c.stroke(paths.center);
     if(WX()==='Wet'){c.strokeStyle='rgba(20,24,40,.35)';c.lineWidth=HW*2;c.stroke(paths.center);c.strokeStyle='rgba(150,170,210,.1)';c.lineWidth=HW*1.2;c.stroke(paths.center)}
+    else if(WX()==='Damp'){c.strokeStyle='rgba(20,24,40,.18)';c.lineWidth=HW*2;c.stroke(paths.center)}
+    /* autumn: wet leaves piled on some corners (they cost a little grip there) */
+    if(SEAS()==='Autumn'&&WX()!=='Snow'&&!BIOMES[world.def.biome].trop&&cam.z>9){const L=leafMask(road),T=road,cols=['#c2512a','#d98a2b','#9c3d22','#b8862f','#7a4a22'];
+      for(let i=0;i<T.len;i+=1){if(!L[i])continue;const a=T.pts[i];if(a.v<vr.v0||a.v>vr.v1||a.u<vr.u0||a.u>vr.u1)continue;const n=T.left[i];
+        for(let k=0;k<12;k++){const h1=hash2(i,k,71),h2=hash2(i,k,72),h3=hash2(i,k,73),off=(h1-.5)*HW*1.8,al=(h2-.5)*.1;c.fillStyle=cols[Math.floor(h3*cols.length)];c.globalAlpha=.92;c.fillRect(a.v+n.v*off+Math.cos(T.theta[i])*al-.016,a.u+n.u*off+Math.sin(T.theta[i])*al-.011,.032,.022)}}c.globalAlpha=1}
+    /* standing water: puddles along the road when it's damp (and a few more in the rain) */
+    if((WX()==='Damp'||WX()==='Wet')&&cam.z>9){const P=puddles(),many=WX()==='Wet';c.lineWidth=.006;
+      for(const q of P){if(!many&&q.wet)continue;if(q.v<vr.v0||q.v>vr.v1||q.u<vr.u0||q.u>vr.u1)continue;c.save();c.translate(q.v,q.u);c.rotate(q.ang);
+        c.fillStyle='rgba(70,92,135,.8)';c.beginPath();c.ellipse(0,0,q.rx,q.ry,0,0,Math.PI*2);c.fill();c.fillStyle='rgba(185,210,250,.38)';c.beginPath();c.ellipse(-q.rx*.25,-q.ry*.3,q.rx*.55,q.ry*.32,0,0,Math.PI*2);c.fill();
+        c.strokeStyle='rgba(170,195,235,.4)';c.beginPath();c.ellipse(0,0,q.rx,q.ry,0,0,Math.PI*2);c.stroke();c.restore()}}
     if(lod){c.fillStyle='rgba(0,0,0,.14)';c.fill(paths.patch)}
     c.strokeStyle='rgba(0,0,0,.28)';c.lineWidth=.022;c.stroke(paths.skid);
     if(skids.length){c.strokeStyle='rgba(12,12,14,.4)';c.lineWidth=.024;c.beginPath();for(const s of skids){c.moveTo(s[0],s[1]);c.lineTo(s[2],s[3])}c.stroke()}
@@ -2174,22 +2207,31 @@ const MAP=(()=>{
     txt(m,'TRACK',bx+8,by+15,8,'#cfeeff');
   }
   /* ---------- physics ---------- */
+  /* autumn leaves: a few corners carry a carpet of wet leaves. Decided by position, so uphill and downhill agree, and drawn on the map */
+  function leafy(v,u){const h=hash2(Math.floor(v*2),Math.floor(u*2),613);return h<.1}
+  function leafMask(T){if(T._leaf)return T._leaf;const N=T.len,m=new Uint8Array(N);for(let i=0;i<N;i++){if(Math.abs(T.curv[i])>.07&&leafy(T.pts[i].v,T.pts[i].u))m[i]=1}return T._leaf=m}
   function profile(d,c,w,T,race){
     T=T||home().road;
-    const sp=spec(c),N=T.len,mpt=T.mpt,st=d.stats,g=9.81,kn=knowOf(d,T.id)/100,wet=w==='Wet',snow=w==='Snow',fog=w==='Fog'&&!hasT(d,'fog'),push=race?1.03*(hasT(d,'hot')?1.02:1):1;
+    const sp=spec(c),N=T.len,mpt=T.mpt,st=d.stats,g=9.81,kn=knowOf(d,T.id)/100,wk=wetK(w),wet=wk>0,snow=w==='Snow',fog=w==='Fog'&&!hasT(d,'fog'),push=race?1.03*(hasT(d,'hot')?1.02:1):1;
     const down=T.pts[N-1].z<T.pts[0].z,heavy=clamp((sp.kg-1100)/500,-.6,1);
     const mass=sp.kg+75,P=sp.hp*735.5*.85*(.64+.36*st.thr/100)*(.75+.25*(c.cond??100)/100)*(down?.82:1);
-    let mu=(.7+.6*TYRES[c.tyre.grade].grip)*(1-Math.max(0,c.tyre.wear-45)/160);if(wet)mu*=TYRES[c.tyre.grade].wet*WET_DRIVE[sp.drive]*(hasT(d,'rain')?1.12:1);if(snow)mu*=TYRES[c.tyre.grade].snow*SNOW_DRIVE[sp.drive]*(hasT(d,'ice')?1.06:1);
+    let mu=(.7+.6*TYRES[c.tyre.grade].grip)*(1-Math.max(0,c.tyre.wear-45)/160);const fW=Math.min(1,TYRES[c.tyre.grade].wet*WET_DRIVE[sp.drive]*(hasT(d,'rain')?1.12:1));if(snow)mu*=TYRES[c.tyre.grade].snow*SNOW_DRIVE[sp.drive]*(hasT(d,'ice')?1.06:1);
+    /* grip can change along the road: a wet race that dries out, leaves on autumn corners, cold tyres in the first corners of a winter dawn */
+    const q=new Float32Array(N).fill(1),DRY=race&&w==='Wet'?RACE_DRY:null,leaves=!snow&&SEAS()==='Autumn'&&world&&world.def&&!BIOMES[world.def.biome].trop?leafMask(T):null,cold=!race&&SEASON()==='Winter'&&!snow;
+    for(let i=0;i<N;i++){const x=i/N;let wi=wk;if(DRY&&x>DRY.a)wi=1-(1-DRY.e)*Math.min(1,(x-DRY.a)/(1-DRY.a));if(wi>0)q[i]*=1-(1-fW)*wi;
+      if(leaves&&leaves[i])q[i]*=1-(1-fW)*(wet?.35:.5);if(cold&&x<.12)q[i]*=1-.13*(1-x/.12)*(c.tyre.grade===2?1.4:1)}
     if(down)mu*=1-.07*heavy+.03*(sp.handN-.7);
     const lat=mu*(.82+.18*sp.handN)*(.8+.2*(st.crn*.75+st.dft*.25)/100)*(fog?.95:1)*push*(1+.025*kn);
     const lon=mu*({AWD:1,FR:.56,MR:.62,FF:.6,RR:.66}[sp.drive])*(1+.08*c.lsd);
     const brk=mu*(.82+.18*sp.brakeN)*(.7+.3*(st.brk*.7+st.ht*.3)/100)*push*(down?1-.06*heavy:1)*(1+.035*kn);
     const vtop=Math.min(sp.top,fog?125:snow?120:999)/3.6,vel=new Float32Array(N),grade=new Float32Array(N);
+    /* wind: drag works on the air speed, so a headwind costs top speed on the straights and a tailwind gives a little back */
+    const WND=race?(RACE_WIND||windNow()):(S?windNow():null),hw=new Float32Array(N);if(WND&&WND.kmh>0)for(let i=0;i<N;i++)hw[i]=headwind(T.theta[i],WND)/3.6;
     for(let i=1;i<N;i++){const a=Math.max(0,i-30),b=Math.min(N-1,i+30);let ds=0;for(let k=a+1;k<=b;k++)ds+=T.seg[k];grade[i]=clamp((T.pts[b].z-T.pts[a].z)/((ds*mpt)||1),-.12,.12)}
-    for(let i=0;i<N;i++){const k=Math.abs(T.curv[i])/mpt,km=Math.max(1e-4,k/(1+7*k));vel[i]=Math.min(vtop,Math.sqrt(lat*g/km))}
+    for(let i=0;i<N;i++){const k=Math.abs(T.curv[i])/mpt,km=Math.max(1e-4,k/(1+7*k));vel[i]=Math.min(vtop,Math.sqrt(lat*q[i]*g/km))}
     vel[0]=.5;vel[N-1]=Math.min(vel[N-1],race?vel[N-1]:4);
-    for(let i=1;i<N;i++){const ds=T.seg[i]*mpt,v=Math.max(vel[i-1],3);const a=Math.min(lon*g,P/(mass*v))-.5*1.2*.62*v*v/mass-.013*g-g*grade[i];vel[i]=Math.min(vel[i],Math.sqrt(Math.max(9,vel[i-1]*vel[i-1]+2*a*ds)))}
-    for(let i=N-2;i>=0;i--){const ds=T.seg[i+1]*mpt,ab=brk*g+g*grade[i+1];vel[i]=Math.min(vel[i],Math.sqrt(vel[i+1]*vel[i+1]+2*Math.max(2,ab)*ds))}
+    for(let i=1;i<N;i++){const ds=T.seg[i]*mpt,v=Math.max(vel[i-1],3),va=v+hw[i];const a=Math.min(lon*q[i]*g,P/(mass*v))-.5*1.2*.62*va*Math.abs(va)/mass-.013*g-g*grade[i];vel[i]=Math.min(vel[i],Math.sqrt(Math.max(9,vel[i-1]*vel[i-1]+2*a*ds)))}
+    for(let i=N-2;i>=0;i--){const ds=T.seg[i+1]*mpt,ab=brk*q[i+1]*g+g*grade[i+1];vel[i]=Math.min(vel[i],Math.sqrt(vel[i+1]*vel[i+1]+2*Math.max(2,ab)*ds))}
     const cum=new Float32Array(N);let t=0,vmax=0;for(let i=1;i<N;i++){t+=T.seg[i]*mpt/Math.max(1,(vel[i]+vel[i-1])/2);cum[i]=t;vmax=Math.max(vmax,vel[i])}
     return{time:t,vel,cum,vmax:vmax*3.6};
   }
@@ -2541,8 +2583,8 @@ function renderHUD(){
   $('#sMoney').textContent=yen(S.money);$('#sCred').textContent=Math.round(S.cred);$('#sWeek').textContent=S.week;
   $('#days').innerHTML=DAYS.map((d,i)=>`<div class="day ${i<S.day?'past':''} ${i===S.day?'now':''} ${i===6?'sat':''}">${d}<small>${i===6?'TOUGE':'RUN'}</small></div>`).join('');
   const ph={pre:['Before dawn','04:30'],post:[S.day===6?'Afternoon':'Morning',S.day===6?'16:20':'06:40'],race:['Race night','23:30'],raced:['Late night','01:15']}[S.phase]||['',''];
-  if(S.day===6&&!S.raceWeather)S.raceWeather=rollWeather();const w0=S.phase==='race'||S.phase==='raced'?tropWx(S.raceWeather||S.weather,RACE_M):S.weather,wc=w=>w==='Wet'?'wet':w==='Fog'?'fog':w==='Snow'?'snow':'',SE=SEASONS[seasonIdx(S.week)];
-  $('#clock').innerHTML=`<span class="pill season s${seasonIdx(S.week)}">${SE.jp}<span class="sn"> ${SE.n}</span></span><span class="pill amber">${DAYS[S.day]} ${ph[1]}</span><span class="pill ${wc(w0)}">${WXLABEL[w0]}</span><span class="pill ph">${ph[0]}</span>${S.day===6&&(S.phase==='pre'||S.phase==='post')?`<span class="pill ${wc(S.raceWeather)}" title="Race night forecast">Tonight: ${WXLABEL[S.raceWeather]}</span>`:''}`;
+  if(S.day===6&&!S.raceWeather)S.raceWeather=rollWeather(S.weather);if(S.day===6&&!S.raceWind)S.raceWind=rollWind();const w0=S.phase==='race'||S.phase==='raced'?tropWx(S.raceWeather||S.weather,RACE_M):S.weather,wc=w=>w==='Wet'?'wet':w==='Damp'?'damp':w==='Fog'?'fog':w==='Snow'?'snow':'',WN=windNow(),SE=SEASONS[seasonIdx(S.week)];
+  $('#clock').innerHTML=`<span class="pill season s${seasonIdx(S.week)}">${SE.jp}<span class="sn"> ${SE.n}</span></span><span class="pill amber">${DAYS[S.day]} ${ph[1]}</span><span class="pill ${wc(w0)}">${WXLABEL[w0]}<span class="wind" title="Wind ${WN.kmh} km/h from the ${compass(WN.from)} (the arrow shows where it blows). Slipstream passes work best into a headwind."><i class="warr" style="transform:rotate(${(WN.from+180)%360}deg)">↑</i>${WN.kmh}<small>km/h</small></span></span><span class="pill ph">${ph[0]}</span>${S.day===6&&(S.phase==='pre'||S.phase==='post')?`<span class="pill ${wc(S.raceWeather)}" title="Race night forecast">Tonight: ${WXLABEL[S.raceWeather]}</span>`:''}`;
   $('#ticker').innerHTML=S.log.slice(-3).map(l=>`<div>${esc(l.m)}</div>`).join('');
 }
 function renderAction(){
@@ -2769,6 +2811,8 @@ function dispatch(){
 function finishDelivery(list){
   const gh=list.find(r=>r.ghost),N0=MAP.homeTrack().len;list=list.filter(r=>!r.ghost);let passed=[];
   if(gh){const gf=gh.start+gh.cumReal[N0-1];passed=list.filter(r=>r.dnf!=null||r.start+r.cumReal[N0-1]>gf);passed.forEach(r=>r.res.notes.push('Passed by the grey GC8'));S.buntaSeen=(S.buntaSeen||0)+1;
+    /* everyone on the pass got a lesson watching the master's lines */
+    list.forEach(r=>{const b=knowOf(r.d,'usuzumi');learnPass(r.d,'usuzumi',28);const g=Math.round(knowOf(r.d,'usuzumi')-b);if(g>0)r.res.notes.push(`Studied Bunta's lines: Usuzumi knowledge +${g}%`)});
     addLog(S.buntaSeen===1?`A grey Impreza GC8 Type R came out of the dark and passed ${passed.length?passed.map(r=>r.d.first).join(', '):'everyone'} like they were parked. Down at the shop, someone says the name: Bunta Fujiwara.`:`Bunta Fujiwara's grey GC8 was on the pass again. ${passed.length} of the crew got passed.`)}
   let rev=0,prod=0,fuel=0,wages=0;
   const rows=list.map(r=>{const{d,c,res}=r;const notes=res.notes.slice(),cup=r.cupT?Math.round(r.cupT.final/.84*100):null;
@@ -2795,7 +2839,7 @@ function finishDelivery(list){
   <div class="mact"><button class="btn primary" data-act="close">${S.day===6?'Back to the shop':'Continue'}</button></div>`);
 }
 function nextDay(){
-  S.day++;S.phase='pre';S.weather=rollWeather();if(S.day===6){S.raceWeather=rollWeather();addLog(`Race night forecast: ${WXLABEL[S.raceWeather].toLowerCase()}.`)}MAP.setDark(1);
+  S.day++;S.phase='pre';S.weather=rollWeather(S.weather);S.wind=rollWind();if(S.day===6){S.raceWeather=rollWeather(S.weather);S.raceWind=rollWind();addLog(`Race night forecast: ${WXLABEL[S.raceWeather].toLowerCase()}.`)}MAP.setDark(1);
   if(S.weather!=='Clear')addLog(S.weather==='Wet'?'Rain overnight. The pass is greasy.':S.weather==='Snow'?'Snow fell overnight. The pass is white.':'Fog has rolled over the summit.');
   save();renderAll();
 }
@@ -2807,7 +2851,7 @@ function endWeek(){
   <div class="mact"><button class="btn primary" data-act="startWeek">Start week ${S.week+1}</button></div>`);
 }
 function weekQuip(){const n=MTNS.filter(m=>S.cred>=m.cred).length;if(n===MTNS.length)return'Every pass in the region knows the name Kasumi Tofu.';const nx=MTNS.find(m=>S.cred<m.cred);return`${nx.name} opens at ${nx.cred} street cred. You have ${Math.round(S.cred)}.`}
-function startWeek(){S.raceWeather=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red and the fog comes in.',Winter:'Winter. Snow on the passes. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
+function startWeek(){const pw=S.raceWeather||S.weather;S.raceWeather=null;S.raceWind=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather(pw);S.wind=rollWind();MAP.setDark(1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red, the fog comes in, and wet leaves pile up on some corners.',Winter:'Winter. Snow on the passes, and cold tyres on the first corners of every dawn run. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
 
 /* ================= race night ================= */
 let RP=null,RQ=[],RES=[];
@@ -2835,7 +2879,7 @@ function renderPlanner(){
     <div class="mvrow">${movesChips(d,'No special moves yet.')}</div>
     ${vo.length>1?`<div class="row"><label class="fld" for="rp-${dir}-v">Opponent</label><select id="rp-${dir}-v" data-chg="rpV" data-dir="${dir}" style="max-width:min(300px,100%)">${vo.map(x=>`<option value="${esc(x.v)}" ${x.v===(s.vs||'cpu')?'selected':''}>${esc(x.l)}</option>`).join('')}</select></div>`:''}<div class="meta">${o.net?`@${esc(o.h)}'s ghost · their real driver and car, raced on your Saturday`:"Tonight's challenger"}</div>${oppCard(o,m.id)}<div class="mvrow">${movesChips(o,'No special moves.')}</div>
     <div class="kv"><span>Purse <b>${yenK(Math.round(m.prize*(dir==='down'?1.15:1)))}</b></span><span>Cred <b>+${Math.round(m.credW*(dir==='down'?1.2:1))}</b></span></div></div>`};
-  modal(`<div class="eyebrow">Saturday · Week ${S.week} · Tonight: ${WXLABEL[RW]}</div><h2>Race night</h2>${RW==='Wet'?'<p class="wxnote">Rain tonight. Semi-slicks lose half their grip and spin easily in the wet. Street tyres and four-wheel drive are the safe bet.</p>':RW==='Snow'?'<p class="wxnote">Snow tonight. Grip is the worst it gets. Studless tyres are the only safe choice, four-wheel drive is king and rear-drive cars will struggle.</p>':RW==='Fog'?'<p class="wxnote">Fog tonight. Speeds stay low and focus matters. Fog Eyes drivers see through it. Lights Out is deadly in the fog.</p>':''}
+  modal(`<div class="eyebrow">Saturday · Week ${S.week} · Tonight: ${WXLABEL[RW]} · wind ${(S.raceWind||windNow()).kmh} km/h ${compass((S.raceWind||windNow()).from)}</div><h2>Race night</h2>${(S.raceWind||windNow()).kmh>=14&&S.drivers.some(x=>movesOf(x).includes('slip'))?`<p class="wxnote">A ${(S.raceWind||windNow()).kmh} km/h wind from the ${compass((S.raceWind||windNow()).from)} tonight. Slipstream passes land far more often on straights that run into it, and hardly ever with it at your back.</p>`:''}${RW==='Wet'?'<p class="wxnote">Rain tonight. Semi-slicks lose half their grip and spin easily in the wet. Street tyres and four-wheel drive are the safe bet. Sometimes the rain stops partway and a dry line appears for the final stretch.</p>':RW==='Snow'?'<p class="wxnote">Snow tonight. Grip is the worst it gets. Studless tyres are the only safe choice, four-wheel drive is king and rear-drive cars will struggle.</p>':RW==='Fog'?'<p class="wxnote">Fog tonight. Speeds stay low and focus matters. Fog Eyes drivers see through it. Lights Out is deadly in the fog.</p>':RW==='Damp'?'<p class="wxnote">Damp tonight: no rain, but puddles and a greasy surface after the wet. Grip is down a little. Sport tyres cope fine, street tyres lose almost nothing, and semi-slicks get nervous in the standing water.</p>':''}
   <p class="rules">Touge rules: first to the finish wins. Side by side starts are decided by a braking duel into the first corner. With a coin toss, one car leads and the other chases. The car behind has to find a way past with special moves, slipstream and pressure. All-out attack tries more moves but wears tyres and invites mistakes.</p>
   <div class="slots">${slot('up')}${slot('down')}</div>
   <div class="mact"><button class="btn" data-act="skipRaces">Skip racing tonight</button><button class="btn race" data-act="startRaces" ${RP.up.on||RP.down.on?'':'disabled'}>Start race night</button></div>`,true);
@@ -2918,12 +2962,16 @@ function nextRace(){
   setTimeout(()=>{
     MAP.loadWorld(m.id);MAP.setDarkNow(1);const T=MAP.track(dir);
     const oTac=hasT(opp,'hot')?'agg':hasT(opp,'ice')||hasT(opp,'steady')?'pat':'bal';
-    const RW=tropWx(S.raceWeather||S.weather,m.id),fr=S.day===6&&!job.ch&&!job.simCar&&rested(d),A=racer(d,c,T,RW,job.tac,fr),Bq=racer(opp,opp.car,T,RW,oTac);
+    const RW=tropWx(S.raceWeather||S.weather,m.id),fr=S.day===6&&!job.ch&&!job.simCar&&rested(d);
+    RACE_WIND=job.ch?windOfSeed(strHash('w'+job.ch.id)):(S.raceWind||windNow());
+    /* a wet race can dry out: the rain stops partway and the line dries towards the finish */
+    {const rr=job.ch?mulberry32(strHash('d'+job.ch.id)):R;RACE_DRY=RW==='Wet'&&rr()<.35?{a:.25+rr()*.4,e:.25+rr()*.15}:null}
+    const A=racer(d,c,T,RW,job.tac,fr),Bq=racer(opp,opp.car,T,RW,oTac);
     const lead=job.lead0!==undefined?job.lead0:job.start==='chase'?1:job.start==='toss'?(R()<.5?0:1):null;job.chased=lead===1&&job.start==='chase';job.lead=lead;A.start=lead===1?.75:0;Bq.start=lead===0?.75:0;
     const cars=[A,Bq].map(r=>({cum:r.cumReal,start:r.start,dnf:r.dnf,d:r.d,c:r.c,incs:r.incs,tac:r.tac,fresh:r.fresh,moves:new Set(movesOf(r.d))})),tev=traffic(cars,T,true);
     [A,Bq].forEach((r,k)=>{r.cumReal=cars[k].rel;r.lanes=cars[k].lanes;r.fx=cars[k].fx;r.incs.sort((a,b)=>a.i-b.i);r.res.time=r.dnf!=null?Infinity:r.start+r.cumReal[T.len-1]});
     const gh=m.id==='genting'&&(window.YSK_FORCE||R()<YSK_CHANCE)?yskRun(A,Bq,T,RW):null;
-    if(job.ch||opp.net){A.hh=S.handle||null;Bq.hh=opp.h||null}CUR={job,A,B:Bq,gh,tev};if(job.onSim)job.onSim(A,Bq,tev);const evs=raceEvents(A,Bq,T,d,opp,tev);if(gh)evs.push(...gh.ev);evs.sort((x,y)=>x.t-y.t);
+    if(job.ch||opp.net){A.hh=S.handle||null;Bq.hh=opp.h||null}CUR={job,A,B:Bq,gh,tev};if(job.onSim)job.onSim(A,Bq,tev);const evs=raceEvents(A,Bq,T,d,opp,tev);if(gh)evs.push(...gh.ev);if(RACE_DRY){const ix=Math.min(T.len-1,Math.floor(RACE_DRY.a*T.len)),lt=Math.min(A.start+(A.cumReal[ix]||0),Bq.start+(Bq.cumReal[ix]||0));evs.push({t:lt,tag:'DRYING',msg:"The rain's stopped. A dry line is starting to appear."})}evs.sort((x,y)=>x.t-y.t);
     MAP.runRace({T,list:gh?[A,Bq,gh]:[A,Bq],events:evs,title:`${dir==='up'?'UPHILL':'DOWNHILL'} ${m.name.toUpperCase()}`,dir:dir==='up'?'UP':'DOWN'},()=>{busy=false;MUSIC.stop(.8);renderAction();finishRace()});MUSIC.play('race');
   },80);
 }
@@ -2932,6 +2980,7 @@ function finishRace(){
   if(gh){S.yskSeen=(S.yskSeen||0)+1;addLog(S.yskSeen===1?`On Genting, a ${CARS[gh.c.model].name} came out of the mist and passed both cars like they were standing still. The marshals just say the name: YS Khong.`:`YS Khong was on Genting again, this time in a ${CARS[gh.c.model].name}.`)}
   const ta=A.res.time,tb=Bq.res.time,win=A.dnf==null&&(Bq.dnf!=null||ta<tb),both=A.dnf!=null&&Bq.dnf!=null,margin=isFinite(ta)&&isFinite(tb)?Math.abs(tb-ta):0;
   const prize=job.ch?wager:Math.round(m.prize*(dir==='down'?1.15:1)),cw=Math.round(m.credW*(dir==='down'?1.2:1)*(job.chased&&A.dnf==null&&(Bq.dnf!=null||A.res.time<Bq.res.time)?1.25:1)),notes=[],rec=S.records[m.id]||(S.records[m.id]={w:0,l:0});
+  if(gh){const b=knowOf(d,m.id);learnPass(d,m.id,30);const g=Math.round(knowOf(d,m.id)-b);if(g>0)notes.push(`${d.first} studied YS Khong's lines: ${m.name} knowledge +${g}%`)}
   let credD;
   if(win){S.money+=prize;S.weekRev+=prize;credD=cw;S.cred+=cw;d.wins++;S.wins++;rec.w++;if(job.chased)notes.push('Chase win +25% cred')}
   else{credD=m.home||both?0:-Math.round(cw*.25);S.cred=Math.max(0,S.cred+credD);d.losses++;S.losses++;rec.l++;if(wager&&!both){S.money-=wager;S.weekRev-=wager}}
@@ -3546,10 +3595,12 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden
     return primaryIn(bar)||bs.find(b=>b.classList.contains('race'))||(bs.length===1?bs[0]:null)}
   /* on desktop, tag that button with a small SPACE badge */
   if(matchMedia('(hover:hover) and (pointer:fine)').matches)setInterval(()=>{const tg=spaceTarget();document.querySelectorAll('.kspace').forEach(b=>{if(b!==tg)b.classList.remove('kspace')});if(tg&&!tg.classList.contains('kspace'))tg.classList.add('kspace')},250);
+  const WORDS=['fujiwara','bunta','genting','spring','summer','autumn','winter'];let kbuf='',kT=0;
+  const typingWord=k=>{const n=performance.now();if(n-kT>1500)kbuf='';kT=n;kbuf=(kbuf+k).slice(-9);for(let L=Math.min(kbuf.length,9);L>=2;L--){const tail=kbuf.slice(-L);if(WORDS.some(w=>w.startsWith(tail)))return true}return false};
   const KEYS={'-':'zoomOut','_':'zoomOut','=':'zoomIn','+':'zoomIn','0':'fit',v:'follow',d:'director',c:'crt',o:'slowmo',m:'snd',p:'bgm'};
   document.addEventListener('keydown',e=>{const t=e.target;if(e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;
     if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.tagName==='SELECT'||t.isContentEditable))return;
-    const k=e.key.length===1?e.key.toLowerCase():e.key,modal=!$('#modal').hidden,coach=$('#coach');
+    const k=e.key.length===1?e.key.toLowerCase():e.key,modal=!$('#modal').hidden,coach=$('#coach');if(k.length===1&&/[a-z]/.test(k)&&typingWord(k))return;
     if(k===' '||k==='Enter'){if(t&&(t.tagName==='BUTTON'||t.tagName==='A')){let kb=false;try{kb=t.matches(':focus-visible')}catch(x){}if(kb)return;t.blur()}
       const el=spaceTarget();if(el){e.preventDefault();press(el)}return}
     if(k==='h'||k==='?'){if(!modal){e.preventDefault();showHelp(false)}return}
@@ -3568,6 +3619,13 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#modal').hidden
   // "genting" (or 7 quick taps on the season badge) opens the secret Malaysian course for this save
   const genting=()=>{if(!S)return;if(S.genting){toast('Genting Highlands is already on the touge map.');return}S.genting=true;syncSecret();
     addLog('A postcard from Malaysia is pinned behind the counter: Genting Highlands, cloud-top hairpins above the rainforest. Someone circled a name in pen: YS Khong.');AUDIO.unlock();AUDIO.cash();save();renderAll();toast('Secret course unlocked: Genting Highlands, Malaysia')};
+  // "spring", "summer", "autumn", "winter": jump the calendar to the start of that season (the week number stays)
+  const setSeason=name=>{if(!S)return;const ti=SEASONS.findIndex(x=>x.n.toLowerCase()===name);if(ti<0)return;if(seasonIdx(S.week)===ti){toast(`It's already ${SEASONS[ti].n.toLowerCase()}.`);return}
+    const cur=S.week-1+(S.sOff||0);let T=(Math.floor(cur/(4*SEASON_WEEKS))*4+ti)*SEASON_WEEKS;if(T-(S.week-1)<0)T+=4*SEASON_WEEKS;S.sOff=T-(S.week-1);
+    S.weather=rollWeather();S.wind=rollWind();if(S.day===6){S.raceWeather=rollWeather(S.weather);S.raceWind=rollWind()}
+    const msg={Spring:'Spring arrives overnight. The snow is gone and the first sakura are opening.',Summer:'Summer arrives overnight. Long, hot days and short nights on the pass.',Autumn:'Autumn arrives overnight. The maples turn red and leaves pile up on the corners.',Winter:'Winter arrives overnight. Snow on the passes and cold tyres at dawn.'}[SEASONS[ti].n];
+    addLog(msg);MAP.loadWorld('usuzumi');lastView='';AUDIO.unlock();AUDIO.cash();save();renderAll();toast(msg)};
+  let sbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){sbuf=(sbuf+e.key.toLowerCase()).slice(-10);const w=['spring','summer','autumn','winter'].find(x=>sbuf.endsWith(x));if(w){sbuf='';setSeason(w)}}});
   let gbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){gbuf=(gbuf+e.key.toLowerCase()).slice(-12);if(gbuf.endsWith('genting')){gbuf='';genting()}}});
   let staps=[];document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.pill.season'))return;const n=performance.now();staps=staps.filter(x=>n-x<3000);staps.push(n);if(staps.length>=7){staps=[];genting()}});
   document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.brand'))return;const n=performance.now();taps=taps.filter(x=>n-x<3000);taps.push(n);if(taps.length>=7){taps=[];pay()}});})();
@@ -3581,9 +3639,9 @@ function showHelp(intro){
   <p><b>Garage.</b> Spend on engine, suspension, brakes, a limited-slip diff, weight reduction and a sprung tofu cradle. Watch tyre wear: bald tyres cost grip and time.</p>
   <p><b>Risk.</b> Bald tyres, a battered car, rain and fog make spins, slides off the road, breakdowns and crashes more likely. A crash or breakdown loses that run and costs a tow, and the damage needs repairing in the Garage. A car below 15% condition can't drive.</p>
   <p><b>Traffic.</b> Cars leave the shop about 12 seconds apart in crew order. A faster car that catches a slower one has to follow until a straight, then pass. Rushed passes and sudden stops can end in contact, and both cars take damage.</p>
-  <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. Downhill, weight and nimbleness count for more than power.</p>
-  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Tyres wear through a race, so a patient approach can win late.</p>
-  <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well.</p>
+  <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. The day after rain is often damp: no rain, but puddles and a slightly greasy road, which costs street tyres almost nothing and sport tyres only a little. Each day also has a wind, shown next to the weather: a headwind costs top speed on the straights and a tailwind gives a little back. A wet race night can dry out partway, leaving a dry line for the last part of the run. In autumn some corners carry wet leaves, and on winter dawns the tyres are cold for the first few corners, semi-slicks most of all. Downhill, weight and nimbleness count for more than power.</p>
+  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Slipstream works best into a headwind, and Around the Outside works best in the wet, where less steering lock means more speed. Tyres wear through a race, so a patient approach can win late.</p>
+  <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well. Anyone on the road when Bunta Fujiwara or YS Khong shows up learns a lot about that pass just from watching them.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, power, handling and tyres, a little tougher on the harder passes, and they know their home pass a bit better than you. In your first weeks the downhill locals go easy on you while uphill is close to even, and a losing streak eases the next challenger a little. From week 2, the first local you beat asks to join your crew. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
   ${intro?'':`<p class="keys"><b>Keyboard.</b> <kbd>Space</kbd> or <kbd>Enter</kbd> presses the highlighted button: the main action at the bottom, the main button in a window, or Next on a tip. <kbd>1</kbd> to <kbd>6</kbd> switch tabs. <kbd>−</kbd> <kbd>+</kbd> zoom, <kbd>0</kbd> whole pass, <kbd>V</kbd> follow, <kbd>D</kbd> director, <kbd>C</kbd> CRT, <kbd>O</kbd> slow-mo, <kbd>M</kbd> sound, <kbd>P</kbd> music, <kbd>H</kbd> this help, <kbd>Esc</kbd> closes a window.</p>`}
@@ -4028,6 +4086,10 @@ const TUT=(()=>{
   const TIPS=[
     {k:'press',target:'#actionbar',t:'More drivers than presses',b:'Each press makes one batch a day, and every batch needs its own car. Add presses in the Shop tab, or use the dawn roster in the Crew tab to share the days out.',when:()=>calm()&&S.phase==='pre'&&readyDrivers().length>plannedRuns().length},
     {k:'recruit',target:'.tab[data-t="crew"]',t:'New crew member',b:'A rival has joined Kasumi Tofu. In the Crew tab, check they have a car and pick their days on the dawn roster. More drivers mean more batches, as long as you have the presses.',when:()=>calm()&&S.drivers.length>1},
+    {k:'slipTip',target:'#clock .wind',t:'New move: Slipstream',when:()=>calm()&&S.drivers.some(d=>movesOf(d).includes('slip')),
+      b:()=>{const d=S.drivers.find(x=>movesOf(x).includes('slip'));return`${d.first} can now use Slipstream. On a fast straight they tuck in nose-to-tail right behind the rival for a moment, then pull out and slingshot past. It lands far more often into a headwind and hardly ever with the wind at your back, so check the wind arrow up here. It changes every day. More power than the rival helps too.`}},
+    {k:'outsideTip',target:'#clock .pill:nth-child(3)',t:'New move: Around the outside',when:()=>calm()&&S.drivers.some(d=>movesOf(d).includes('outside')),
+      b:()=>{const d=S.drivers.find(x=>movesOf(x).includes('outside'));return`${d.first} can now go Around the outside on fast sweepers. It's at its best in the wet: with less grip, the wide line needs less steering lock, so the car carries more speed than a rival squeezing the inside. On damp roads it helps a little, and in the dry it's a straight cornering contest.`}},
     {k:'rosterTour',when:()=>calm()&&S.phase==='pre'&&S.drivers.length>1&&!!S.tut.tips.recruit,steps:[
       {side:'left',target:'.card.roster',t:'Your dawn roster',b:'With two or more drivers you choose who does the dawn run each day. Rows are drivers and columns are days. Tap a square to put a driver on or off that morning. The week repeats until you change it, and each driver card has the same day buttons under Dawn runs.',enter:()=>openTab('crew')},
       {side:'left',target:'.card.roster .rg',t:'Runs against presses',b:'The bottom row counts each day\'s runs against your presses. Green means every press is busy. Red means someone is rostered but benched, because each press fills one car. Amber means a press sits idle. "rest" means the shop stays shut that day.',enter:()=>openTab('crew')},
@@ -4130,7 +4192,7 @@ if(!window.TOUGE_ADMIN){window.claude?.hot?.ready?window.claude.hot.ready(boot):
    refuse unless this browser's sign-in is listed in public.admins. */
 const ADMIN=(()=>{
   const X=window.TOUGE_NETX,KIND={ch:'Challenge',gh:'Ghost race',ghd:'Raced your ghost',cpu:'Local race'},DAYMS=864e5;
-  let me={uid:null,admin:false,fn:true},data={handles:{},players:{},ch:[],inbox:{}},bans=[],sel=null,q='',sort='seen',filt='all',tab='players',confirmK=null,loading=true,errMsg='',lastLoad=0,pend={},gmStep=1,gmOn=true,cloud={},cloudOn=null;
+  let me={uid:null,admin:false,fn:true},data={handles:{},players:{},ch:[],inbox:{}},bans=[],sel=null,q='',sort='seen',filt='all',tab='players',confirmK=null,loading=true,errMsg='',lastLoad=0,pend={},gmStep=1,gmOn=true,cloud={},cloudOn=null,hid=new Set(),hidOn=null;
   const root=()=>document.getElementById('adm');
   const mt=id=>MTNS.concat(typeof GENTING!=='undefined'?[GENTING]:[]).find(m=>m.id===id);
   const ago=t=>{if(!t)return'never';const d=(Date.now()-t)/DAYMS;return d<1/1440?'just now':d<1/24?Math.round(d*1440)+'m ago':d<1?Math.round(d*24)+'h ago':d<60?Math.round(d)+'d ago':new Date(t).toLocaleDateString()};
@@ -4154,6 +4216,8 @@ const ADMIN=(()=>{
       data.ch=cs.map(d=>Object.assign({id:d.id,upd:tms(d.updated_at)},d.data)).sort((a,b)=>(b.t||0)-(a.t||0));
       ib.forEach(d=>{const k=d.coll.split('/')[1];data.inbox[k]=(data.inbox[k]||0)+1});
       bans=[];if(me.admin){const b=await X.sb.rpc('admin_bans');if(!b.error)bans=b.data||[]}
+      /* handles hidden from the public */
+      hid=new Set();hidOn=null;if(me.admin){const q=await X.sb.rpc('admin_hidden');if(q.error){hidOn=/admin_hidden|function|schema cache/i.test(q.error.message||'')?false:null}else{hidOn=true;(q.data||[]).forEach(x=>hid.add(typeof x==='string'?x:(x.admin_hidden||x.k||'')))}}
       /* when each device last backed its save up (for Play as) */
       cloud={};cloudOn=null;if(me.admin){const q=await X.sb.from('saves').select('uid,updated_at');if(q.error){cloudOn=!/relation|does not exist|schema cache/i.test(q.error.message||'')?null:false}else{cloudOn=true;(q.data||[]).forEach(r=>cloud[r.uid]=tms(r.updated_at))}}
       /* changes sent to players that their game hasn't picked up yet */
@@ -4165,11 +4229,11 @@ const ADMIN=(()=>{
   /* ---------- model ---------- */
   function rowOf(k){const H=data.handles[k],P=data.players[k];if(!H&&!P)return null;
     const ch=data.ch.filter(c=>c.from===k||c.to===k),seen=Math.max(P&&P.t||0,H&&H.t||0,P&&P.upd||0);
-    return{k,h:(P&&P.h)||(H&&H.h)||k,H,P,blocked:!!(H&&H.blocked),ovr:P?Math.round(P.ovr||0):0,w:P?P.w||0:0,l:P?P.l||0:0,rw:P?P.rw||0:0,rl:P?P.rl||0:0,wk:P?P.wk||0:0,seen,eco:P&&P.eco&&typeof P.eco==='object'?P.eco:null,money:P&&P.eco?nn(P.eco.money,-1):-1,joined:H&&H.t||0,owner:(H&&H.owner)||(P&&P.owner),ch,inbox:data.inbox[k]||0,
+    return{k,h:(P&&P.h)||(H&&H.h)||k,H,P,blocked:!!(H&&H.blocked),ovr:P?Math.round(P.ovr||0):0,w:P?P.w||0:0,l:P?P.l||0:0,rw:P?P.rw||0:0,rl:P?P.rl||0:0,wk:P?P.wk||0:0,seen,hidden:hid.has(k),eco:P&&P.eco&&typeof P.eco==='object'?P.eco:null,money:P&&P.eco?nn(P.eco.money,-1):-1,joined:H&&H.t||0,owner:(H&&H.owner)||(P&&P.owner),ch,inbox:data.inbox[k]||0,
       top:P&&Array.isArray(P.roster)&&P.roster.length?P.roster.slice().sort((a,b)=>(b.ovr||0)-(a.ovr||0))[0]:P&&Array.isArray(P.crew)&&P.crew[0]||null,banned:bans.some(b=>b.uid===((H&&H.owner)||(P&&P.owner)))}}
   function rows(){const keys=new Set(Object.keys(data.handles).concat(Object.keys(data.players)));let R=[...keys].map(rowOf).filter(Boolean);
     const wk=Date.now()-7*DAYMS;
-    if(filt==='active')R=R.filter(r=>r.seen>=wk&&!r.blocked);else if(filt==='blocked')R=R.filter(r=>r.blocked);else if(filt==='noprof')R=R.filter(r=>!r.P&&!r.blocked);else R=R.filter(r=>!r.blocked);
+    if(filt==='active')R=R.filter(r=>r.seen>=wk&&!r.blocked);else if(filt==='blocked')R=R.filter(r=>r.blocked);else if(filt==='noprof')R=R.filter(r=>!r.P&&!r.blocked);else if(filt==='hidden')R=R.filter(r=>r.hidden);else R=R.filter(r=>!r.blocked);
     if(q){const s=q.toLowerCase();R=R.filter(r=>r.k.includes(s)||r.h.toLowerCase().includes(s)||(r.P&&(r.P.roster||[]).some(d=>(d.first+' '+d.family).toLowerCase().includes(s))))}
     const S2={ovr:(a,b)=>b.ovr-a.ovr,seen:(a,b)=>b.seen-a.seen,wins:(a,b)=>b.w-a.w||a.l-b.l,new:(a,b)=>b.joined-a.joined,money:(a,b)=>b.money-a.money,name:(a,b)=>a.k.localeCompare(b.k)}[sort];
     return R.sort(S2)}
@@ -4189,13 +4253,13 @@ const ADMIN=(()=>{
       <span class="meta">Admin rights belong to this browser's sign-in. If you clear this browser's data you'll get a new ID and need to run the line again.</span></div>`}
   function listRow(r){const d=r.top;return`<button type="button" class="arow ${sel===r.k?'on':''}" data-adm="pick" data-k="${esc(r.k)}" aria-pressed="${sel===r.k}">
       ${d&&d.seed?`<img class="av" src="${avatar(d.seed,d.face)}" alt="">`:'<span class="av noav">?</span>'}
-      <span class="an"><b>@${esc(r.h)}</b><span class="meta">${r.blocked?'Blocked name':r.P?`${sort==='money'&&r.money>=0?yen(r.money)+' · ':''}${r.w}W ${r.l}L · seen ${ago(r.seen)}`:'No profile yet'}${r.banned?' · banned':''}</span></span>
+      <span class="an"><b>@${esc(r.h)}</b><span class="meta">${r.hidden?'<span class="hidtag">Hidden</span> ':''}${r.blocked?'Blocked name':r.P?`${sort==='money'&&r.money>=0?yen(r.money)+' · ':''}${r.w}W ${r.l}L · seen ${ago(r.seen)}`:'No profile yet'}${r.banned?' · banned':''}</span></span>
       <span class="povr"><small>OVR</small>${r.P?r.ovr:'–'}</span></button>`}
   function listView(){const R=rows();
     return`<div class="alist card"><div class="atools">
         <label class="sr" for="admQ">Search handles or drivers</label><input id="admQ" type="search" placeholder="Search @handle or driver" value="${esc(q)}" autocomplete="off">
         <label class="sr" for="admSort">Sort</label><select id="admSort">${[['seen','Last seen'],['ovr','Crew OVR'],['money','Most money'],['wins','Battles won'],['new','Newest'],['name','A to Z']].map(([v,l])=>`<option value="${v}" ${sort===v?'selected':''}>${l}</option>`).join('')}</select></div>
-      <div class="achips" role="group" aria-label="Filter">${[['all','All'],['active','Active 7 days'],['noprof','No profile'],['blocked','Blocked']].map(([v,l])=>`<button type="button" class="chip ${filt===v?'on':''}" data-adm="filt" data-v="${v}" aria-pressed="${filt===v}">${l}</button>`).join('')}</div>
+      <div class="achips" role="group" aria-label="Filter">${[['all','All'],['active','Active 7 days'],['noprof','No profile'],['hidden','Hidden'],['blocked','Blocked']].map(([v,l])=>`<button type="button" class="chip ${filt===v?'on':''}" data-adm="filt" data-v="${v}" aria-pressed="${filt===v}">${l}</button>`).join('')}</div>
       <div class="arows">${R.length?R.map(listRow).join(''):`<div class="meta aempty">${loading?'Loading…':q?'No handles match that search.':'Nobody here yet.'}</div>`}</div></div>`}
   function chRow(c,k){const m=mt(c.crit&&c.crit.m),other=c.from===k?c.th||c.to:c.fh||c.from,dir=c.from===k?'sent to':'from',res=c.res;
     const win=res&&res.win?(res.win===k?'W':'L'):res?'D':null;
@@ -4209,7 +4273,7 @@ const ADMIN=(()=>{
     const hist=Array.isArray(P.hist)?P.hist.slice(0,20):[];
     const hs=hist.length?hist.map(e=>{const m=mt(e.m);return`<div class="phr"><span class="res ${e.r}">${e.r==='W'?'WON':e.r==='L'?'LOST':'DRAW'}</span><div><b>${e.vs?'vs '+esc(e.vs):'vs a local challenger'}</b> <span class="meta">${m?esc(m.name):''} ${e.dir==='up'?'uphill':'downhill'} · ${KIND[e.k]||'Race'}${e.when?' · '+esc(e.when):''}</span><div class="meta">${esc(e.line||'')}</div></div></div>`}).join(''):'<div class="meta">No races shared.</div>';
     const conf=confirmK===r.k?confirmBox(r):'';
-    return`<div class="card adetail"><div class="eyebrow">Touge Net profile${r.blocked?' · blocked name':''}${r.banned?' · banned device':''}</div><div class="row" style="justify-content:space-between"><h2 class="phd">@${esc(r.h)}</h2>${me.admin&&!r.blocked?`<span class="row" style="gap:8px"><span class="meta">${cloudOn===false?'Run the updated setup.sql for cloud saves':r.owner&&cloud[r.owner]?'Cloud save '+ago(cloud[r.owner]):'No cloud save yet'}</span><button type="button" class="btn sm" data-adm="playas" data-k="${esc(r.k)}" title="Open a copy of this player's latest save in a new tab">Play as @${esc(r.h)}</button></span>`:''}</div>
+    return`<div class="card adetail"><div class="eyebrow">Touge Net profile${r.blocked?' · blocked name':''}${r.hidden?' · hidden from the public':''}${r.banned?' · banned device':''}</div><div class="row" style="justify-content:space-between"><h2 class="phd">@${esc(r.h)}</h2>${me.admin&&!r.blocked?`<span class="row" style="gap:8px"><span class="meta">${cloudOn===false?'Run the updated setup.sql for cloud saves':r.owner&&cloud[r.owner]?'Cloud save '+ago(cloud[r.owner]):'No cloud save yet'}</span><button type="button" class="btn sm ${r.hidden?'primary':'ghost'}" data-adm="hide" data-k="${esc(r.k)}" data-on="${r.hidden?0:1}" title="${hidOn===false?'Run the updated setup.sql first':r.hidden?'Other players can see this handle again':'Other players stop seeing this handle anywhere on Touge Net'}" ${hidOn===false?'disabled':''}>${r.hidden?'Unhide':'Hide from public'}</button><button type="button" class="btn sm" data-adm="playas" data-k="${esc(r.k)}" title="Open a copy of this player's latest save in a new tab">Play as @${esc(r.h)}</button></span>`:''}</div>
       ${r.eco?`<div class="kv kmoney"><span>Money <b>${yen(nn(r.eco.money))}</b></span><span>Lifetime sales <b>${yen(nn(r.eco.earned))}</b></span><span>Cred <b>${nn(r.eco.cred).toLocaleString()}</b></span><span>Drivers <b>${nn(r.eco.drivers)}</b></span><span>Cars <b>${nn(r.eco.cars)}</b></span></div>`:r.P?'<div class="kv"><span class="meta">Money and full driver stats show after this player\'s game next syncs on the new version.</span></div>':''}
       <div class="kv"><span>Crew OVR <b>${r.P?r.ovr:'–'}</b></span><span>Battles <b>${r.w}W ${r.l}L</b></span><span>All races <b>${r.rw}W ${r.rl}L</b></span><span>Game week <b>${r.wk||'–'}</b></span><span>Last seen <b>${ago(r.seen)}</b></span><span>Joined <b>${day(r.joined)}</b></span><span>Ghost notes <b>${r.inbox}</b></span><span>Device <b title="${esc(r.owner||'')}">${short(r.owner)}</b></span></div>
       ${godPanel(r)}
@@ -4270,6 +4334,9 @@ const ADMIN=(()=>{
       if(a==='pick'){sel=b.dataset.k;confirmK=null;render();if(matchMedia('(max-width:860px)').matches){const d=el.querySelector('.adetail');d&&d.scrollIntoView({behavior:'smooth',block:'start'})}}
       else if(a==='filt'){filt=b.dataset.v;render()}
       else if(a==='gmstep'){gmStep=+b.dataset.v;render()}
+      else if(a==='hide'){const k=b.dataset.k,on=b.dataset.on==='1',h=(data.handles[k]||{}).h||k;b.disabled=true;const r=await X.sb.rpc('admin_hide',{k,hide:on});b.disabled=false;
+        if(r.error){note(/admin_hide|function|schema cache/i.test(r.error.message||'')?'Hiding needs the updated setup.sql. Run it once in Supabase.':(r.error.message||'That did not work.'),true);return}
+        if(on)hid.add(k);else hid.delete(k);note(on?`@${h} is hidden. Other players no longer see them on Touge Net.`:`@${h} is visible to everyone again.`);render()}
       else if(a==='gm'){if(!sel)return;const t=b.dataset.t,v=+b.dataset.v,op=t==='stat'?{t,d:+b.dataset.d,k:b.dataset.k,v}:{t,v};b.disabled=true;
         const r=await X.sb.rpc('admin_gm',{k:sel,op});b.disabled=false;if(r.error){note(r.error.message||'That did not work.',true);return}(pend[sel]=pend[sel]||[]).push(op);render()}
       else if(a==='playas'){const k=b.dataset.k,h=(data.handles[k]||{}).h||k;
