@@ -559,7 +559,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v122</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v124</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -1052,7 +1052,7 @@ function traffic(cars,T,race){
     if(a.c.ghost||b.c.ghost){a.behind=-2;return}
     if(t-(a.lastHit??-99)<15||t-(b.lastHit??-99)<15){a.behind=-2;return}a.lastHit=b.lastHit=t;
     const i=Math.floor(Math.min(a.p,b.p));
-    [a,b].forEach((s,n)=>{const x={type:'hit',i:Math.floor(s.p),cond:4+R()*8,tofu:5+R()*6,with:(n?a:b).c.d.first};s.stun=.6+R()*1.0;if(n===1&&R()<.2){s.stun+=2.2;x.cond+=4;x.spun=true}if(Math.floor(s.p)>=N-2)x.i=N-3;s.c.incs.push(x)});
+    [a,b].forEach((s,n)=>{const x={type:'hit',i:Math.floor(s.p),cond:4+R()*8,tofu:5+R()*6,with:(n?a:b).c.d.first,pk:(n?a:b).k};s.stun=.6+R()*1.0;if(n===1&&R()<.2){s.stun+=2.2;x.cond+=4;x.spun=true}if(Math.floor(s.p)>=N-2)x.i=N-3;s.c.incs.push(x)});
     ev.push({type:'hit',t,i,by:a.k,on:b.k});endAlong(key(a.k,b.k));a.behind=-2;b.behind=-2;
   }
   /* Lights Out in the dark: the driver knows the road by heart, but not tonight's puddles or where the leaves have piled up */
@@ -2321,11 +2321,14 @@ const MAP=(()=>{
             if(ks<.6)rw.forEach(w=>{if(R()<.6)smoke.push({v:w[0],u:w[1],r:.05+R()*.06,a:.5,dv:(R()-.5)*.006,du:(R()-.5)*.006})})}
           else{r.cy=0;r.last=null;r.slideOn=false;s={v:q.v,u:q.u,a:T.theta[ix]+(r.rank%2?-1:1)*Math.PI/2,lights:dark,brake:true,steer:0}}}else{const sl=hotelSlots[ri%6];s={v:sl.v,u:sl.u,a:sl.a,lights:0,brake:false,steer:0}}}
       else{allDone=false;r.state='run';while(r.i<N-2&&r.cum[r.i+1]<tt)r.i++;const i=r.i,f=clamp((tt-r.cum[i])/((r.cum[i+1]-r.cum[i])||1),0,1);
-        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&ra<=w.t1);let tl=lw?lw.lane:r.baseLane,noShrink=false;
-        if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='gutter'){tl=sgi*(HW-.02);noShrink=true}else if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
+        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&(ra<=w.t1||(w.type==='gutter'&&i<=w.at+8)));let tl=lw?lw.lane:r.baseLane,noShrink=false,deep=false;
+        /* gutter run: it only works from the inside. When it lands the car hugs the apex with its inside wheels down in the drain;
+           (just that side's wheels, the body stays on the road); when it misses the car turns in from too wide, clips the lip short of the drain and runs out wide */
+        if(fx&&fx.type==='gutter'&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);noShrink=true;if(fx.ok){tl=sgi*(HW+.055-CW/2);deep=true}else tl=i<=fx.at?sgi*(HW-.2):-sgi*.18}
+        else if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
         r.laneCur+=(tl-r.laneCur)*(noShrink?.18:lw?.16:.08);
         const near=runs.list.some(o=>o!==r&&o.state==='run'&&Math.abs(o.i-i)<8),rlT=noShrink?0:(lw||near)?.35:1;r.rlB+=(rlT-r.rlB)*.08;
-        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lane=clamp(r.laneCur*r.shk+rlo+wd,-(HW-.07),HW-.07);
+        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lim=deep?HW+.055-CW/2:HW-.07,lane=clamp(r.laneCur*r.shk+rlo+wd,-lim,lim);
         const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;const mk=r.mistAt&&r.mistAt.find(m=>i>=m.j-1&&i<m.j+m.span);if(!mk)r.cy+=(r.yaw[i]-r.cy)*.12;
         let mOff=0;if(mk){const pr=i===mk.j-1?f*.3:.3+.7*clamp((i-mk.j+f+1)/mk.span,0,1),e=pr<.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2;
           if(mk.kind==='spin'){const a2=mk.sg*Math.PI*2*e;r.cy=Math.atan2(Math.sin(a2),Math.cos(a2));mOff=mk.sg*.12*Math.sin(Math.PI*pr)}
@@ -2338,6 +2341,7 @@ const MAP=(()=>{
           if(fx.type==='slip')s.slip=true;
           if(fx.type==='feint'&&Math.abs(i-fx.at)<18){s.a+=-sgi*.55*Math.sin(clamp((i-fx.at+18)/36,0,1)*Math.PI*2);r.cy=.4}
           if(fx.type==='late'&&i<fx.at&&fx.at-i<12){s.brake=true;s.bigBrake=true;if(R()<.6)smoke.push({v:v+Math.cos(ang)*CL*.3,u:u+Math.sin(ang)*CL*.3,r:.03+R()*.03,a:.4,dv:(R()-.5)*.003,du:(R()-.5)*.003})}
+          if(fx.type==='gutter'&&!fx.ok&&i>=fx.at-3&&i<=fx.at+2){const q=clamp((i-fx.at+3+f)/5,0,1);s.a+=sgi*.3*Math.sin(q*Math.PI);if(R()<.5)sparks.push({v:v-Math.sin(ang)*sgi*CW*.5,u:u+Math.cos(ang)*sgi*CW*.5,dv:(R()-.5)*.02,du:(R()-.5)*.02,l:5+R()*5})}
           if(fx.type==='gutter'&&fx.ok&&Math.abs(i-fx.at)<11){for(let q=0;q<3;q++){const wx=v-Math.sin(ang)*sgi*CW*.5+Math.cos(ang)*(R()-.5)*CL*.5,wy=u+Math.cos(ang)*sgi*CW*.5+Math.sin(ang)*(R()-.5)*CL*.5;sparks.push({v:wx,u:wy,dv:-Math.cos(ang)*(.01+R()*.02)+(R()-.5)*.01,du:-Math.sin(ang)*(.01+R()*.02)+(R()-.5)*.01,l:8+R()*8})}if(sparks.length>400)sparks.splice(0,100)}}
         r.pausing=null;const px=r.incs.find(x=>!x.dnf&&tt>=r.cum[x.i]&&x.i+1<N&&tt<r.cum[x.i+1]);
         if(px){const ta=r.cum[px.i],tb=r.cum[px.i+1],p=(tt-ta)/((tb-ta)||1),pp=T.pts[px.i],nn=T.left[px.i],sg=Math.sign(T.curv[px.i])||1;r.pausing=px;
@@ -2357,6 +2361,16 @@ const MAP=(()=>{
       {const moving=r.state==='run'||(r.state==='done'&&r.slideOn);if(s.brake&&moving&&!s.wreck){const ca=Math.cos(s.a),sa=Math.sin(s.a),tl=[-1,1].map(k=>{const x=-CL/2+.01,y=k*(CW/2-.035);return[s.v+ca*x-sa*y,s.u+sa*x+ca*y]});
         if(r.lastTail){const d=Math.hypot(tl[0][0]-r.lastTail[0][0],tl[0][1]-r.lastTail[0][1]);if(d>.004&&d<1.2)for(let k=0;k<2;k++)btr.push({a:r.lastTail[k],b:tl[k],t:now,w:s.bigBrake?1.4:1})}r.lastTail=tl}else r.lastTail=null}
     });
+    /* contact: for the moment of the hit, pull the two cars together until their bodies actually touch (door to door, or nose to tail), then let them bounce apart */
+    {const done=new Set();runs.list.forEach((r,ri)=>{if(!r.s||r.s.wreck||!r.incs)return;
+      /* the hit plays out over about 0.8 s of screen time around the moment of contact, so it reads even when the cars are fast */
+      let hit=null,t=0;for(const x of r.incs){if(x.type!=='hit'||x.pk==null||x.i+1>=N)continue;const tt=el-(r.delay+r.cum[x.i]);if(tt>-.2&&tt<.6){hit=x;t=tt;break}}if(!hit)return;
+      const q=runs.list[hit.pk];if(!q||!q.s||q.s.wreck||q.state!=='run'&&q.state!=='wait')return;const key=Math.min(ri,hit.pk)+'_'+Math.max(ri,hit.pk);if(done.has(key))return;done.add(key);
+      const sm=x=>x*x*(3-2*x),k=t<0?sm((t+.2)/.2):t<.25?1:Math.max(0,1-(t-.25)/.35);if(k<=0)return;
+      const A=r.s,B=q.s,ca=Math.cos(A.a),sa=Math.sin(A.a),dv=B.v-A.v,du=B.u-A.u,dl=dv*ca+du*sa,dw=-dv*sa+du*ca,side=Math.abs(dw)*1.6>Math.abs(dl);
+      if(Math.hypot(dl,dw)>CL*5)return;
+      const tl=side?dl*.5:Math.sign(dl||1)*CL*1.02,tw=side?Math.sign(dw||1)*CW*1.02:dw*.4,ml=(tl-dl)*k/2,mw=(tw-dw)*k/2,mv=ml*ca-mw*sa,mu=ml*sa+mw*ca;
+      A.v-=mv;A.u-=mu;B.v+=mv;B.u+=mu;if(k>.6&&R()<.6)sparks.push({v:(A.v+B.v)/2,u:(A.u+B.u)/2,dv:(R()-.5)*.02,du:(R()-.5)*.02,l:6+R()*6})})}
     if(smoke.length>500)smoke.splice(0,smoke.length-500);
     if(!race&&S){const busyIds=new Set(runs.list.map(r=>r.c.id));let k=runs.list.length;S.cars.forEach(car=>{if(busyIds.has(car.id)||k>=GARAGE_MAX)return;const sl=shopSlots[k++];out.push({v:sl.v,u:sl.u,a:sl.a,c1:car.c1,c2:car.c2,model:car.model,look:car.look,lights:0,brake:false,steer:0})})}
     else if(race){if(world.def.home&&S)S.cars.slice(0,GARAGE_MAX).forEach((car,k)=>{if(runs.list.some(r=>r.c.id===car.id))return;const sl=shopSlots[k];out.push({v:sl.v,u:sl.u,a:sl.a,c1:car.c1,c2:car.c2,model:car.model,look:car.look,lights:0,brake:false,steer:0})});else shopSlots.forEach(s=>out.push({v:s.v,u:s.u,a:s.a,c1:s.c1,c2:shade(s.c1,-.4),model:'s13',lights:0,brake:false,steer:0,hazard:true}))}
@@ -2924,7 +2938,7 @@ function collide(A,Bq,T){
   for(const h of T.hair){if(n>=2)break;const ea=A.dnf??N,eb=Bq.dnf??N;if(h>=ea||h>=eb)break;if(A.incs.some(x=>x.i===h)||Bq.incs.some(x=>x.i===h))continue;
     const gap=Math.abs(A.cumReal[h]-Bq.cumReal[h]);if(gap>.35)continue;
     const p=.16*(hasT(A.d,'hot')||hasT(Bq.d,'hot')?1.4:1)*(hasT(A.d,'ice')?.7:1);if(R()>p)continue;n++;
-    [A,Bq].forEach(r=>{const x=mkInc('hit',h);if(R()<.18){x.loss+=3+R()*2;x.cond+=3}r.incs.push(x);for(let j=h+1;j<N;j++)r.cumReal[j]+=x.loss});
+    [A,Bq].forEach(r=>{const x=mkInc('hit',h);x.pk=r===A?1:0;if(R()<.18){x.loss+=3+R()*2;x.cond+=3}r.incs.push(x);for(let j=h+1;j<N;j++)r.cumReal[j]+=x.loss});
   }
   [A,Bq].forEach(r=>{r.incs.sort((a,b)=>a.i-b.i);r.res.time=r.dnf!=null?Infinity:r.cumReal[N-1]});
 }
