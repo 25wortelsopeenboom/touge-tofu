@@ -71,7 +71,7 @@ window.TOUGE_NET = window.TOUGE_NET || {
   /* cloud saves and admin changes (god mode). Quietly does nothing if the tables aren't set up yet. */
   window.TOUGE_CLOUD={
     put:async(code,h)=>{const u=await session();if(!u)return;const{error}=await sb.from('saves').upsert({uid:u,handle:h||null,code},{onConflict:'uid'});if(error&&!/relation|does not exist|schema cache/i.test(error.message||''))console.warn('Cloud save:',error.message)},
-    ops:async()=>{const u=await session();if(!u)return[];const{data,error}=await sb.from('gm_ops').select('id,op').eq('uid',u).order('id');return error?[]:(data||[])},
+    ops:async forUid=>{const u=forUid||await session();if(!u)return[];const{data,error}=await sb.from('gm_ops').select('id,op').eq('uid',u).order('id');return error?[]:(data||[])},
     ack:async ids=>{if(!ids.length)return;await sb.from('gm_ops').delete().in('id',ids)}};
   const prev=window.claude||{};
   window.claude=Object.assign({},prev,{use:async n=>{
@@ -559,7 +559,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v128</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v129</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -902,7 +902,7 @@ const AVIMG={};function avatarImg(seed,face){const k=face?seed+'|'+JSON.stringif
 /* ================= state ================= */
 /* "Play as" from the control room: index.html?playas=1 opens a copy of another player's save in its own sandbox slot.
    Touge Net runs as them (admins may write for any handle). Their save only changes if you press "Send", and your own save isn't touched. */
-const SANDBOX=(()=>{try{if(!new URLSearchParams(location.search).get('playas'))return null;const c=localStorage.getItem('tougeTofu.playas');return c?{code:c,h:localStorage.getItem('tougeTofu.playasH')||''}:null}catch(e){return null}})();
+const SANDBOX=(()=>{try{if(!new URLSearchParams(location.search).get('playas'))return null;const c=localStorage.getItem('tougeTofu.playas');return c?{code:c,h:localStorage.getItem('tougeTofu.playasH')||'',u:localStorage.getItem('tougeTofu.playasU')||''}:null}catch(e){return null}})();
 const SAVE=SANDBOX?'tougeTofu.sandbox':'tougeTofu.v1';
 let S=null,TAB='crew',busy=false;
 function freshState(){return{v:1,money:30000,week:1,day:0,cred:0,phase:'pre',prod:1,qual:1,weather:'Clear',drivers:[],cars:[],nid:1,log:[],wins:0,losses:0,weekRev:0,weekCredStart:0,weekRaces:[],seenIntro:false,records:{},batches:0,earned:0}}
@@ -934,11 +934,12 @@ function cloudSave(now){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S)return;cle
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&cloudT){cloudSave(true)}});
 let gmBusy=false;
 const LV_STAT=2;
-async function gmPull(){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S||gmBusy||busy)return;gmBusy=true;
-  try{const ops=await C.ops();if(ops.length){const done=[];
+/* Play As: the copy also takes the admin changes queued for the real player (read only, so the real game still gets them too) */
+async function gmPull(){const C=window.TOUGE_CLOUD;if(!C||!S||gmBusy||busy)return;if(SANDBOX&&!SANDBOX.u)return;gmBusy=true;
+  try{let ops=await C.ops(SANDBOX?SANDBOX.u:undefined);if(SANDBOX){const seen=new Set(S.sbxOps||[]);ops=ops.filter(r=>!seen.has(r.id))}if(ops.length){const done=[];
     let swapped=false;
     for(const r of ops){const o=r.op||{},v=Math.round(+o.v||0);
-      if(o.t==='replace'&&typeof o.code==='string'){try{const keep={};['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>{if(S[k]!==undefined)keep[k]=S[k]});
+      if(o.t==='replace'&&typeof o.code==='string'){try{const keep={};['handle','hkey','hpend','dev','net','netSeen','netWx','sbx','sbxOps'].forEach(k=>{if(S[k]!==undefined)keep[k]=S[k]});
         const n=Object.assign(freshState(),readCode(o.code));delete n.sbx;['handle','hkey','hpend','dev','net','netSeen','netWx'].forEach(k=>delete n[k]);S=Object.assign(n,keep);normDrivers();if(S.phase==='race')S.phase='post';closeModal();MAP.loadWorld('usuzumi');lastView='';swapped=true}catch(e){}}
       else if(o.t==='money')S.money=Math.max(0,S.money+v);
       else if(o.t==='cred'){S.cred=Math.max(0,S.cred+v)}
@@ -948,8 +949,9 @@ async function gmPull(){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S||gmBusy||b
       else if(o.t==='move'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&MOVES[o.k]){d.gm=(d.gm||[]).filter(k=>k!==o.k);if(o.on)d.gm.push(o.k)}}
       else if(o.t==='perk'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&PERKS[o.k]&&o.k!=='second'){d.perks=(d.perks||[]).filter(k=>k!==o.k);if(o.on)d.perks.push(o.k)}}
       done.push(r.id)}
+    if(SANDBOX){S.sbxOps=(S.sbxOps||[]).concat(done).slice(-200);save();renderAll();toast('Admin changes applied to this copy');gmBusy=false;return}
     save();renderAll();await C.ack(done);/* publish the new stats and OVR straight away so the control room catches up */try{NET.touch()}catch(e){}if(swapped){toast('Your save was updated by the Touge Net admin.');cloudSave(true)}}}catch(e){}gmBusy=false}
-setInterval(gmPull,15000);
+setInterval(gmPull,15000);setTimeout(gmPull,2500);
 function load(){try{const t=localStorage.getItem(SAVE);if(t){const s=JSON.parse(t);if(s&&s.v===1)return s}}catch(e){}return null}
 function addLog(m){S.log.push({t:`W${S.week} ${DAYS[S.day]}`,m});if(S.log.length>60)S.log.shift()}
 const carById=id=>S.cars.find(c=>c.id===id);
