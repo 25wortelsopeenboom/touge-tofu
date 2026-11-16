@@ -559,7 +559,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v129</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v130</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -950,7 +950,7 @@ async function gmPull(){const C=window.TOUGE_CLOUD;if(!C||!S||gmBusy||busy)retur
       else if(o.t==='perk'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&PERKS[o.k]&&o.k!=='second'){d.perks=(d.perks||[]).filter(k=>k!==o.k);if(o.on)d.perks.push(o.k)}}
       done.push(r.id)}
     if(SANDBOX){S.sbxOps=(S.sbxOps||[]).concat(done).slice(-200);save();renderAll();toast('Admin changes applied to this copy');gmBusy=false;return}
-    save();renderAll();await C.ack(done);/* publish the new stats and OVR straight away so the control room catches up */try{NET.touch()}catch(e){}if(swapped){toast('Your save was updated by the Touge Net admin.');cloudSave(true)}}}catch(e){}gmBusy=false}
+    save();renderAll();await C.ack(done);/* publish the new stats and OVR straight away so the control room catches up */try{NET.touch()}catch(e){}if(swapped)toast('Your save was updated by the Touge Net admin.');/* upload straight away, so a Play As copy opened now already has the change */cloudSave(true)}}catch(e){}gmBusy=false}
 setInterval(gmPull,15000);setTimeout(gmPull,2500);
 function load(){try{const t=localStorage.getItem(SAVE);if(t){const s=JSON.parse(t);if(s&&s.v===1)return s}}catch(e){}return null}
 function addLog(m){S.log.push({t:`W${S.week} ${DAYS[S.day]}`,m});if(S.log.length>60)S.log.shift()}
