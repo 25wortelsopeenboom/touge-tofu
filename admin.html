@@ -86,7 +86,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="15 Nov 21:59"</script>
+<script>window.TOUGE_ADMIN=true;window.TOUGE_BUILD="16 Nov 10:02"</script>
 <style>
 /* control room: same tokens and type as the game, laid out as a two-pane console */
 html.admin #app,html.admin #modal{display:none!important}
@@ -664,7 +664,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v122</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v128</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -1053,7 +1053,7 @@ async function gmPull(){const C=window.TOUGE_CLOUD;if(SANDBOX||!C||!S||gmBusy||b
       else if(o.t==='move'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&MOVES[o.k]){d.gm=(d.gm||[]).filter(k=>k!==o.k);if(o.on)d.gm.push(o.k)}}
       else if(o.t==='perk'){const d=S.drivers.find(x=>x.id===+o.d);if(d&&PERKS[o.k]&&o.k!=='second'){d.perks=(d.perks||[]).filter(k=>k!==o.k);if(o.on)d.perks.push(o.k)}}
       done.push(r.id)}
-    save();renderAll();await C.ack(done);if(swapped){toast('Your save was updated by the Touge Net admin.');cloudSave(true)}}}catch(e){}gmBusy=false}
+    save();renderAll();await C.ack(done);/* publish the new stats and OVR straight away so the control room catches up */try{NET.touch()}catch(e){}if(swapped){toast('Your save was updated by the Touge Net admin.');cloudSave(true)}}}catch(e){}gmBusy=false}
 setInterval(gmPull,15000);
 function load(){try{const t=localStorage.getItem(SAVE);if(t){const s=JSON.parse(t);if(s&&s.v===1)return s}}catch(e){}return null}
 function addLog(m){S.log.push({t:`W${S.week} ${DAYS[S.day]}`,m});if(S.log.length>60)S.log.shift()}
@@ -1081,14 +1081,18 @@ function levelInfo(xp){const lv=Math.floor(Math.sqrt(xp/60))+1,a=(lv-1)**2*60,b=
 /* Growth pace. GROW_K scales every run's gain, GROW_SOFT sets how hard gains shrink as a stat climbs,
    LVUP_K scales the bonus points a level-up gives. 1, 1.25 and 1 were the original (fast) values. */
 const GROW_K=.6,GROW_SOFT=1.6,LVUP_K=.6;
+/* how fast a stat grows at its current value. Below 50 it's the original curve; from 50 up the slowdown is gentler,
+   so the high end (90 to 99) is a long climb but not an endless one. GROW_TOP shapes that tail. */
+const GROW_TOP=1.15,PVP_GROW=1.6;
+function growCurve(s){return s<=50?Math.pow(Math.max(0,1-s/100),GROW_SOFT):Math.pow(.5,GROW_SOFT)*Math.pow(Math.max(0,1-(s-50)/51),GROW_TOP)}
 function grow(d,emph,mult){
   const tal=(hasT(d,'natural')?1.35:1)*mult;const ups={};
-  STATS.forEach(([k])=>{let e=emph[k]??1;if(hasT(d,'latebrake')&&k==='brk')e*=1.3;const s=d.stats[k];const g=GROW_K*1.5*e*Math.pow(Math.max(0,1-s/100),GROW_SOFT)*(.6+R()*.8)*tal*(s>80?1-(s-80)/40:1);d.stats[k]=Math.max(s,Math.min(99,s+g));ups[k]=g});
+  STATS.forEach(([k])=>{let e=emph[k]??1;if(hasT(d,'latebrake')&&k==='brk')e*=1.3;const s=d.stats[k];const g=GROW_K*1.5*e*growCurve(s)*(.6+R()*.8)*tal;d.stats[k]=Math.max(s,Math.min(99,s+g));ups[k]=g});
   return ups;
 }
 function giveXP(d,xp,notes){
   const before=levelInfo(d.xp).lv;d.xp+=xp;const after=levelInfo(d.xp).lv;
-  if(after>before){for(let i=0;i<after-before;i++){const ks=STATS.map(s=>s[0]).sort(()=>R()-.5).slice(0,2);ks.forEach(k=>d.stats[k]=Math.max(d.stats[k],Math.min(99,d.stats[k]+(1.5+R()*.8)*LVUP_K*(d.stats[k]>85?.5:1))))}notes.push(`Level ${after}!`);if(PERK_LV.some(l=>l>before&&l<=after)){notes.push('Perk ready');addLog(`${d.first} reached level ${after}. A new perk is ready in the Crew tab.`);toast(`${d.first} can pick a new perk`)}}
+  if(after>before){for(let i=0;i<after-before;i++){const ks=STATS.map(s=>s[0]).sort(()=>R()-.5).slice(0,2);ks.forEach(k=>d.stats[k]=Math.max(d.stats[k],Math.min(99,d.stats[k]+(1.5+R()*.8)*LVUP_K*(d.stats[k]>85?.75:1))))}notes.push(`Level ${after}!`);if(PERK_LV.some(l=>l>before&&l<=after)){notes.push('Perk ready');addLog(`${d.first} reached level ${after}. A new perk is ready in the Crew tab.`);toast(`${d.first} can pick a new perk`)}}
 }
 function modCost(c,mk,lvl){const md=MODS.find(m=>m.k===mk);if(mk==='cradle')return 25000;const ref=CARS[c.model].modRef||clamp(CARS[c.model].price,300000,3000000);return Math.round(Math.max(md.min[lvl],ref*md.pct[lvl])/1000)*1000}
 function repairCost(c){const ref=Math.max(CARS[c.model].price,300000);return Math.round((100-c.cond)*Math.max(900,ref*.0012)/100)*100}
@@ -1157,7 +1161,7 @@ function traffic(cars,T,race){
     if(a.c.ghost||b.c.ghost){a.behind=-2;return}
     if(t-(a.lastHit??-99)<15||t-(b.lastHit??-99)<15){a.behind=-2;return}a.lastHit=b.lastHit=t;
     const i=Math.floor(Math.min(a.p,b.p));
-    [a,b].forEach((s,n)=>{const x={type:'hit',i:Math.floor(s.p),cond:4+R()*8,tofu:5+R()*6,with:(n?a:b).c.d.first};s.stun=.6+R()*1.0;if(n===1&&R()<.2){s.stun+=2.2;x.cond+=4;x.spun=true}if(Math.floor(s.p)>=N-2)x.i=N-3;s.c.incs.push(x)});
+    [a,b].forEach((s,n)=>{const x={type:'hit',i:Math.floor(s.p),cond:4+R()*8,tofu:5+R()*6,with:(n?a:b).c.d.first,pk:(n?a:b).k};s.stun=.6+R()*1.0;if(n===1&&R()<.2){s.stun+=2.2;x.cond+=4;x.spun=true}if(Math.floor(s.p)>=N-2)x.i=N-3;s.c.incs.push(x)});
     ev.push({type:'hit',t,i,by:a.k,on:b.k});endAlong(key(a.k,b.k));a.behind=-2;b.behind=-2;
   }
   /* Lights Out in the dark: the driver knows the road by heart, but not tonight's puddles or where the leaves have piled up */
@@ -2426,11 +2430,14 @@ const MAP=(()=>{
             if(ks<.6)rw.forEach(w=>{if(R()<.6)smoke.push({v:w[0],u:w[1],r:.05+R()*.06,a:.5,dv:(R()-.5)*.006,du:(R()-.5)*.006})})}
           else{r.cy=0;r.last=null;r.slideOn=false;s={v:q.v,u:q.u,a:T.theta[ix]+(r.rank%2?-1:1)*Math.PI/2,lights:dark,brake:true,steer:0}}}else{const sl=hotelSlots[ri%6];s={v:sl.v,u:sl.u,a:sl.a,lights:0,brake:false,steer:0}}}
       else{allDone=false;r.state='run';while(r.i<N-2&&r.cum[r.i+1]<tt)r.i++;const i=r.i,f=clamp((tt-r.cum[i])/((r.cum[i+1]-r.cum[i])||1),0,1);
-        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&ra<=w.t1);let tl=lw?lw.lane:r.baseLane,noShrink=false;
-        if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='gutter'){tl=sgi*(HW-.02);noShrink=true}else if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
+        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&(ra<=w.t1||(w.type==='gutter'&&i<=w.at+8)));let tl=lw?lw.lane:r.baseLane,noShrink=false,deep=false;
+        /* gutter run: it only works from the inside. When it lands the car hugs the apex with its inside wheels down in the drain;
+           (just that side's wheels, the body stays on the road); when it misses the car turns in from too wide, clips the lip short of the drain and runs out wide */
+        if(fx&&fx.type==='gutter'&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);noShrink=true;if(fx.ok){tl=sgi*(HW+.055-CW/2);deep=true}else tl=i<=fx.at?sgi*(HW-.2):-sgi*.18}
+        else if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
         r.laneCur+=(tl-r.laneCur)*(noShrink?.18:lw?.16:.08);
         const near=runs.list.some(o=>o!==r&&o.state==='run'&&Math.abs(o.i-i)<8),rlT=noShrink?0:(lw||near)?.35:1;r.rlB+=(rlT-r.rlB)*.08;
-        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lane=clamp(r.laneCur*r.shk+rlo+wd,-(HW-.07),HW-.07);
+        const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lim=deep?HW+.055-CW/2:HW-.07,lane=clamp(r.laneCur*r.shk+rlo+wd,-lim,lim);
         const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;const mk=r.mistAt&&r.mistAt.find(m=>i>=m.j-1&&i<m.j+m.span);if(!mk)r.cy+=(r.yaw[i]-r.cy)*.12;
         let mOff=0;if(mk){const pr=i===mk.j-1?f*.3:.3+.7*clamp((i-mk.j+f+1)/mk.span,0,1),e=pr<.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2;
           if(mk.kind==='spin'){const a2=mk.sg*Math.PI*2*e;r.cy=Math.atan2(Math.sin(a2),Math.cos(a2));mOff=mk.sg*.12*Math.sin(Math.PI*pr)}
@@ -2443,6 +2450,7 @@ const MAP=(()=>{
           if(fx.type==='slip')s.slip=true;
           if(fx.type==='feint'&&Math.abs(i-fx.at)<18){s.a+=-sgi*.55*Math.sin(clamp((i-fx.at+18)/36,0,1)*Math.PI*2);r.cy=.4}
           if(fx.type==='late'&&i<fx.at&&fx.at-i<12){s.brake=true;s.bigBrake=true;if(R()<.6)smoke.push({v:v+Math.cos(ang)*CL*.3,u:u+Math.sin(ang)*CL*.3,r:.03+R()*.03,a:.4,dv:(R()-.5)*.003,du:(R()-.5)*.003})}
+          if(fx.type==='gutter'&&!fx.ok&&i>=fx.at-3&&i<=fx.at+2){const q=clamp((i-fx.at+3+f)/5,0,1);s.a+=sgi*.3*Math.sin(q*Math.PI);if(R()<.5)sparks.push({v:v-Math.sin(ang)*sgi*CW*.5,u:u+Math.cos(ang)*sgi*CW*.5,dv:(R()-.5)*.02,du:(R()-.5)*.02,l:5+R()*5})}
           if(fx.type==='gutter'&&fx.ok&&Math.abs(i-fx.at)<11){for(let q=0;q<3;q++){const wx=v-Math.sin(ang)*sgi*CW*.5+Math.cos(ang)*(R()-.5)*CL*.5,wy=u+Math.cos(ang)*sgi*CW*.5+Math.sin(ang)*(R()-.5)*CL*.5;sparks.push({v:wx,u:wy,dv:-Math.cos(ang)*(.01+R()*.02)+(R()-.5)*.01,du:-Math.sin(ang)*(.01+R()*.02)+(R()-.5)*.01,l:8+R()*8})}if(sparks.length>400)sparks.splice(0,100)}}
         r.pausing=null;const px=r.incs.find(x=>!x.dnf&&tt>=r.cum[x.i]&&x.i+1<N&&tt<r.cum[x.i+1]);
         if(px){const ta=r.cum[px.i],tb=r.cum[px.i+1],p=(tt-ta)/((tb-ta)||1),pp=T.pts[px.i],nn=T.left[px.i],sg=Math.sign(T.curv[px.i])||1;r.pausing=px;
@@ -2462,6 +2470,16 @@ const MAP=(()=>{
       {const moving=r.state==='run'||(r.state==='done'&&r.slideOn);if(s.brake&&moving&&!s.wreck){const ca=Math.cos(s.a),sa=Math.sin(s.a),tl=[-1,1].map(k=>{const x=-CL/2+.01,y=k*(CW/2-.035);return[s.v+ca*x-sa*y,s.u+sa*x+ca*y]});
         if(r.lastTail){const d=Math.hypot(tl[0][0]-r.lastTail[0][0],tl[0][1]-r.lastTail[0][1]);if(d>.004&&d<1.2)for(let k=0;k<2;k++)btr.push({a:r.lastTail[k],b:tl[k],t:now,w:s.bigBrake?1.4:1})}r.lastTail=tl}else r.lastTail=null}
     });
+    /* contact: for the moment of the hit, pull the two cars together until their bodies actually touch (door to door, or nose to tail), then let them bounce apart */
+    {const done=new Set();runs.list.forEach((r,ri)=>{if(!r.s||r.s.wreck||!r.incs)return;
+      /* the hit plays out over about 0.8 s of screen time around the moment of contact, so it reads even when the cars are fast */
+      let hit=null,t=0;for(const x of r.incs){if(x.type!=='hit'||x.pk==null||x.i+1>=N)continue;const tt=el-(r.delay+r.cum[x.i]);if(tt>-.2&&tt<.6){hit=x;t=tt;break}}if(!hit)return;
+      const q=runs.list[hit.pk];if(!q||!q.s||q.s.wreck||q.state!=='run'&&q.state!=='wait')return;const key=Math.min(ri,hit.pk)+'_'+Math.max(ri,hit.pk);if(done.has(key))return;done.add(key);
+      const sm=x=>x*x*(3-2*x),k=t<0?sm((t+.2)/.2):t<.25?1:Math.max(0,1-(t-.25)/.35);if(k<=0)return;
+      const A=r.s,B=q.s,ca=Math.cos(A.a),sa=Math.sin(A.a),dv=B.v-A.v,du=B.u-A.u,dl=dv*ca+du*sa,dw=-dv*sa+du*ca,side=Math.abs(dw)*1.6>Math.abs(dl);
+      if(Math.hypot(dl,dw)>CL*5)return;
+      const tl=side?dl*.5:Math.sign(dl||1)*CL*1.02,tw=side?Math.sign(dw||1)*CW*1.02:dw*.4,ml=(tl-dl)*k/2,mw=(tw-dw)*k/2,mv=ml*ca-mw*sa,mu=ml*sa+mw*ca;
+      A.v-=mv;A.u-=mu;B.v+=mv;B.u+=mu;if(k>.6&&R()<.6)sparks.push({v:(A.v+B.v)/2,u:(A.u+B.u)/2,dv:(R()-.5)*.02,du:(R()-.5)*.02,l:6+R()*6})})}
     if(smoke.length>500)smoke.splice(0,smoke.length-500);
     if(!race&&S){const busyIds=new Set(runs.list.map(r=>r.c.id));let k=runs.list.length;S.cars.forEach(car=>{if(busyIds.has(car.id)||k>=GARAGE_MAX)return;const sl=shopSlots[k++];out.push({v:sl.v,u:sl.u,a:sl.a,c1:car.c1,c2:car.c2,model:car.model,look:car.look,lights:0,brake:false,steer:0})})}
     else if(race){if(world.def.home&&S)S.cars.slice(0,GARAGE_MAX).forEach((car,k)=>{if(runs.list.some(r=>r.c.id===car.id))return;const sl=shopSlots[k];out.push({v:sl.v,u:sl.u,a:sl.a,c1:car.c1,c2:car.c2,model:car.model,look:car.look,lights:0,brake:false,steer:0})});else shopSlots.forEach(s=>out.push({v:s.v,u:s.u,a:s.a,c1:s.c1,c2:shade(s.c1,-.4),model:'s13',lights:0,brake:false,steer:0,hazard:true}))}
@@ -2806,7 +2824,7 @@ function toast(t){const el=document.createElement('div');el.className='toast';el
 /* ================= game flow ================= */
 let lastResults=null;
 /* the legend in the grey GC8: shows up now and then on the dawn run, passes everyone, never stops */
-const BUNTA_CHANCE=.15;
+const BUNTA_CHANCE=.05,BUNTA_GAP=10; // chance per dawn run, and at least this many days between visits
 const REPLAY_GAP=4; // seconds: the highlights replay zooms out to frame both cars only when they are within this gap
 const REPLAY_ZOOM=.5; // ...and only if both fit at no less than this share of the normal replay zoom; otherwise it follows the featured car
 function buntaRun(list){
@@ -2819,7 +2837,7 @@ function buntaRun(list){
   const a=clamp((tot-target)/(cw||1),.02,.45),cumReal=new Float32Array(N);for(let x=1;x<N;x++)cumReal[x]=cumReal[x-1]+(cum[x]-cum[x-1])*(1-a*w[x]);
   return{ghost:true,d,c,start,cumReal,incs:[],dnf:null,res:{sp:spec(c),prof:Object.assign({},prof,{cum:cumReal}),time:cumReal[N-1],dmg:0,notes:[],fresh:1,price:0,xp:0,incs:[],dnf:null}};
 }
-const YSK_CHANCE=.35; // share of Genting Highlands races where YS Khong turns up
+const YSK_CHANCE=.10,YSK_GAP=3; // share of Genting Highlands races where YS Khong turns up, at most once every 3 weeks
 function yskRun(A,Bq,T,w){
   const N=T.len,keys=Object.keys(CARS).filter(k=>!CARS[k].hidden),model=keys[Math.floor(R()*keys.length)],pt=CARS[model].paint||PAINTS[Math.floor(R()*PAINTS.length)],pick=a=>a[Math.floor(R()*a.length)];
   const d={id:-2,first:'YS',family:'Khong',seed:80711,stats:{brk:121,crn:124,dft:118,ht:122,thr:120,foc:124},trait:'rain',perks:[],know:{genting:100},xp:0,legend:true};
@@ -2880,7 +2898,7 @@ function dispatch(){
   const runs=plannedRuns();if(!runs.length||busy)return;if(!S.seenIntro){S.seenIntro=true;$('#hint').hidden=true}
   busy=true;
   const list=runs.map(({d,c},k)=>{const res=simDelivery(d,c,S.weather);return{d,c,res,cumReal:res.cumReal,incs:res.incs,dnf:res.dnf,start:k*DEP_GAP}});
-  if(!(S.tut&&S.tut.s>=0)&&!S.drivers.some(x=>x.legend)&&(S.week>1||S.day>0)&&(window.BUNTA_FORCE||R()<BUNTA_CHANCE)){list.push(buntaRun(list));toast(S.buntaSeen?'Headlights in the mirror. The grey GC8 is back.':'Someone else is on the pass this morning...')}
+  if(!(S.tut&&S.tut.s>=0)&&!S.drivers.some(x=>x.legend)&&(S.week>1||S.day>0)&&(window.BUNTA_FORCE||(S.week*7+S.day-(S.buntaLast??-99)>=BUNTA_GAP&&R()<BUNTA_CHANCE))){S.buntaLast=S.week*7+S.day;list.push(buntaRun(list));toast(S.buntaSeen?'Headlights in the mirror. The grey GC8 is back.':'Someone else is on the pass this morning...')}
   if(list.length>1)trafficDelivery(list,MAP.homeTrack());
   MAP.runDelivery(list,()=>{busy=false;MUSIC.stop();finishDelivery(list)});MUSIC.play('delivery');
   renderAll();
@@ -3029,7 +3047,7 @@ function collide(A,Bq,T){
   for(const h of T.hair){if(n>=2)break;const ea=A.dnf??N,eb=Bq.dnf??N;if(h>=ea||h>=eb)break;if(A.incs.some(x=>x.i===h)||Bq.incs.some(x=>x.i===h))continue;
     const gap=Math.abs(A.cumReal[h]-Bq.cumReal[h]);if(gap>.35)continue;
     const p=.16*(hasT(A.d,'hot')||hasT(Bq.d,'hot')?1.4:1)*(hasT(A.d,'ice')?.7:1);if(R()>p)continue;n++;
-    [A,Bq].forEach(r=>{const x=mkInc('hit',h);if(R()<.18){x.loss+=3+R()*2;x.cond+=3}r.incs.push(x);for(let j=h+1;j<N;j++)r.cumReal[j]+=x.loss});
+    [A,Bq].forEach(r=>{const x=mkInc('hit',h);x.pk=r===A?1:0;if(R()<.18){x.loss+=3+R()*2;x.cond+=3}r.incs.push(x);for(let j=h+1;j<N;j++)r.cumReal[j]+=x.loss});
   }
   [A,Bq].forEach(r=>{r.incs.sort((a,b)=>a.i-b.i);r.res.time=r.dnf!=null?Infinity:r.cumReal[N-1]});
 }
@@ -3049,7 +3067,7 @@ function nextRace(){
     const lead=job.lead0!==undefined?job.lead0:job.start==='chase'?1:job.start==='toss'?(R()<.5?0:1):null;job.chased=lead===1&&job.start==='chase';job.lead=lead;A.start=lead===1?.75:0;Bq.start=lead===0?.75:0;
     const cars=[A,Bq].map(r=>({cum:r.cumReal,start:r.start,dnf:r.dnf,d:r.d,c:r.c,incs:r.incs,tac:r.tac,fresh:r.fresh,moves:new Set(movesOf(r.d))})),tev=traffic(cars,T,true);
     [A,Bq].forEach((r,k)=>{r.cumReal=cars[k].rel;r.lanes=cars[k].lanes;r.fx=cars[k].fx;r.incs.sort((a,b)=>a.i-b.i);r.res.time=r.dnf!=null?Infinity:r.start+r.cumReal[T.len-1]});
-    const gh=m.id==='genting'&&(window.YSK_FORCE||R()<YSK_CHANCE)?yskRun(A,Bq,T,RW):null;
+    const gh=m.id==='genting'&&(window.YSK_FORCE||(S.week-(S.yskLast??-99)>=YSK_GAP&&R()<YSK_CHANCE))?(S.yskLast=S.week,yskRun(A,Bq,T,RW)):null;
     if(job.ch||opp.net){A.hh=S.handle||null;Bq.hh=opp.h||null}CUR={job,A,B:Bq,gh,tev};if(job.onSim)job.onSim(A,Bq,tev);const evs=raceEvents(A,Bq,T,d,opp,tev);if(gh)evs.push(...gh.ev);if(RACE_DRY){const ix=Math.min(T.len-1,Math.floor(RACE_DRY.a*T.len)),lt=Math.min(A.start+(A.cumReal[ix]||0),Bq.start+(Bq.cumReal[ix]||0));evs.push({t:lt,tag:'DRYING',msg:"The rain's stopped. A dry line is starting to appear."})}evs.sort((x,y)=>x.t-y.t);
     MAP.runRace({T,list:gh?[A,Bq,gh]:[A,Bq],events:evs,title:`${dir==='up'?'UPHILL':'DOWNHILL'} ${m.name.toUpperCase()}`,dir:dir==='up'?'UP':'DOWN'},()=>{busy=false;MUSIC.stop(.8);renderAction();finishRace()});MUSIC.play('race');
   },80);
@@ -3064,7 +3082,9 @@ function finishRace(){
   if(win){S.money+=prize;S.weekRev+=prize;credD=cw;S.cred+=cw;d.wins++;S.wins++;rec.w++;if(job.chased)notes.push('Chase win +25% cred')}
   else{credD=m.home||both?0:-Math.round(cw*.25);S.cred=Math.max(0,S.cred+credD);d.losses++;S.losses++;rec.l++;if(wager&&!both){S.money-=wager;S.weekRev-=wager}}
   S.weekRaces.push(win);
-  const mb=movesOf(d),mk=mentorK(d);grow(d,dir==='down'?{brk:1.6,dft:1.6,ht:1.4,crn:1.3}:{thr:1.6,crn:1.3,foc:1.3},(win?2.2:1.6)*mk);giveXP(d,Math.round((win?130:70)*mk),notes);learnCheck(d,mb);
+  /* a real battle against another player (not a ghost) teaches more */
+  const pvp=job.ch?PVP_GROW:1;if(job.ch)notes.push('Battle with a real driver: faster growth');
+  const mb=movesOf(d),mk=mentorK(d);grow(d,dir==='down'?{brk:1.6,dft:1.6,ht:1.4,crn:1.3}:{thr:1.6,crn:1.3,foc:1.3},(win?2.2:1.6)*mk*pvp);giveXP(d,Math.round((win?130:70)*mk*pvp),notes);learnCheck(d,mb);
   {const k0=Math.floor(knowOf(d,m.id));learnPass(d,m.id,9);const k1=Math.floor(knowOf(d,m.id));if(Math.floor(k1/25)>Math.floor(k0/25))notes.push(`Knows ${m.name} ${k1}%`)}
   d.mm=d.mm||{};(A.fx||[]).filter(x=>x.ok&&MOVES[x.type]).forEach(x=>{const r0=mrank(d,x.type);d.mm[x.type]=(d.mm[x.type]||0)+1;const r1=mrank(d,x.type);if(r1>r0){notes.push(`${MOVES[x.type].name} ${ROMAN[r1]}`);addLog(`${d.first}'s ${MOVES[x.type].name} is now rank ${ROMAN[r1]}.`);toast(`${MOVES[x.type].name} rank ${ROMAN[r1]} for ${d.first}`)}});
   let lost=0,tow=0;if(A.mist.length)lost+=A.mist.length*(3+R()*4);A.incs.forEach(x=>{lost+=x.cond||0;tow+=x.tow||0;if(x.tyre)c.tyre.wear=Math.min(100,c.tyre.wear+x.tyre)});
@@ -4380,7 +4400,7 @@ const ADMIN=(()=>{
       ${me.admin?`<button class="btn sm ghost" data-adm="delch" data-id="${esc(c.id)}" aria-label="Delete this challenge">Delete</button>`:''}</div>`}
   function detail(){const r=sel&&rowOf(sel);if(!r)return`<div class="card adetail aempty"><div class="eyebrow">管理室</div><h2>Pick a handle</h2><p class="meta">Choose a player on the left to see their crew, record and battles.</p></div>`;
     const P=r.P||{},ros=Array.isArray(P.roster)&&P.roster.length?P.roster:(P.crew||[]),ds=ros.slice().sort((a,b)=>(b.ovr||0)-(a.ovr||0));
-    const drv=ds.length?ds.map(d=>{const car=d.car&&CARS[d.car.model]?d.car:null;return`<div class="pdr"><img class="av" src="${avatar(d.seed||1,d.face)}" alt=""><div class="pn"><b>${esc(d.first||'?')} ${esc(d.family||'')}</b><span class="meta">Level ${d.lv||1}${d.trait&&TRAITS[d.trait]?' · '+TRAITS[d.trait].name:''}</span></div><span class="povr"><small>OVR</small>${Math.round(d.ovr||0)}</span>
+    const drv=ds.length?ds.map(d=>{const car=d.car&&CARS[d.car.model]?d.car:null;return`<div class="pdr"><img class="av" src="${avatar(d.seed||1,d.face)}" alt=""><div class="pn"><b>${esc(d.first||'?')} ${esc(d.family||'')}</b><span class="meta">Level ${d.lv||1}${d.trait&&TRAITS[d.trait]?' · '+TRAITS[d.trait].name:''}</span></div><span class="povr"><small>OVR</small>${projOvr(d)}</span>
       ${car?`<span class="pcar"><img src="${SPR.url(car,132,84)}" alt=""><span><b>${esc(CARS[car.model].code)}</b> ${esc(CARS[car.model].name)}</span></span><span class="povr pi"><small>PI</small>${Math.round(car.pi||0)}</span>`:'<span class="pcar meta">No car</span><span></span>'}</div>${drvX(d)}`}).join(''):'<div class="meta">No drivers shared.</div>';
     const hist=Array.isArray(P.hist)?P.hist.slice(0,20):[];
     const hs=hist.length?hist.map(e=>{const m=mt(e.m);return`<div class="phr"><span class="res ${e.r}">${e.r==='W'?'WON':e.r==='L'?'LOST':'DRAW'}</span><div><b>${e.vs?'vs '+esc(e.vs):'vs a local challenger'}</b> <span class="meta">${m?esc(m.name):''} ${e.dir==='up'?'uphill':'downhill'} · ${KIND[e.k]||'Race'}${e.when?' · '+esc(e.when):''}</span><div class="meta">${esc(e.line||'')}</div></div></div>`}).join(''):'<div class="meta">No races shared.</div>';
@@ -4404,6 +4424,11 @@ const ADMIN=(()=>{
       <div class="gmrow"><span>Money</span><b>${yen(nn(r.eco.money)+pm)}</b>${pmark(pm)}<span class="gmbs">${[-1000000,-100000,100000,1000000].map(v=>`<button type="button" class="btn sm ${v<0?'ghost':''}" data-adm="gm" data-t="money" data-v="${v}">${v>0?'+':'−'}${yenK(Math.abs(v))}</button>`).join('')}</span></div>
       <div class="gmrow"><span>Street cred</span><b>${(nn(r.eco.cred)+pc).toLocaleString()}</b>${pmark(pc)}<span class="gmbs">${[-100,-10,10,100].map(v=>`<button type="button" class="btn sm ${v<0?'ghost':''}" data-adm="gm" data-t="cred" data-v="${v}">${v>0?'+':'−'}${Math.abs(v)}</button>`).join('')}</span></div>
       <div class="gmrow"><span>Stat step</span><span class="gmbs">${[1,5,10].map(v=>`<button type="button" class="chip ${gmStep===v?'on':''}" data-adm="gmstep" data-v="${v}">±${v}</button>`).join('')}</span><span class="meta">Use the ▲▼ next to each driver stat below.</span></div></div>`}
+  /* driver OVR with any not-yet-collected God-mode stat or level changes applied, so the number moves as soon as you click */
+  function projOvr(d){const o=Math.round(d.ovr||0),x=d&&d.x&&typeof d.x==='object'?d.x:null;if(!x||!x.st||!sel||!(pend[sel]||[]).length)return o;
+    const lp=pendSum(sel,q=>q.t==='level'&&+q.d===+x.id),lv0=levelInfo(nn(x.xp)).lv,lvd=Math.max(1,lv0+lp)-lv0,st={};let any=!!lvd;
+    STATS.forEach(([k])=>{const pd=pendSum(sel,q=>q.t==='stat'&&+q.d===+x.id&&q.k===k);if(pd)any=true;st[k]=clamp(nn(x.st[k])+pd+lvd*LV_STAT,1,130)});
+    if(!any)return o;const n=Math.round(dskill({stats:st})*100);return n===o?o:`<s class="meta">${o}</s> <em class="gmp" title="Waiting for the player's game to pick this up">${n}</em>`}
   function drvX(d){const x=d&&d.x&&typeof d.x==='object'?d.x:null;if(!x)return me.admin?'<div class="pdx"><div class="meta gmwhy">Full stats and the ▲▼ buttons appear once this player\'s game is on v105 or later and syncs.</div></div>':'';const st=x.st||{};
     const god=me.admin&&gmOn&&x.id!=null&&sel;
     const lp=god?pendSum(sel,o=>o.t==='level'&&+o.d===+x.id):0,lv0=levelInfo(nn(x.xp)).lv,lvShow=Math.max(1,lv0+lp),lvd=lvShow-lv0;
