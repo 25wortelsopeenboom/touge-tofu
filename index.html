@@ -560,7 +560,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v137</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v138</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -3449,19 +3449,19 @@ const NET=(()=>{
     <div class="tot"><div><span>Your till</span><b>${yen(S.money)}</b></div><div><span>After lending</span><b class="${ok?'':'neg'}">${yen(S.money-x.amt)}</b></div>${x.bank?`<div><span>They owe the bank</span><b>${yen(x.bank)}</b></div>`:''}</div>
     ${ok?'':`<p class="note" style="color:var(--brake)">You don't have ${yen(x.amt)} in the till right now.</p>`}<p class="note" id="lnMsg" role="status"></p>
     <div class="mact"><button class="btn" data-act="netLnDec" data-id="${esc(id)}">Decline</button><button class="btn" data-act="close">Later</button><button class="btn primary" data-act="netLnLend" data-id="${esc(id)}" ${ok?'':'disabled'}>Lend ${yen(x.amt)}</button></div>`)}
-  async function lnLend(id){if(sbxNo())return;const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey||SANDBOX)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
+  async function lnLend(id){if(sbxNo())return;const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
     if(b){b.disabled=true;b.textContent='Lending…'}
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(!cur||cur.st!=='ask'){closeModal();toast(`@${x.fh} withdrew the request.`);return}
       await db.doc('loans/'+id).update({st:'lent',tAcc:now(),paid:0});markSeen('lp'+id);S.money-=x.amt;fl()[id]=0;AUDIO.cash&&AUDIO.cash();addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save();closeModal();toast(`${yen(x.amt)} lent to @${x.fh}`);renderAll()}
     catch(e){if(m){m.textContent=wErr(e);m.style.color='var(--brake)'}if(b){b.disabled=false;b.textContent='Lend '+yen(x.amt)}}}
-  async function lnDec(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
-  async function lnCancel(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask'||SANDBOX)return;
+  async function lnDec(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
+  async function lnCancel(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask')return;
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(cur&&cur.st!=='ask'){toast('They already answered.');return}await db.doc('loans/'+id).delete();lnOut=lnOut.filter(v=>v.id!==id);toast('Loan request withdrawn');render()}catch(e){toast(wErr(e))}}
   function lnRepay(id){const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
     S.money-=b.left;b.paid+=b.left;const was=b.left;b.left=0;addLog(`Paid back the last ${yen(was)} to @${b.h}. That loan is cleared.`);AUDIO.cash&&AUDIO.cash();toast(SANDBOX?`Paid off in this copy. Send it to @${esc(S.sbx||SANDBOX.h)} to make it stick.`:`Loan from @${b.h} paid off`);save();push(id);renderAll()}
   function lnFreeAsk(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey||x.st!=='lent')return;
     modal(`<div class="eyebrow">Loan to @${esc(x.fh)}</div><h2>Call it a gift?</h2><p>@${esc(x.fh)} still owes you ${yen(x.amt-x.paid)}. If you let it go, they stop paying and you won't get the rest back.</p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnFreeGo" data-id="${esc(id)}">Let it go</button></div>`)}
-  async function lnFree(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
+  async function lnFree(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
   function lnRow(x){const inc=x.to===S.hkey,o=inc?x.fh:x.th,k=inc?x.from:x.to;let s,t,btn='';
     if(x.st==='ask'){if(inc){t=`${hl(k,o)} asks to borrow ${yen(x.amt)}`;s=`Paid back over ${x.wks} weeks, ${yen(x.per)} a week`;btn=`<button class="btn sm primary" data-act="netLnAns" data-id="${esc(x.id)}">Answer</button>`}
       else{t=`You asked ${hl(k,o)} for ${yen(x.amt)}`;s='Waiting for their answer';btn=`<button class="btn sm" data-act="netLnCancel" data-id="${esc(x.id)}">Withdraw</button>`}}
