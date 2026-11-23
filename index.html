@@ -559,7 +559,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v131</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v132</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -2861,7 +2861,8 @@ let RP=null,RQ=[],RES=[];
 function raceReady(d){return d&&carOK(carById(d.carId))}
 function openRacePlanner(){
   const ds=S.drivers.filter(raceReady);
-  if(!ds.length){toast('No driver has a roadworthy car to race. Repair one in the Garage.');return}
+  if(!ds.length){/* nobody can race: say why and let the night pass, instead of a dead end */
+    modal(`<div class="eyebrow">Saturday Night Touge</div><h2>No car can race tonight</h2><p>${stuck()?"Every car is too damaged to drive and there's no money for repairs. Skip tonight, or ask the mechanic to patch one up on the tab and race after all.":'No driver has a car in good enough shape to race. Repair one in the Garage, or skip tonight.'}</p><div class="mact"><button class="btn" data-act="skipRaces">Skip racing tonight</button>${stuck()?'<button class="btn primary" data-act="mechOffer">Ask the mechanic</button>':'<button class="btn primary" data-act="tab" data-t="garage">Go to the Garage</button>'}</div>`);return}
   const best=ds.slice().sort((a,b)=>dskill(b)-dskill(a))[0];
   const open=MTNS.filter(passOpen);const top=open[open.length-1];
   const vs=NET.defaultVs();RP={up:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs},down:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs}};
