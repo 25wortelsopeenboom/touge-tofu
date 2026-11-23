@@ -559,7 +559,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v130</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v131</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -992,6 +992,13 @@ function giveXP(d,xp,notes){
   if(after>before){for(let i=0;i<after-before;i++){const ks=STATS.map(s=>s[0]).sort(()=>R()-.5).slice(0,2);ks.forEach(k=>d.stats[k]=Math.max(d.stats[k],Math.min(99,d.stats[k]+(1.5+R()*.8)*LVUP_K*(d.stats[k]>85?.75:1))))}notes.push(`Level ${after}!`);if(PERK_LV.some(l=>l>before&&l<=after)){notes.push('Perk ready');addLog(`${d.first} reached level ${after}. A new perk is ready in the Crew tab.`);toast(`${d.first} can pick a new perk`)}}
 }
 function modCost(c,mk,lvl){const md=MODS.find(m=>m.k===mk);if(mk==='cradle')return 25000;const ref=CARS[c.model].modRef||clamp(CARS[c.model].price,300000,3000000);return Math.round(Math.max(md.min[lvl],ref*md.pct[lvl])/1000)*1000}
+/* repairs: the cost to bring a car up to a given condition, and the way out when the shop is broke */
+const TAB_COND=40;
+function repairTo(c,to){const ref=Math.max(CARS[c.model].price,300000);return Math.round(Math.max(0,to-c.cond)*Math.max(900,ref*.0012)/100)*100}
+/* stuck: nobody can drive, and there isn't enough money to make even one car roadworthy */
+function stuck(){if(!S||!S.drivers.length||!S.cars.length)return false;if(S.drivers.some(d=>carOK(carById(d.carId))))return false;const cheapest=Math.min(...S.cars.map(c=>repairTo(c,TAB_COND)));return S.money<cheapest}
+/* how far the money in hand gets a car (whole percent) */
+function patchTo(c){if(S.money<=0)return c.cond;const per=repairTo(c,c.cond+1)||1;return Math.min(99,Math.floor(c.cond+S.money/per))}
 function repairCost(c){const ref=Math.max(CARS[c.model].price,300000);return Math.round((100-c.cond)*Math.max(900,ref*.0012)/100)*100}
 function carValue(c){const m=CARS[c.model];let v=Math.max(m.price*.6,90000);MODS.forEach(md=>{for(let l=0;l<c[md.k];l++)v+=modCost(c,md.k,l)*.4});return Math.round(v*(.6+.4*c.cond/100)/1000)*1000}
 
@@ -2583,7 +2590,7 @@ function renderAction(){
   document.documentElement.classList.toggle('busy',!!busy);const a=$('#actionbar');let h='';
   if(busy)h=`<button class="btn" data-act="skip">Skip to results</button>`;
   else if(S.phase==='pre'){const runs=plannedRuns();
-    if(!runs.length){const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}
+    if(!runs.length){if(stuck()){h=`<span class="why">Every car is wrecked and there's no money for repairs.</span><button class="btn" data-act="restDay">Rest today</button><button class="btn primary big" data-act="mechOffer">Ask the mechanic</button>`}else{const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}}
     else{const ready=readyDrivers().length,extra=ready-runs.length;
       if(extra>0)h=`<span class="why">${extra} driver${extra>1?'s':''} waiting: only ${S.prod} press${S.prod>1?'es':''}.</span>`+(S.prod<6?`<button class="btn" data-act="tab" data-t="shop">${S.money>=PROD[S.prod]?'Add press '+yenK(PROD[S.prod]):'Press costs '+yenK(PROD[S.prod])}</button>`:'');
       h+=`<button class="btn primary big" data-act="dispatch">Dispatch ${runs.length} run${runs.length>1?'s':''} <small>04:30</small></button>`}}
@@ -2646,6 +2653,8 @@ function progHTML(d){
 function meter(label,val,col,txt){return`<div class="meter"><span>${label}</span><i><em style="width:${clamp(val,0,100)}%;background:${col}"></em></i><b>${txt}</b></div>`}
 function garageHTML(){
   let h=`<div><h2>Garage<span class="jp">車庫</span></h2><p class="sub">${S.cars.length} car${S.cars.length>1?'s':''}. Fresh tyres and a stiff chassis keep the tofu in one piece.</p></div>`;
+  if(stuck())h+=`<div class="note" style="border:1px solid var(--brake);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">Every car is too damaged to drive and there isn't enough money to fix one.<button class="btn sm primary" data-act="mechOffer">Ask the mechanic</button></div>`;
+  else if(S.debt>0)h+=`<p class="note">Mechanic's tab: <b>${yen(S.debt)}</b> left. Half of each day's delivery profit goes to paying it off.</p>`;
   if(S.cars.length>1)h+=sortBar('sortC',S.sortC||'join',[['join','Order bought'],['pi','PI'],['name','Name'],['cond','Needs work'],['tyre','Tyres worn']]);
   sortedCars().forEach(c=>{
     const m=CARS[c.model],sp=spec(c),drv=driverOfCar(c.id),wear=c.tyre.wear;
@@ -2658,7 +2667,7 @@ function garageHTML(){
     ${c.cond<15?'<div class="note" style="color:var(--brake)">Wrecked. Repair it before it can drive again.</div>':c.cond<50?'<div class="note" style="color:var(--warn)">Rough shape. Breakdowns get likely below 60%.</div>':''}${c.tyre.wear>80?'<div class="note" style="color:var(--warn)">Tyres nearly bald. Expect slides and spins.</div>':''}
     <div class="tyrerow">${TYRES.map((t,i)=>{const sp2=setsOf(c)[i],fit=c.tyre.grade===i;return`<div class="tyreopt ${fit?'on':''}"><b>${t.name}</b><span>${fit?`Fitted · ${Math.round(c.tyre.wear)}%`:sp2!=null?`Spare · ${Math.round(sp2)}%`:'Not owned'}</span>${(g=>`<span class="dryg">Dry grip ${g.dry}%</span><span class="wetg">Wet grip ${g.wet}%</span><span class="wetg">Snow grip ${g.snow}%</span>`)(tyreGrip(t))}<div class="row">${!fit&&sp2!=null?`<button class="btn sm" data-act="swapTyre" data-id="${c.id}" data-g="${i}" ${S.money<SWAP_FEE?'disabled':''}>Swap ${yenK(SWAP_FEE)}</button>`:''}<button class="btn sm" data-act="tyre" data-id="${c.id}" data-g="${i}" ${S.money<t.cost?'disabled':''}>New ${yenK(t.cost)}</button></div></div>`}).join('')}</div>
     <div class="row">
-    ${c.cond<100?`<button class="btn sm" data-act="repair" data-id="${c.id}" ${S.money<repairCost(c)?'disabled':''}>Repair ${yenK(repairCost(c))}</button>`:''}</div>
+    ${c.cond<100?(S.money>=repairCost(c)?`<button class="btn sm" data-act="repair" data-id="${c.id}">Repair ${yenK(repairCost(c))}</button>`:(pt=>pt>c.cond?`<button class="btn sm" data-act="patch" data-id="${c.id}" title="Full repair costs ${yen(repairCost(c))}">Patch to ${pt}% · ${yenK(repairTo(c,pt))}</button>`:`<button class="btn sm" disabled>Repair ${yenK(repairCost(c))}</button>`)(patchTo(c))):''}</div>
     <div class="mods">${MODS.map(md=>{const lv=c[md.k],mx=lv>=md.max,cost=mx?0:modCost(c,md.k,lv);return`<div class="mod"><div class="ml"><b>${md.name}</b><span>${md.labels[lv]}</span></div><div class="pips">${Array.from({length:md.max},(_,i)=>`<i class="${i<lv?'on':''}"></i>`).join('')}</div>${mx?'<span class="chip good">Maxed</span>':`<button class="btn sm" data-act="mod" data-id="${c.id}" data-m="${md.k}" ${S.money<cost?'disabled':''}>${yenK(cost)}</button>`}</div>`}).join('')}</div>
     ${carOwner(c)?`<div class="note">${esc(carOwner(c).first)}'s own car. It isn't yours to sell, and it leaves with ${esc(carOwner(c).first)} if they quit the crew.</div>`:S.cars.length<2?`<div class="note">Your only car. Buy another before selling it.</div>`:`<div class="row"><button class="btn sm" data-act="sell" data-id="${c.id}">Sell for ${yenK(carValue(c))}</button></div>`}
     </div>`;
@@ -2819,7 +2828,9 @@ function finishDelivery(list){
     return{d,c,res,notes,cup};
   });
   const tow=rows.reduce((s,r)=>s+(r.res.tow||0),0),net=rev-prod-fuel-wages-tow;
-  S.money+=net;S.weekRev+=net;S.batches+=list.length;S.earned+=rev;if(S.day===6)S.satRan={w:S.week,ids:rows.map(r=>r.d.id)};
+  S.money+=net;S.weekRev+=net;S.batches+=list.length;
+  /* the mechanic's tab is paid back from half of each profitable day */
+  let tabPaid=0;if(S.debt>0&&net>0){tabPaid=Math.min(S.debt,Math.round(net*.5/100)*100||Math.min(S.debt,net));S.money-=tabPaid;S.debt-=tabPaid;addLog(S.debt>0?`Paid ${yen(tabPaid)} off the mechanic's tab. ${yen(S.debt)} to go.`:`Paid off the mechanic's tab.`)}S.earned+=rev;if(S.day===6)S.satRan={w:S.week,ids:rows.map(r=>r.d.id)};
   const fin=rows.filter(r=>r.res.dnf==null),best=fin.length?fin.reduce((a,b)=>a.res.time<b.res.time?a:b):null;
   addLog(`Delivered ${fin.length} of ${list.length} batch${list.length>1?'es':''} for ${yen(rev)}.${best?` Best run ${best.d.first}, ${fmtT(best.res.time)}.`:''}`);
   S.phase='post';MAP.setDark(S.day===6?.05:.12);save();renderAll();if(rev>0)AUDIO.cash();
@@ -2827,7 +2838,7 @@ function finishDelivery(list){
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th class="num">Time</th><th class="num">Fresh</th><th class="num">Damage</th><th class="num" title="Water left in the cup on the dashboard">Cup</th><th class="num">Paid</th><th class="num">XP</th><th>Notes</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num ${r.res.dnf!=null?'neg':''}">${r.res.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${r.res.dnf!=null?'-':Math.round(r.res.fresh*100)+'%'}</td><td class="num ${r.res.dmg>8?'neg':r.res.dmg<2?'pos':''}">${r.res.dnf!=null?'Lost':r.res.dmg.toFixed(1)+'%'}</td><td class="num ${r.cup==null?'':r.cup>80?'pos':r.cup<50?'neg':''}">${r.cup==null?'-':r.cup+'%'}</td><td class="num">${yen(r.res.price)}</td><td class="num">+${r.res.xp}</td><td class="tagline">${r.notes.join(' · ')}</td></tr>`).join('')}
   </tbody></table></div>
-  <div class="tot"><div><span>Hotel paid</span><b>${yen(rev)}</b></div><div><span>Beans and nigari</span><b class="neg">${yen(-prod)}</b></div><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Wages</span><b class="neg">${yen(-wages)}</b></div>${tow?`<div><span>Tow truck</span><b class="neg">${yen(-tow)}</b></div>`:''}<div><span>Net today</span><b class="${net>=0?'pos':'neg'}">${yen(net)}</b></div></div>
+  <div class="tot"><div><span>Hotel paid</span><b>${yen(rev)}</b></div><div><span>Beans and nigari</span><b class="neg">${yen(-prod)}</b></div><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Wages</span><b class="neg">${yen(-wages)}</b></div>${tow?`<div><span>Tow truck</span><b class="neg">${yen(-tow)}</b></div>`:''}<div><span>Net today</span><b class="${net>=0?'pos':'neg'}">${yen(net)}</b></div>${tabPaid?`<div><span>Mechanic's tab${S.debt>0?` (${yenK(S.debt)} left)`:' (paid off)'}</span><b class="neg">${yen(-tabPaid)}</b></div>`:''}</div>
   <div class="mact"><button class="btn primary" data-act="close">${S.day===6?'Back to the shop':'Continue'}</button></div>`);
 }
 function nextDay(){
@@ -3505,6 +3516,14 @@ const ACT={
   tyre:d=>{const c=carById(+d.id),t=TYRES[+d.g];if(!fitNew(c,+d.g))return;toast(`New ${t.name.toLowerCase()} tyres on the ${CARS[c.model].code}`);save();renderAll()},
   swapTyre:d=>{const c=carById(+d.id),t=TYRES[+d.g];if(!fitSpare(c,+d.g))return;toast(`Swapped to the spare ${t.name.toLowerCase()} set`);save();renderAll()},
   repair:d=>{const c=carById(+d.id),k=repairCost(c);if(S.money<k)return;AUDIO.coin();S.money-=k;c.cond=100;toast('Panels straightened');save();renderAll()},
+  patch:d=>{const c=carById(+d.id),to=patchTo(c),k=repairTo(c,to);if(to<=c.cond||S.money<k)return;AUDIO.coin();S.money-=k;c.cond=to;toast(`Patched up to ${to}%`);addLog(`${CARS[c.model].code} patched up to ${to}% for ${yen(k)}.`);save();renderAll()},
+  /* the mechanic's tab: when nothing can run and the till is empty, he patches one car now and gets paid from later deliveries */
+  mechTab:()=>{if(!stuck())return;const c=S.cars.slice().sort((a,b)=>repairTo(a,TAB_COND)-repairTo(b,TAB_COND))[0],k=repairTo(c,TAB_COND);c.cond=TAB_COND;S.debt=(S.debt||0)+k;
+    addLog(`The mechanic patched the ${CARS[c.model].code} up to ${TAB_COND}% on the tab: ${yen(k)}. Half of each day's profit pays it back.`);
+    if(!S.drivers.some(d=>d.carId===c.id)){const d=S.drivers.find(x=>!carOK(carById(x.carId)))||S.drivers[0];if(d)d.carId=c.id}
+    closeModal();toast(`${CARS[c.model].code} back on the road`);save();renderAll()},
+  mechOffer:()=>{if(!stuck())return;const c=S.cars.slice().sort((a,b)=>repairTo(a,TAB_COND)-repairTo(b,TAB_COND))[0],k=repairTo(c,TAB_COND);
+    modal(`<div class="eyebrow">Garage · 車庫</div><h2>Put it on the tab?</h2><p>Every car is too damaged to drive, and there's ${S.money<0?'a debt of '+yen(-S.money):'only '+yen(S.money)} in the till. The mechanic down the road will patch the <b>${esc(CARS[c.model].maker)} ${esc(CARS[c.model].code)}</b> up to ${TAB_COND}% now for <b>${yen(k)}</b>, and take half of each day's delivery profit until it's paid off.</p><div class="mact"><button class="btn" data-act="close">Not now</button><button class="btn primary" data-act="mechTab">Put it on the tab</button></div>`)},
   sell:d=>{const c=carById(+d.id);if(!c||S.cars.length<2||carOwner(c))return;const v=carValue(c),fam=c.model==='ae86'&&c.paint==='High Tech Two-Tone';modal(`<h2>Sell the ${CARS[c.model].code}?</h2><p>${fam?'This is the family hachi-roku, the car that started the shop. ':''}${esc(CARS[c.model].maker)} ${esc(CARS[c.model].name)} goes to the lot for ${yen(v)}.${driverOfCar(c.id)?(()=>{const sp=S.cars.find(k=>k!==c&&!driverOfCar(k.id));return sp?` ${esc(driverOfCar(c.id).first)} will move into the ${CARS[sp.model].code}.`:' Its driver will be left without a car.'})():''}</p><div class="mact"><button class="btn" data-act="close">Keep it</button><button class="btn primary" data-act="sellYes" data-id="${c.id}">Sell for ${yen(v)}</button></div>`)},
   sellYes:d=>{const c=carById(+d.id);if(!c||S.cars.length<2||carOwner(c))return;const v=carValue(c);S.money+=v;S.cars=S.cars.filter(x=>x!==c);S.drivers.forEach(x=>{if(x.carId===c.id){x.carId=0;const spare=S.cars.find(k=>!driverOfCar(k.id));if(spare){x.carId=spare.id;toast(`${x.first} moves into the ${CARS[spare.model].code}`)}}});addLog(`Sold the ${CARS[c.model].code} for ${yen(v)}.`);closeModal();save();renderAll()},
   buy:d=>{const m=CARS[d.k];if(S.money<m.price||S.cars.length>=GARAGE_MAX)return;if(m.legend&&(S.cred<m.legend||S.cars.some(c=>c.model===d.k)))return;const p=m.paint||PAINTS[Math.floor(R()*PAINTS.length)];AUDIO.coin();S.money-=m.price;const car={id:S.nid++,model:d.k,c1:p[1],c2:shade(p[1],-.4),paint:p[0],engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:1,wear:10},cond:96,km:Math.round(40000+R()*90000)};S.cars.push(car);
