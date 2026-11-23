@@ -560,7 +560,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v136</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v137</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -3399,7 +3399,7 @@ const NET=(()=>{
   const loanWith=k=>allL().some(x=>(x.from===k||x.to===k)&&(x.st==='ask'||x.st==='lent'));
   const fb=()=>S.fb||(S.fb={}),fl=()=>S.fl||(S.fl={});
   const canNet=()=>ready&&!ro&&!!S.hkey&&!S.hpend;
-  const sbxNo=()=>{if(!SANDBOX)return false;toast('Loans move real money, so they are off in Play As. Ask from the player\'s own game.');return true};
+  const sbxNo=()=>false;
   const canLn=k=>canNet()&&k!==S.hkey&&live(players[k])&&!loanWith(k);
   function onLoans(){let cash=false;
     allL().forEach(x=>{const id=x.id;
@@ -3412,6 +3412,7 @@ const NET=(()=>{
         else if(b&&x.st==='done'){delete fb()[id];save()}}
       if(x.to===S.hkey){
         if(x.st==='ask'&&!seen()['ln'+id]&&now()-x.t<14*DAY){markSeen('ln'+id);save();notices.push({k:'loan',x})}
+        if(x.st==='lent'&&fl()[id]==null&&!seen()['lp'+id]){markSeen('lp'+id);S.money-=x.amt;fl()[id]=x.paid;cash=true;addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save()}
         const g=fl()[id];
         if(g!=null&&x.paid>g){const d=x.paid-g;fl()[id]=x.paid;S.money+=d;cash=true;addLog(`@${x.fh} paid back ${yen(d)}.${x.paid>=x.amt?' The loan is fully repaid.':` ${yen(x.amt-x.paid)} still to come.`}`);toast(`@${x.fh} paid you back ${yen(d)}`);save()}
         if(g!=null&&(x.st==='done'||x.st==='free')&&fl()[id]>=x.paid){delete fl()[id];save();if(x.st==='done'&&db&&!SANDBOX)db.doc('loans/'+id).delete().catch(()=>{})}}
@@ -3451,13 +3452,13 @@ const NET=(()=>{
   async function lnLend(id){if(sbxNo())return;const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey||SANDBOX)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
     if(b){b.disabled=true;b.textContent='Lending…'}
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(!cur||cur.st!=='ask'){closeModal();toast(`@${x.fh} withdrew the request.`);return}
-      await db.doc('loans/'+id).update({st:'lent',tAcc:now(),paid:0});S.money-=x.amt;fl()[id]=0;AUDIO.cash&&AUDIO.cash();addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save();closeModal();toast(`${yen(x.amt)} lent to @${x.fh}`);renderAll()}
+      await db.doc('loans/'+id).update({st:'lent',tAcc:now(),paid:0});markSeen('lp'+id);S.money-=x.amt;fl()[id]=0;AUDIO.cash&&AUDIO.cash();addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save();closeModal();toast(`${yen(x.amt)} lent to @${x.fh}`);renderAll()}
     catch(e){if(m){m.textContent=wErr(e);m.style.color='var(--brake)'}if(b){b.disabled=false;b.textContent='Lend '+yen(x.amt)}}}
   async function lnDec(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
   async function lnCancel(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask'||SANDBOX)return;
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(cur&&cur.st!=='ask'){toast('They already answered.');return}await db.doc('loans/'+id).delete();lnOut=lnOut.filter(v=>v.id!==id);toast('Loan request withdrawn');render()}catch(e){toast(wErr(e))}}
-  function lnRepay(id){if(sbxNo())return;const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
-    S.money-=b.left;b.paid+=b.left;const was=b.left;b.left=0;addLog(`Paid back the last ${yen(was)} to @${b.h}. That loan is cleared.`);AUDIO.cash&&AUDIO.cash();toast(`Loan from @${b.h} paid off`);save();push(id);renderAll()}
+  function lnRepay(id){const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
+    S.money-=b.left;b.paid+=b.left;const was=b.left;b.left=0;addLog(`Paid back the last ${yen(was)} to @${b.h}. That loan is cleared.`);AUDIO.cash&&AUDIO.cash();toast(SANDBOX?`Paid off in this copy. Send it to @${esc(S.sbx||SANDBOX.h)} to make it stick.`:`Loan from @${b.h} paid off`);save();push(id);renderAll()}
   function lnFreeAsk(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey||x.st!=='lent')return;
     modal(`<div class="eyebrow">Loan to @${esc(x.fh)}</div><h2>Call it a gift?</h2><p>@${esc(x.fh)} still owes you ${yen(x.amt-x.paid)}. If you let it go, they stop paying and you won't get the rest back.</p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnFreeGo" data-id="${esc(id)}">Let it go</button></div>`)}
   async function lnFree(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
