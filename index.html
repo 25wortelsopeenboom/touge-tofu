@@ -291,7 +291,7 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute
 .chip.amber{color:var(--sodium);border-color:rgba(255,176,59,.45)}
 .chip.red{color:var(--brake);border-color:rgba(255,77,77,.45)}
 .mvrow{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
-.chip.mv{font-weight:700}
+.chip.mv{font-weight:700}.chip.mv.off{opacity:.45;border-style:dashed}
 .chip.good{color:var(--good);border-color:rgba(91,211,138,.45)}
 .av{image-rendering:pixelated;border-radius:8px;display:block;background:#1a2040}
 .drv-top{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center}
@@ -560,7 +560,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v138</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v140</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -800,19 +800,30 @@ function learnPass(d,id,amt){d.know=d.know||{};const k=d.know[id]||0;d.know[id]=
 const ROMAN=['','I','II','III'];
 function mrank(d,mv){if(d.mmRank)return d.mmRank;const n=(d.mm&&d.mm[mv])||0;return n>=10?3:n>=4?2:1}
 const mentorK=d=>S.drivers.some(x=>x!==d&&hasP(x,'mentor'))?1.2:1;
-function normDrivers(){(S.drivers||[]).forEach(d=>{if(!d.know)d.know={usuzumi:Math.min(90,(d.runs||0)*.55)};if(!d.perks)d.perks=[];if(!d.mm){d.mm={};const v=Math.min(6,Math.floor((d.wins||0)/4));if(v)movesOf(d).forEach(k=>{if(k!=='block')d.mm[k]=v})}})}
+function normDrivers(){(S.drivers||[]).forEach(d=>{if(!d.know)d.know={usuzumi:Math.min(90,(d.runs||0)*.55)};if(!d.perks)d.perks=[];if(!d.mm){d.mm={};const v=Math.min(6,Math.floor((d.wins||0)/4));if(v)movesOf(d).forEach(k=>{if(!MOVES[k].passive)d.mm[k]=v})}})}
 const MOVES={
-  slip:{name:'Slipstream',jp:'スリップストリーム',col:'#c6f04a',where:'straights',req:'Throttle 45',ok:d=>d.stats.thr>=45,desc:'Tucks into the leader\'s wake on a straight and slingshots past.'},
-  late:{name:'Late Brake',jp:'突っ込み',col:'#ff4d4d',where:'hairpins',req:'Braking 70',ok:d=>d.stats.brk>=70||(hasT(d,'latebrake')&&d.stats.brk>=58),desc:'Brakes impossibly late into a hairpin and dives up the inside.'},
-  gutter:{name:'Gutter Run',jp:'溝走り',col:'#ffb03b',where:'hairpins with a drain',req:'Cornering 72, Drifting 65',ok:d=>d.stats.crn>=72&&d.stats.dft>=65,desc:'Hooks the inside wheels into the hairpin drain to carry speed no tyre could.'},
-  feint:{name:'Feint Drift',jp:'フェイント',col:'#e2b941',where:'S-bends',req:'Drifting 78',ok:d=>d.stats.dft>=78,desc:'Flicks the car the wrong way, then whips through the S-bends on a stolen line.'},
-  lights:{name:'Lights Out',jp:'無灯火',col:'#7fd4ff',where:'hairpin stacks',req:'Focus 78, Cornering 70',ok:d=>d.stats.foc>=78&&d.stats.crn>=70,desc:'Kills the headlights so the leader loses you in the mirror, then strikes. Once a race, needs a run of hairpins. In fog it works at any hairpin, twice a race, and lands far more often. In the wet or the damp, and on autumn leaves, it\'s a gamble: you can learn the road by heart, but not tonight\'s puddles or leaves, and a blind car can spin or go off.'},
-  outside:{name:'Around the Outside',jp:'アウトから',col:'#cfeeff',where:'sweepers',req:'Cornering 85',ok:d=>d.stats.crn>=85,desc:'Holds full commitment around the outside of a fast sweeper.'},
-  block:{name:'Iron Wall',jp:'鉄壁',col:'#9aa0ff',where:'defence',req:'Focus 82, Braking 72',ok:d=>d.stats.foc>=82&&d.stats.brk>=72,desc:'Covers the inside line so attacks rarely stick.'},
+  slip:{name:'Slipstream',jp:'スリップストリーム',col:'#c6f04a',where:'straights',req:'Throttle 45',need:{thr:45},ok:d=>d.stats.thr>=45,desc:'Tucks into the leader\'s wake on a straight and slingshots past.'},
+  late:{name:'Late Brake',jp:'突っ込み',col:'#ff4d4d',where:'hairpins',req:'Braking 70',need:{brk:70},ok:d=>d.stats.brk>=70||(hasT(d,'latebrake')&&d.stats.brk>=58),desc:'Brakes impossibly late into a hairpin and dives up the inside.'},
+  gutter:{name:'Gutter Run',jp:'溝走り',col:'#ffb03b',where:'hairpins with a drain',req:'Cornering 72, Drifting 65',need:{crn:72,dft:65},ok:d=>d.stats.crn>=72&&d.stats.dft>=65,desc:'Hooks the inside wheels into the hairpin drain to carry speed no tyre could.'},
+  feint:{name:'Feint Drift',jp:'フェイント',col:'#e2b941',where:'S-bends',req:'Drifting 78',need:{dft:78},ok:d=>d.stats.dft>=78,desc:'Flicks the car the wrong way, then whips through the S-bends on a stolen line.'},
+  lights:{name:'Lights Out',jp:'無灯火',col:'#7fd4ff',where:'hairpin stacks',req:'Focus 78, Cornering 70',need:{foc:78,crn:70},ok:d=>d.stats.foc>=78&&d.stats.crn>=70,desc:'Kills the headlights so the leader loses you in the mirror, then strikes. Once a race, needs a run of hairpins. In fog it works at any hairpin, twice a race, and lands far more often. In the wet or the damp, and on autumn leaves, it\'s a gamble: you can learn the road by heart, but not tonight\'s puddles or leaves, and a blind car can spin or go off.'},
+  outside:{name:'Around the Outside',jp:'アウトから',col:'#cfeeff',where:'sweepers',req:'Cornering 85',need:{crn:85},ok:d=>d.stats.crn>=85,desc:'Holds full commitment around the outside of a fast sweeper.'},
+  brkdrift:{name:'Braking Drift',jp:'ブレーキングドリフト',col:'#ff8a5c',where:'hairpins',req:'Braking 55, Heel-toe 50',need:{brk:55,ht:50},ok:d=>d.stats.brk>=55&&d.stats.ht>=50,desc:'Trail-brakes into the hairpin until the rear lets go, then balances the slide on steering and throttle and slips up the inside.'},
+  ffdrift:{name:'FF Drift',jp:'FFドリフト',col:'#ffd166',where:'tight hairpins',req:'Drifting 58, Braking 60 · FWD car',need:{dft:58,brk:60},car:c=>carDrive(c)==='FF',carNote:'front-wheel-drive car',ok:d=>d.stats.dft>=58&&d.stats.brk>=60,desc:'Snatches the handbrake, then steers and brakes to swing a front-driver round a tight hairpin. Only in an FF car.'},
+  grip:{name:'Grip Racing',jp:'グリップ走行',col:'#9be7c4',where:'sweepers and S-bends, dry roads',req:'Cornering 62, Focus 58',need:{crn:62,foc:58},ok:d=>d.stats.crn>=62&&d.stats.foc>=58,desc:'No smoke, no slide: a perfect line, the earliest apex and the cleanest exit. Only on a dry road.'},
+  awd:{name:'4WD Drift',jp:'四駆ドリフト',col:'#b8a1ff',where:'hairpins and sweepers',req:'Drifting 64, Throttle 62 · AWD car',need:{dft:64,thr:62},car:c=>carDrive(c)==='AWD',carNote:'four-wheel-drive car',ok:d=>d.stats.dft>=64&&d.stats.thr>=62,desc:'All four wheels clawing sideways under power. Strong anywhere and best of all in the wet or snow. Only in an AWD car.'},
+  power:{name:'Power Over',jp:'パワーオーバー',col:'#ff5fa2',where:'hairpin exits and sweepers',req:'Throttle 70, Drifting 62 · 230 PS, not FWD',need:{thr:70,dft:62},car:c=>carDrive(c)!=='FF'&&spec(c).hp>=230,carNote:'car with 230 PS or more that isn\'t front-wheel drive',ok:d=>d.stats.thr>=70&&d.stats.dft>=62,desc:'Full throttle on turn-in breaks the rear loose and the car power-slides out of the corner. Needs real horsepower, and it\'s a handful in the wet.'},
+  jump:{name:'Jump Drift',jp:'ジャンプドリフト',col:'#ffa94d',where:'hairpins with a kerb',req:'Drifting 74, Cornering 68',need:{dft:74,crn:68},ok:d=>d.stats.dft>=74&&d.stats.crn>=68,desc:'Bounces the inside rear over the apex kerb so the tail steps out, then rides the oversteer past. Miss it and the car can spin.'},
+  lfb:{name:'Left-Foot Braking',jp:'左足ブレーキ',col:'#7ee0ff',where:'following',passive:true,req:'Braking 76, Heel-toe 72, Focus 65',need:{brk:76,ht:72,foc:65},ok:d=>d.stats.brk>=76&&d.stats.ht>=72&&d.stats.foc>=65,desc:'Brake and throttle together, so the car sits right on the leader\'s bumper. Slipstream lands more often and the pressure on the leader builds faster. Always on.'},
+  flick:{name:'Scandinavian Flick',jp:'慣性ドリフト',col:'#e0e6ff',where:'hairpins after a straight',req:'Drifting 84, Focus 72',need:{dft:84,foc:72},ok:d=>d.stats.dft>=84&&d.stats.foc>=72,desc:'Steers away from the hairpin, then throws the weight back so the car swings sideways into it, carrying more speed than braking ever could.'},
+  block:{name:'Iron Wall',jp:'鉄壁',col:'#9aa0ff',where:'defence',passive:true,req:'Focus 82, Braking 72',need:{foc:82,brk:72},ok:d=>d.stats.foc>=82&&d.stats.brk>=72,desc:'Covers the inside line so attacks rarely stick.'},
 };
-/* moves come from stats, plus any the Touge Net admin granted (d.gm) */
+/* moves come from stats, plus any the Touge Net admin granted (d.gm); a few only work in the right kind of car */
+const carDrive=c=>(c&&CARS[c.model]&&CARS[c.model].drive)||'FR';
+const moveFits=(k,c)=>!MOVES[k].car||!c||MOVES[k].car(c);
+function moveNext(d){let best=null,bs=1e9;Object.keys(MOVES).forEach(k=>{const M=MOVES[k];if(!M.need||M.ok(d)||(d.gm||[]).includes(k))return;let sh=0;for(const q in M.need)sh+=Math.max(0,M.need[q]-(d.stats[q]||0));if(sh<bs){bs=sh;best=k}});return best}
 const movesOf=d=>Object.keys(MOVES).filter(k=>MOVES[k].ok(d)||(Array.isArray(d.gm)&&d.gm.includes(k)));
-function movesChips(d,empty){const ms=movesOf(d);if(!ms.length){const nx=Object.keys(MOVES).find(k=>!MOVES[k].ok(d));return`<span class="note">${empty||'No special moves yet.'}${nx?` Next: ${MOVES[nx].name} at ${MOVES[nx].req}.`:''}</span>`}return ms.map(k=>{const r=k==='block'?0:mrank(d,k),n=(d.mm&&d.mm[k])||0;return`<span class="chip mv" style="color:${MOVES[k].col};border-color:${MOVES[k].col}55" title="${esc(MOVES[k].desc)}${r&&!d.mmRank?` Rank ${ROMAN[r]}: landed ${n} time${n===1?'':'s'}.${r<3?` Rank ${ROMAN[r+1]} at ${r===1?4:10}.`:''}`:''}">${MOVES[k].name}${r?' '+ROMAN[r]:''}</span>`}).join(' ')}
+function movesChips(d,empty){const ms=movesOf(d),mc=carById(d.carId);if(!ms.length){const nx=moveNext(d);return`<span class="note">${empty||'No special moves yet.'}${nx?` Next: ${MOVES[nx].name} at ${MOVES[nx].req}.`:''}</span>`}return ms.map(k=>{const r=MOVES[k].passive?0:mrank(d,k),n=(d.mm&&d.mm[k])||0,fit=moveFits(k,mc);return`<span class="chip mv${fit?'':' off'}" style="color:${MOVES[k].col};border-color:${MOVES[k].col}55" title="${esc(MOVES[k].desc)}${fit?'':esc(` Needs a ${MOVES[k].carNote}, so it's off in this car.`)}${r&&!d.mmRank?` Rank ${ROMAN[r]}: landed ${n} time${n===1?'':'s'}.${r<3?` Rank ${ROMAN[r+1]} at ${r===1?4:10}.`:''}`:''}">${MOVES[k].name}${r?' '+ROMAN[r]:''}</span>`}).join(' ')}
 function learnCheck(d,before){movesOf(d).forEach(k=>{if(!before.includes(k)){addLog(`${d.first} learned ${MOVES[k].name}!`);toast(`${d.first} learned ${MOVES[k].name}`)}})}
 const TACTICS={agg:{name:'All-out attack',k:1,mist:1.3,deg:1.3,pace:.994},bal:{name:'Balanced',k:.6,mist:1,deg:1,pace:1},pat:{name:'Patient',k:.32,mist:.7,deg:.7,pace:1.005}};
 const WEATHER={Clear:{time:1,dmg:1,mist:1},Damp:{time:1.035,dmg:1.12,mist:1.25},Wet:{time:1.08,dmg:1.3,mist:1.6},Fog:{time:1.06,dmg:1.1,mist:1.4},Snow:{time:1.16,dmg:1.45,mist:2.1}};
@@ -828,6 +839,11 @@ const PROD_COST=3000;
 const FIRST=['Kenji','Daisuke','Ryo','Shinji','Takeshi','Wataru','Kazuya','Hiroshi','Sho','Yusuke','Tetsuya','Makoto','Jun','Atsushi','Koji','Naoki','Haruto','Rin','Aya','Mika','Natsuki','Yui','Kaede','Saki','Tomoko','Emi','Goro','Isamu'];
 const FAMILY=['Sato','Kobayashi','Ishida','Morimoto','Hayashi','Kuroda','Nakajima','Fujii','Okada','Tanabe','Shimizu','Matsuda','Arai','Uchida','Nomura','Sakai','Iwata','Kondo','Miura','Ogawa','Hoshino','Kamiya'];
 const TEAMS=['Cedar Ghosts','Hairpin Union','Neon Fox','Paper Lantern Club','Last Train Boys','Sodium Lights','Wet Asphalt','Shrine Line','Midnight Ramen','Kanto Crows','Gravel Saints','Torii Rockets','Blue Smoke Society','Usui Wolves','Kobe Lights','Iron Crane'];
+/* the main arc of the sweeper around index at: the longest stretch that keeps turning the same way, with its apex */
+function sweepArc(T,at){const C=T._sw||(T._sw={});if(C[at])return C[at];const f=(T.feats||[]).find(f=>f.type==='sweeper'&&at>=f.i0&&at<=f.i1);let r=null;
+  if(f){let best=null,cur=null;for(let i=f.i0;i<=f.i1;i++){const k=T.curv[i],sg=Math.abs(k)>.02?Math.sign(k):0;if(sg&&cur&&cur.sg===sg){cur.b=i;cur.t+=Math.abs(k)}else cur=sg?{sg,a:i,b:i,t:Math.abs(k)}:null;if(cur&&(!best||cur.t>best.t))best=cur}
+    if(best){let h=0,ap=best.a;for(let i=best.a;i<=best.b;i++){h+=Math.abs(T.curv[i]);if(h>=best.t/2){ap=i;break}}r={a0:best.a,a1:best.b,at:ap,sg:best.sg}}}
+  return C[at]=r||{a0:at-15,a1:at+15,at,sg:Math.sign(T.curv[at])||1}}
 const SECT_LABEL={hairpin:'Hairpin',scurve:'S-bends',sweeper:'Sweeper',straight:'Straight'};
 function genSectors(id,n,mix){const r=mulberry32(strHash(id)+7);const ks=Object.keys(mix);const tot=ks.reduce((a,k)=>a+mix[k],0);const out=['straight'];while(out.length<n){let x=r()*tot,k=ks[0];for(const kk of ks){x-=mix[kk];if(x<=0){k=kk;break}}if(k==='straight'&&out[out.length-1]==='straight')continue;out.push(k)}return out}
 const MTNS=[
@@ -1084,30 +1100,38 @@ function traffic(cars,T,race){
     const FOGGY=race&&WX()==='Fog';
     const j=Math.floor(s.p),M=s.c.moves,opts=[],tk=TACTICS[s.c.tac||'bal'];
     const h=T.hair.find(x=>x-j>=5&&x-j<=13);
-    if(h!=null&&!s.tried.has(h)){s.tried.add(h);if(M.has('gutter')&&gset.has(h))opts.push(['gutter',h,1.3]);if(M.has('late'))opts.push(['late',h,1]);if(M.has('lights')&&(s.lightsUsed||0)<(FOGGY?2:1)&&(FOGGY||T.hair.filter(x=>x>=h&&x<h+90).length>=2))opts.push(['lights',h,(FOGGY?3.2:1.6)*(1-.6*blindRisk(s,j,h).r)])}
-    const f=T.feats.find(f=>f.type==='scurve'&&f.i0-j>=2&&f.i0-j<=9);if(f&&!s.tried.has('f'+f.i0)){s.tried.add('f'+f.i0);if(M.has('feint'))opts.push(['feint',(f.i0+f.i1)>>1,1])}
-    const sw=T.feats.find(f=>f.type==='sweeper'&&f.i0-j>=2&&f.i0-j<=9);if(sw&&!s.tried.has('s'+sw.i0)){s.tried.add('s'+sw.i0);if(M.has('outside'))opts.push(['outside',(sw.i0+sw.i1)>>1,1])}
+    const C=s.c.c,fits=k=>M.has(k)&&moveFits(k,C),wkB=race?wetK(WX()):0,dry=!race||(wkB===0&&WX()!=='Snow');
+    /* a hairpin after a real straight, for the Scandinavian flick */
+    const longIn=hh=>{let m=0;for(let k=Math.max(0,hh-28);k<=hh-10;k++)m=Math.max(m,Math.abs(T.curv[k]));return hh>=28&&m<.16};
+    if(h!=null&&!s.tried.has(h)){s.tried.add(h);if(fits('brkdrift'))opts.push(['brkdrift',h,1]);if(fits('ffdrift'))opts.push(['ffdrift',h,1.3]);if(fits('jump')&&!gset.has(h))opts.push(['jump',h,1]);if(fits('flick')&&longIn(h))opts.push(['flick',h,1.1]);if(fits('awd'))opts.push(['awd',h,1+wkB]);if(fits('power'))opts.push(['power',h,1-.6*wkB]);if(M.has('gutter')&&gset.has(h))opts.push(['gutter',h,1.3]);if(M.has('late'))opts.push(['late',h,1]);if(M.has('lights')&&(s.lightsUsed||0)<(FOGGY?2:1)&&(FOGGY||T.hair.filter(x=>x>=h&&x<h+90).length>=2))opts.push(['lights',h,(FOGGY?3.2:1.6)*(1-.6*blindRisk(s,j,h).r)])}
+    const f=T.feats.find(f=>f.type==='scurve'&&f.i0-j>=2&&f.i0-j<=9);if(f&&!s.tried.has('f'+f.i0)){s.tried.add('f'+f.i0);if(M.has('feint'))opts.push(['feint',(f.i0+f.i1)>>1,1]);if(fits('grip')&&dry)opts.push(['grip',(f.i0+f.i1)>>1,.8])}
+    const sw=T.feats.find(f=>f.type==='sweeper'&&f.i0-j>=2&&f.i0-j<=9);if(sw&&!s.tried.has('s'+sw.i0)){s.tried.add('s'+sw.i0);const ap=sweepArc(T,(sw.i0+sw.i1)>>1).at;if(M.has('outside'))opts.push(['outside',ap,1]);if(fits('grip')&&dry)opts.push(['grip',ap,1]);if(fits('awd'))opts.push(['awd',ap,.8+wkB]);if(fits('power'))opts.push(['power',ap,.8-.5*wkB])}
     const vO=(o.p-o.pp)/dt*.2*T.mpt;if(maxAhead[j]<.13&&vO>21&&M.has('slip')&&!s.tried.has('st'+(j/45|0))){s.tried.add('st'+(j/45|0));opts.push(['slip',j+18,1])}
     if(!opts.length||(s.att||0)>=({agg:6,bal:4,pat:3}[s.c.tac||'bal'])||R()>tk.k*.5)return false;s.att=(s.att||0)+1;
     let tot=opts.reduce((a,x)=>a+x[2],0),r=R()*tot,pk=opts[0];for(const x of opts){r-=x[2];if(r<=0){pk=x;break}}
     const [mv,at]=pk,D=o.c.d.stats,A=s.c.d.stats,def=(D.foc+D.brk)/2+(o.c.moves.has('block')?14:0)+(o.c.fresh?REST_K.def:0);
-    const fit={gutter:(A.crn+A.dft)/2+6,late:A.brk+(hasT(s.c.d,'latebrake')?10:0),lights:(A.foc+A.crn)/2+14+(FOGGY?(hasT(o.c.d,'fog')?6:18):0),feint:A.dft+4,outside:A.crn,slip:A.thr}[mv]+(mrank(s.c.d,mv)-1)*7+(hasP(s.c.d,'hunter')?8:0)+(mv==='gutter'?8*knowOf(s.c.d,T.id)/100:0),MR=mrank(s.c.d,mv);
+    const fit={gutter:(A.crn+A.dft)/2+6,late:A.brk+(hasT(s.c.d,'latebrake')?10:0),lights:(A.foc+A.crn)/2+14+(FOGGY?(hasT(o.c.d,'fog')?6:18):0),feint:A.dft+4,outside:A.crn,slip:A.thr,brkdrift:(A.brk+A.dft)/2+(A.ht-50)/5+4,ffdrift:(A.dft+A.brk)/2+8,grip:(A.crn+A.foc)/2+2,awd:(A.dft+A.thr)/2+4,power:(A.thr+A.dft)/2+clamp((spec(s.c.c).hp-230)/15,0,14),jump:(A.dft+A.crn)/2+5,flick:A.dft+4+(A.foc-72)/4}[mv]+(mrank(s.c.d,mv)-1)*7+(hasP(s.c.d,'hunter')?8:0)+(mv==='gutter'?8*knowOf(s.c.d,T.id)/100:0),MR=mrank(s.c.d,mv);
     let p=clamp(.4+(fit-def)/55,.12,.88)*(hasT(s.c.d,'hot')?1.08:1);
     /* slipstream: a headwind makes the tow far stronger, a tailwind kills it. Around the outside: in the wet, the car carries more speed on less steering lock than the inside line allows */
     if(mv==='slip'){const hw=headwind(T.theta[Math.min(N-1,j+8)],RACE_WIND||windNow());p=clamp(p+clamp(hw/35,-1,1)*.16,.06,.94)}
     if(mv==='outside'&&race){const wk=wetK(WX());if(wk)p=clamp(p+.13*wk,.06,.94)}
+    /* 4WD drift loves a slippery road; power over and the kerb hop don't */
+    if(race){const wk=wetK(WX()),sn=WX()==='Snow';if(mv==='awd')p=clamp(p+.14*wk+(sn?.16:0),.06,.94);if(mv==='power')p=clamp(p-.12*wk-(sn?.15:0),.06,.94);if(mv==='jump')p=clamp(p-.08*wk,.06,.94)}
+    if(mv==='slip'&&M.has('lfb'))p=clamp(p+.08,.06,.94);
     if(mv==='slip'){const a=spec(s.c.c).powerN,b=spec(o.c.c).powerN;p*=clamp(.55+a/(b||.01)*.5,.5,1.25)}
     if(mv==='lights')s.lightsUsed=(s.lightsUsed||0)+1;
     /* blind and fast into a hazard nobody memorised */
     if(mv==='lights'){const B=blindRisk(s,j,at);if(B.r&&R()<B.r){const bad=R()<.3,x=mkInc(bad?'off':'spin',Math.min(N-3,j+1));x.blind=B.why;s.stun=bad?6+R()*4:3+R()*2.5;x.loss=0;s.c.incs.push(x);
       s.c.fx.push({type:mv,t0:t,t1:t+2.6,at,ok:false});ev.push({type:'move',move:mv,ok:false,t,i:j,at,by:s.k,on:o.k,blind:B.why,bad});s.mvCool=12;s.press=0;return false}}
-    const ok=R()<p,dur={gutter:2.8,late:2.6,lights:6+(MR-1),feint:2.8,outside:3.4,slip:3.2}[mv];
+    const ok=R()<p,dur={gutter:2.8,late:2.6,lights:6+(MR-1),feint:2.8,outside:3.4,slip:3.2,brkdrift:2.8,ffdrift:2.6,grip:3,awd:3,power:3.2,jump:2.6,flick:3}[mv];
     s.c.fx.push({type:mv,t0:t,t1:t+dur,at,ok});ev.push({type:'move',move:mv,ok,t,i:j,at,by:s.k,on:o.k});
+    /* a missed kerb hop, or too much throttle on a slippery road, can spin the car at the corner */
+    if(!ok&&(mv==='jump'||mv==='power')&&R()<(mv==='jump'?.22:.1+.25*wkB)){const x=mkInc('spin',Math.min(N-3,at));x.loss=0;x.move=mv;s.c.incs.push(x);s.stunAt={i:at,d:2+R()*2};ev[ev.length-1].spun=true}
     s.mvCool=ok?16:9;s.press=ok?0:s.press;
     /* a slipstream that works: tuck in nose-to-tail right behind the rival for a second (max tow), then pull out and slingshot past */
     if(ok&&mv==='slip'){const TW=1.0;s.tow={o,until:t+TW};s.c.lanes.push({t0:t,t1:t+TW+.1,lane:0});o.c.lanes.push({t0:t,t1:t+TW+.1,lane:0});s.boost={until:t+TW+2.6,k:1.09};s.c.fx[s.c.fx.length-1].t1+=TW;return true}
-    if(ok){const inS=-(Math.sign(T.curv[at])||1),lane=mv==='outside'?-inS*.16:inS*.16;startAlong(s,o,lane,-lane);const AL=along.get(key(s.k,o.k));AL.y=o;AL.w=s;AL.slow=mv==='slip'?.8:.66;s.boost={until:t+(mv==='lights'?(FOGGY?5:4)+.5*(MR-1):2.4),k:mv==='slip'?1.08:1.06};return true}
-    const loss={late:.8+R()*.8,gutter:.45+R()*.5,feint:.35+R()*.4,outside:.3+R()*.4,lights:0,slip:0}[mv]*(1-.2*(MR-1));ev[ev.length-1].loss=loss;if(loss){s.slowUntil=t+loss/.6;s.slowK=.4}
+    if(ok){const inS=-(Math.sign(T.curv[at])||1),lane=mv==='outside'?-inS*.16:inS*.16;startAlong(s,o,lane,-lane);const AL=along.get(key(s.k,o.k));AL.y=o;AL.w=s;AL.slow=mv==='slip'?.8:mv==='outside'?.84:.66;if(mv==='outside'){const A=sweepArc(T,at);s.boost={until:1e9,from:A.a0-3,upto:A.a1,k:1.07}}else s.boost={until:t+(mv==='lights'?(FOGGY?5:4)+.5*(MR-1):2.4),k:mv==='slip'?1.08:1.06};return true}
+    const loss={late:.8+R()*.8,gutter:.45+R()*.5,feint:.35+R()*.4,outside:.3+R()*.4,lights:0,slip:0,brkdrift:.5+R()*.5,ffdrift:.45+R()*.45,grip:.25+R()*.3,awd:.35+R()*.4,power:.5+R()*.6,jump:.6+R()*.6,flick:.5+R()*.5}[mv]*(1-.2*(MR-1));ev[ev.length-1].loss=loss;if(loss){s.slowUntil=t+loss/.6;s.slowK=.4}
     return false;
   }
   const tEnd=Math.max(...cars.map(c=>c.start))+Math.max(...cars.map(c=>c.cum[c.dnf??N-1]))*3+120;
@@ -1115,9 +1139,10 @@ function traffic(cars,T,race){
     const order=st.filter(s=>!s.done&&!s.out&&t>=s.c.start).sort((a,b)=>b.p-a.p);
     for(const s of order){
       s.pp=s.p;if(s.tow&&t>=s.tow.until){const q=s.tow.o;s.tow=null;if(!q.done&&!q.out&&q.p>s.p-.5&&!along.has(key(s.k,q.k))){const j0=Math.floor(s.p),inS=-(Math.sign(T.curv[Math.min(N-1,j0+6)])||1),ln=inS*.16;startAlong(s,q,ln,-ln);const AL=along.get(key(s.k,q.k));AL.y=q;AL.w=s;AL.slow=.8}}
+      if(s.stunAt&&s.p>=s.stunAt.i){s.stun=s.stunAt.d;s.stunAt=null}
       if(s.stun>0){s.stun-=dt;s.km=.15;continue}if(!(s.slowUntil>t))s.soft=false;
       const cum=s.c.cum;let p=s.p,rem=dt;
-      let tg=s.boost&&t<s.boost.until?s.boost.k:1;
+      let tg=s.boost&&t<s.boost.until&&(s.boost.from==null||(s.p>=s.boost.from&&s.p<=s.boost.upto))?s.boost.k:1;
       if(race){const tw=st.find(q=>q!==s&&!q.done&&!q.out&&q.p>s.p&&q.p-s.p<FOL+12);if(tw){const jj=Math.floor(s.p),nh=T.hair.find(x=>x>=jj);if(tw.p-s.p>fol(tw)+.6&&(nh==null||nh-jj>6))tg*=1.03;if(maxAhead[jj]<.15)tg*=1.02}}
       if(s.slowUntil>t)tg*=s.slowK;for(const A of along.values())if(A.y===s&&A.w.p<s.p+FOL)tg*=(A.slow||.7);
       s.km=s.km??1;s.km+=(tg-s.km)*Math.min(1,dt/(tg<s.km?1.2:(s.km<.5?.9:1.8)));const bk=Math.max(.05,s.km);
@@ -1126,13 +1151,13 @@ function traffic(cars,T,race){
       let o=null,og=1e9;
       for(const q of st){if(q===s||q.done||q.out||t<q.c.start||q.offIdx.has(Math.floor(q.p)))continue;const g=q.p-s.p,AQ=along.get(key(s.k,q.k));if(g<-.01||(AQ&&(AQ.ng||t-AQ.t0>1.1)))continue;if(g<og){og=g;o=q}}
       if(o&&og>FOL+4)s.cool=false;
-      const FO=o?(s.tow&&s.tow.o===o?1.05:fol(o)):FOL;
+      const FO=o?(s.tow&&s.tow.o===o?1.05:fol(o)*(race&&s.c.moves.has('lfb')?.8:1)):FOL;
       if(o&&des>o.p-FO){
         const vS=(des-s.p)/dt,vO=(o.p-o.pp)/dt,close=(vS-vO)*.2*T.mpt,oStop=(o.stun>0&&!o.soft)||vO*.2*T.mpt<4;
         if(oStop&&og<FOL+2.5&&close>11&&!s.cool){s.cool=true;const pc=(race?.25:.2)*(1.25-s.c.d.stats.brk/100)*(hasT(s.c.d,'ice')?.6:1);if(R()<pc){contact(s,o);continue}}
         s.behind+=dt;
       }else s.behind=Math.max(s.behind<0?s.behind:0,s.behind-dt*.25);
-      if(race&&o&&og<FOL+4&&!along.has(key(s.k,o.k))){s.press+=dt;if(s.mvCool>0)s.mvCool-=dt;else if(o.stun<=0)battle(s,o)}else if(race)s.press=Math.max(0,s.press-dt*2);
+      if(race&&o&&og<FOL+4&&!along.has(key(s.k,o.k))){s.press+=dt*(s.c.moves.has('lfb')?1.35:1);if(s.mvCool>0)s.mvCool-=dt;else if(o.stun<=0)battle(s,o)}else if(race)s.press=Math.max(0,s.press-dt*2);
       if(o&&og<FOL+3&&s.behind>(race?4:1)&&o.stun<=0&&!s.tow&&!along.has(key(s.k,o.k))){
         const j=Math.floor(s.p),j2=Math.min(N-1,j+40),jo=Math.floor(o.p),jo2=Math.min(N-1,jo+40),mine=(cum[j2]-cum[j])/((j2-j)||1),theirs=(o.c.cum[jo2]-o.c.cum[jo])/((jo2-jo)||1);
         if(maxAhead[j]<.25&&mine<theirs*.985){
@@ -1797,9 +1822,9 @@ const MAP=(()=>{
   function topShape(model){if(topCache[model])return topCache[model];const sh=(typeof CV!=='undefined'&&CV.SH&&CV.SH[model])||['coupe',4.3,1.72],T=TOPL[sh[0]]||TOPL.coupe;
     const van=sh[0]==='van';return topCache[model]=Object.assign({L:.36*(van?.98:clamp(sh[1]/4.3,.82,1.07)),W:.17*(van?1.04:clamp(sh[2]/1.72,.86,1.06)),arch:sh[0]},T)}
   function drawCar(c,s){
-    const P=topShape(s.model),CL=P.L,CW=P.W,h=CL/2,X=f=>f*h;
-    c.save();c.translate(s.v+.035,s.u+.045);c.rotate(s.a);rr2(c,-CL/2-.01,-CW/2-.01,CL+.02,CW+.02,.04,'rgba(0,0,0,.42)');c.restore();
-    c.save();c.translate(s.v,s.u);c.rotate(s.a);const tyre='#121214',ax=P.arch==='van'?.34:.3;
+    const P=topShape(s.model),CL=P.L,CW=P.W,h=CL/2,X=f=>f*h,hop=s.hop||0;
+    c.save();c.translate(s.v+.035+hop*.07,s.u+.045+hop*.09);c.rotate(s.a);rr2(c,-CL/2-.01,-CW/2-.01,CL+.02,CW+.02,.04,'rgba(0,0,0,.42)');c.restore();
+    c.save();c.translate(s.v,s.u);c.rotate(s.a);if(hop)c.scale(1+hop*.14,1+hop*.14);const tyre='#121214',ax=P.arch==='van'?.34:.3;
     c.save();c.translate(CL*ax,-CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.018,.07,.03);c.restore();
     c.save();c.translate(CL*ax,CW/2);c.rotate(s.steer||0);c.fillStyle=tyre;c.fillRect(-.035,-.012,.07,.03);c.restore();
     c.fillStyle=tyre;c.fillRect(-CL*ax-.035,-CW/2-.018,.07,.03);c.fillRect(-CL*ax-.035,CW/2-.012,.07,.03);
@@ -2343,15 +2368,20 @@ const MAP=(()=>{
             if(ks<.6)rw.forEach(w=>{if(R()<.6)smoke.push({v:w[0],u:w[1],r:.05+R()*.06,a:.5,dv:(R()-.5)*.006,du:(R()-.5)*.006})})}
           else{r.cy=0;r.last=null;r.slideOn=false;s={v:q.v,u:q.u,a:T.theta[ix]+(r.rank%2?-1:1)*Math.PI/2,lights:dark,brake:true,steer:0}}}else{const sl=hotelSlots[ri%6];s={v:sl.v,u:sl.u,a:sl.a,lights:0,brake:false,steer:0}}}
       else{allDone=false;r.state='run';while(r.i<N-2&&r.cum[r.i+1]<tt)r.i++;const i=r.i,f=clamp((tt-r.cum[i])/((r.cum[i+1]-r.cum[i])||1),0,1);
-        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&(ra<=w.t1||(w.type==='gutter'&&i<=w.at+8)));let tl=lw?lw.lane:r.baseLane,noShrink=false,deep=false;
+        const ra=el/r.sc,lw=r.lanes.find(w=>ra>=w.t0&&ra<=w.t1),fx=r.fx&&r.fx.find(w=>ra>=w.t0&&(ra<=w.t1||(w.type==='gutter'&&i<=w.at+8)||(w.type==='outside'&&i<=(w.ok?sweepArc(T,w.at).a1+3:sweepArc(T,w.at).a0+6))||(MVA[w.type]&&i<=w.at+MVA[w.type][1])));let tl=lw?lw.lane:r.baseLane,noShrink=false,deep=false;
         /* gutter run: it only works from the inside. When it lands the car hugs the apex with its inside wheels down in the drain;
            (just that side's wheels, the body stays on the road); when it misses the car turns in from too wide, clips the lip short of the drain and runs out wide */
         if(fx&&fx.type==='gutter'&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);noShrink=true;if(fx.ok){tl=sgi*(HW+.055-CW/2);deep=true}else tl=i<=fx.at?sgi*(HW-.2):-sgi*.18}
-        else if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='late'){tl=sgi*.2;noShrink=true}else if(fx.type==='outside'){tl=-sgi*(HW-.06);noShrink=true}}
+        /* around the outside: swing wide before turn-in and hold the outside lane all the way to the exit; a failed try runs wide on entry and has to back out */
+        else if(fx&&fx.type==='outside'){const A=sweepArc(T,fx.at);if(i>=A.a0-10&&i<=(fx.ok?A.a1+3:A.a0+6)){tl=A.sg*(HW-.06);noShrink=true}}
+        else if(fx&&MVA[fx.type]){const P=MVA[fx.type],d=i-fx.at,sgi=-(Math.sign(T.curv[fx.at])||1);if(d>=-P[0]&&d<=P[1]){noShrink=true;tl=!fx.ok&&d>0?-sgi*.3:P[3]==='kerb'?sgi*(HW-.1):P[3]==='apex'?sgi*(HW-.14):P[3]==='exit'?(d<2?sgi*.18:-sgi*.12):sgi*.2}}
+        else if(fx&&fx.ok&&Math.abs(i-fx.at)<15){const sgi=-(Math.sign(T.curv[fx.at])||1);if(fx.type==='late'){tl=sgi*.2;noShrink=true}}
+        /* the car being passed around the outside is squeezed onto the inside line */
+        if(race&&!noShrink)for(const o of runs.list){if(o===r||o.state!=='run'||!o.fx||Math.abs(o.i-i)>14)continue;const ro=el/o.sc,w=o.fx.find(w=>w.type==='outside'&&ro>=w.t0);if(!w)continue;const A=sweepArc(T,w.at);if(o.i>=A.a0-10&&o.i<=(w.ok?A.a1+3:A.a0+6)&&i>=A.a0-12&&i<=A.a1+3){tl=-A.sg*(HW-.2);noShrink=true;break}}
         r.laneCur+=(tl-r.laneCur)*(noShrink?.18:lw?.16:.08);
         const near=runs.list.some(o=>o!==r&&o.state==='run'&&Math.abs(o.i-i)<8),rlT=noShrink?0:(lw||near)?.35:1;r.rlB+=(rlT-r.rlB)*.08;
         const a=T.pts[i],b=T.pts[i+1],n=T.left[i],k=Math.abs(T.curv[i]),sf=noShrink?1:(1-Math.min(lw?.2:(race?.7:1),k*1.4));r.shk=r.shk??sf;r.shk+=(sf-r.shk)*.12;const li=clamp(i+(r.lnShift?r.lnShift[i]:0),0,N-2),rlo=r.line?(r.line[li]*(1-f)+r.line[li+1]*f)*r.rlA*r.rlB:0,wd=r.wander?(r.wander[i]*(1-f)+r.wander[i+1]*f)*(noShrink?0:(lw||near)?.3:1):0,lim=deep?HW+.055-CW/2:HW-.07,lane=clamp(r.laneCur*r.shk+rlo+wd,-lim,lim);
-        const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;const mk=r.mistAt&&r.mistAt.find(m=>i>=m.j-1&&i<m.j+m.span);if(!mk)r.cy+=(r.yaw[i]-r.cy)*.12;
+        const v=lerp(a.v,b.v,f)+n.v*lane,u=lerp(a.u,b.u,f)+n.u*lane;const mk=r.mistAt&&r.mistAt.find(m=>i>=m.j-1&&i<m.j+m.span);if(!mk)r.cy+=(r.yaw[i]-r.cy)*.12;if(!mk&&fx&&MVA[fx.type]){const y=mvYaw(fx,i,Math.sign(T.curv[fx.at])||1);if(y!=null)r.cy+=(y-r.cy)*.2}
         let mOff=0;if(mk){const pr=i===mk.j-1?f*.3:.3+.7*clamp((i-mk.j+f+1)/mk.span,0,1),e=pr<.5?2*pr*pr:1-Math.pow(-2*pr+2,2)/2;
           if(mk.kind==='spin'){const a2=mk.sg*Math.PI*2*e;r.cy=Math.atan2(Math.sin(a2),Math.cos(a2));mOff=mk.sg*.12*Math.sin(Math.PI*pr)}
           else if(mk.kind==='slide'){r.cy=mk.sg*mk.amp*Math.sin(Math.PI*pr);mOff=mk.sg*.05*Math.sin(Math.PI*pr)}else r.cy=mk.sg*mk.amp*Math.sin(2*Math.PI*pr)*(1-pr)}
@@ -2361,6 +2391,13 @@ const MAP=(()=>{
         if(fx){const ph=(ra-fx.t0)/(fx.t1-fx.t0),sgi=-(Math.sign(T.curv[fx.at])||1);s.fx=fx.type;
           if(fx.type==='lights'){s.lights=0;s.ghost=true}
           if(fx.type==='slip')s.slip=true;
+          if(MVA[fx.type]){const d=i-fx.at,rearP=k=>[v-Math.cos(ang)*CL*.32-Math.sin(ang)*k*CW*.45,u-Math.sin(ang)*CL*.32+Math.cos(ang)*k*CW*.45],frontP=k=>[v+Math.cos(ang)*CL*.32-Math.sin(ang)*k*CW*.45,u+Math.sin(ang)*CL*.32+Math.cos(ang)*k*CW*.45];
+            if((fx.type==='brkdrift'&&d>=-12&&d<-2)||(fx.type==='ffdrift'&&d>=-9&&d<-3)||(fx.type==='flick'&&d>=-11&&d<-7))s.brake=true;
+            if(fx.type==='ffdrift'&&d>=-9&&d<-4)s.bigBrake=true;
+            if(fx.type==='jump'&&d>=-1&&d<=2){s.hop=Math.sin(clamp((d+1+f)/3,0,1)*Math.PI);if(d===0&&R()<.7)for(let q=0;q<4;q++){const w=rearP(sgi);sparks.push({v:w[0],u:w[1],dv:(R()-.5)*.02,du:(R()-.5)*.02,l:5+R()*6})}}
+            if(fx.type==='power'&&d>=-2&&d<=12)[-1,1].forEach(k=>{const w=rearP(k);if(R()<.9)smoke.push({v:w[0],u:w[1],r:.06+R()*.06,a:.5,dv:(R()-.5)*.006-Math.cos(ang)*.004,du:(R()-.5)*.006-Math.sin(ang)*.004})});
+            if(fx.type==='awd'&&d>=-8&&d<=6)[-1,1].forEach(k=>{const w=frontP(k);if(R()<.5)smoke.push({v:w[0],u:w[1],r:.04+R()*.04,a:.38,dv:(R()-.5)*.004,du:(R()-.5)*.004})});
+            if(sparks.length>400)sparks.splice(0,100)}
           if(fx.type==='feint'&&Math.abs(i-fx.at)<18){s.a+=-sgi*.55*Math.sin(clamp((i-fx.at+18)/36,0,1)*Math.PI*2);r.cy=.4}
           if(fx.type==='late'&&i<fx.at&&fx.at-i<12){s.brake=true;s.bigBrake=true;if(R()<.6)smoke.push({v:v+Math.cos(ang)*CL*.3,u:u+Math.sin(ang)*CL*.3,r:.03+R()*.03,a:.4,dv:(R()-.5)*.003,du:(R()-.5)*.003})}
           if(fx.type==='gutter'&&!fx.ok&&i>=fx.at-3&&i<=fx.at+2){const q=clamp((i-fx.at+3+f)/5,0,1);s.a+=sgi*.3*Math.sin(q*Math.PI);if(R()<.5)sparks.push({v:v-Math.sin(ang)*sgi*CW*.5,u:u+Math.cos(ang)*sgi*CW*.5,dv:(R()-.5)*.02,du:(R()-.5)*.02,l:5+R()*5})}
@@ -2526,6 +2563,13 @@ const MAP=(()=>{
      crashed cars where they stopped, staged cars last. When the order changes the cards slide to their new places (FLIP). */
   /* racing line: start with a band down the centre and pull it tight while keeping it on the road. The tightest path through
      a corner goes outside on entry, clips the apex and drifts back out on exit; S-bends get straightened. Visual only. */
+  /* drift-style moves: [samples before the corner, samples after, drift angle, line] */
+  const MVA={brkdrift:[12,6,.6,'in'],ffdrift:[9,4,.5,'in'],grip:[10,5,0,'apex'],awd:[10,7,.5,'in'],power:[3,14,.85,'exit'],jump:[6,8,.75,'kerb'],flick:[18,6,.8,'in']};
+  const bump=(x,a,b)=>Math.sin(clamp((x-a)/((b-a)||1),0,1)*Math.PI);
+  function mvYaw(fx,i,ins){const P=MVA[fx.type];if(!P||!P[2])return null;const d=i-fx.at;if(d<-P[0]||d>P[1])return null;const amp=P[2]*(fx.ok?1:1.25);
+    if(fx.type==='flick')return d<-11?-ins*.45*bump(d,-P[0],-11):ins*amp*bump(d,-11,P[1]);
+    if(fx.type==='jump')return d<0?0:ins*amp*bump(d,0,P[1]);
+    return ins*amp*bump(d,-P[0],P[1])}
   function racingLine(T){if(T.rl&&T.rlHW===HW)return T.rl;const N=T.len,P=T.pts,n=T.left,W=Math.max(.06,HW-.13);let o=new Float32Array(N);
     for(const[k,it] of [[30,50],[16,60],[8,60],[4,40]]){for(let t=0;t<it;t++)for(let i=k;i<N-k;i++){const a=i-k,b=i+k,pv=(P[a].v+n[a].v*o[a]+P[b].v+n[b].v*o[b])/2-(P[i].v+n[i].v*o[i]),pu=(P[a].u+n[a].u*o[a]+P[b].u+n[b].u*o[b])/2-(P[i].u+n[i].u*o[i]);o[i]=clamp(o[i]+.5*(pv*n[i].v+pu*n[i].u),-W,W)}}
     const sm=new Float32Array(N);for(let i=0;i<N;i++){let a=0,w=0;for(let j=-5;j<=5;j++){const q=i+j;if(q<0||q>=N)continue;const g=Math.exp(-j*j/12);a+=o[q]*g;w+=g}sm[i]=a/w}
@@ -2927,8 +2971,8 @@ function raceEvents(A0,B0,T,d,opp,tev){
   marks.sort((x,y)=>x.i-y.i);
   for(const mk of marks){
     if(mk.tv&&mk.tv.type==='move'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an,M=MOVES[e.move];
-      const okL={gutter:[`${who} drops the inside wheels into the drain and rails round ${oth}!`,`Into the gutter! ${who} carries impossible speed past ${oth}!`],late:[`${who} brakes so late it looks like a mistake, then dives up the inside!`,`${who} out-brakes ${oth} into the hairpin and steals the line!`],lights:WX()==='Fog'?[`${who} kills the lights and melts into the fog! ${oth} has no idea where they went...`,`A ghost in the fog! ${who} reappears alongside ${oth} out of nowhere!`]:[`${who} kills the headlights! ${oth} has lost them in the mirror...`,`Darkness behind ${oth}. ${who} has vanished, then reappears alongside!`],feint:[`${who} feints left, flicks right and slices through the S-bends past ${oth}!`,`A perfect feint! ${who} steals the line through the esses!`],outside:[`${who} goes around the outside of the sweeper and holds it!`,`Full commitment! ${who} takes ${oth} around the outside!`],slip:[`${who} tucks into the slipstream and slingshots past ${oth}!`,`Out of the tow! ${who} pulls alongside and goes by!`]}[e.move];
-      const noL={gutter:`${who} tries the gutter but bounces out and loses ground.`,late:`${who} goes in too deep and runs wide!`,lights:`${who} kills the lights, but ${oth} spots the shadow and covers.`,feint:`${who} tries a feint, but ${oth} doesn't bite.`,outside:`${who} tries the outside line, but ${oth} squeezes them out.`,slip:`${who} pulls out of the slipstream, but there isn't enough to get by.`}[e.move];
+      const okL={gutter:[`${who} drops the inside wheels into the drain and rails round ${oth}!`,`Into the gutter! ${who} carries impossible speed past ${oth}!`],late:[`${who} brakes so late it looks like a mistake, then dives up the inside!`,`${who} out-brakes ${oth} into the hairpin and steals the line!`],lights:WX()==='Fog'?[`${who} kills the lights and melts into the fog! ${oth} has no idea where they went...`,`A ghost in the fog! ${who} reappears alongside ${oth} out of nowhere!`]:[`${who} kills the headlights! ${oth} has lost them in the mirror...`,`Darkness behind ${oth}. ${who} has vanished, then reappears alongside!`],feint:[`${who} feints left, flicks right and slices through the S-bends past ${oth}!`,`A perfect feint! ${who} steals the line through the esses!`],outside:[`${who} goes around the outside of the sweeper and holds it!`,`Full commitment! ${who} takes ${oth} around the outside!`],slip:[`${who} tucks into the slipstream and slingshots past ${oth}!`,`Out of the tow! ${who} pulls alongside and goes by!`],brkdrift:[`${who} trail-brakes in, the rear steps out, and ${who} slides up the inside of ${oth}!`,`A braking drift! ${who} balances it on the throttle and takes ${oth} on the way in!`],ffdrift:[`Handbrake! ${who} swings the front-driver round the hairpin and past ${oth}!`,`An FF drift! Nobody thought ${who}'s car could do that, least of all ${oth}!`],grip:[`No smoke, no drama: ${who} nails the apex and drives out past ${oth}!`,`Textbook grip driving! ${who} gets the better exit and goes by ${oth}!`],awd:[`All four wheels sideways! ${who} claws past ${oth}!`,`A 4WD drift! ${who} pulls out of the corner on full boost and beats ${oth} to the exit!`],power:[`${who} buries the throttle and the tail comes round! Power over past ${oth}!`,`Massive power oversteer! ${who} smokes ${oth} on the exit!`],jump:[`${who} bounces the rear over the kerb, the tail flicks out, and ${who} is through on ${oth}!`,`A jump drift! ${who} uses the kerb and leaves ${oth} behind!`],flick:[`${who} flicks away from the corner, then throws it in sideways! Past ${oth}!`,`A Scandinavian flick! ${who} carries impossible speed into the hairpin and takes ${oth}!`]}[e.move];
+      const noL={gutter:`${who} tries the gutter but bounces out and loses ground.`,late:`${who} goes in too deep and runs wide!`,lights:`${who} kills the lights, but ${oth} spots the shadow and covers.`,feint:`${who} tries a feint, but ${oth} doesn't bite.`,outside:`${who} tries the outside line, but ${oth} squeezes them out.`,slip:`${who} pulls out of the slipstream, but there isn't enough to get by.`,brkdrift:`${who} gets the braking drift too sideways and has to straighten up.`,ffdrift:`${who} pulls the handbrake a fraction late and washes wide.`,grip:`${who} goes for the tidy line, but ${oth} is just as tidy.`,awd:`${who} throws it sideways, but the four-wheel drive pulls it wide.`,power:e.spun?`Too much throttle! ${who} spins it!`:`${who} gets the power over too early and runs wide.`,jump:e.spun?`${who} hits the kerb wrong and the car spins!`:`${who} hits the kerb too hard and loses the line.`,flick:`${who} flicks it in, but the swing is too much and ${who} loses speed.`}[e.move];
       if(e.blind){const sp=e.bad?'runs off the road':'spins';add(e.t,M.name.toUpperCase(),e.blind==='leaves'?`${who} kills the lights and hits a carpet of wet leaves blind! ${who} ${sp}!`:`${who} kills the lights and finds standing water nobody could see! ${who} ${sp}!`,true,{move:e.move,by:e.by,ok:false,name:who});continue}
       if(e.ok)add(e.t,M.name.toUpperCase(),pick(okL),true,{move:e.move,by:e.by,ok:true,name:who});else add(e.t,M.name.toUpperCase(),noL,true,{move:e.move,by:e.by,ok:false,name:who,loss:+(e.loss||0).toFixed(2)});continue}
     if(mk.tv&&mk.tv.type==='pressure'){const e=mk.tv,who=e.by===0?an:bn,oth=e.by===0?bn:an;add(e.t,'PRESSURE',pick([`The pressure tells! ${who} runs wide with ${oth} filling the mirror.`,`${who} cracks under pressure and misses the apex!`,`${oth} has been all over ${who}'s bumper, and ${who} finally slips!`]),true,null,e.by);continue}
@@ -3741,7 +3785,7 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-chg]');i
   const legend=()=>{if(!S)return;if(S.drivers.some(x=>x.legend)){toast('Bunta is already on the crew.');return}if(S.drivers.length>=6){toast('The crew is full. Let someone go first.');return}
     let car=null;if(S.cars.length<GARAGE_MAX){car={id:S.nid++,model:'gc8',c1:'#8e939a',c2:shade('#8e939a',-.42),paint:'Grey',engine:3,susp:3,brakes:2,lsd:1,weight:2,cradle:true,tyre:{grade:1,wear:0},cond:100,km:186000};S.cars.push(car)}
     const d={id:S.nid++,first:'Bunta',family:'Fujiwara',seed:19631,stats:{brk:118,crn:122,dft:122,ht:120,thr:115,foc:125},xp:50460,trait:'fog',carId:car?car.id:0,wage:0,active:true,runs:0,wins:0,losses:0,son:false,legend:true,team:'nobody',
-      know:Object.fromEntries(MTNS.map(m=>[m.id,100])),perks:['cool','closer','launch','hunter'],mm:Object.fromEntries(Object.keys(MOVES).filter(k=>k!=='block').map(k=>[k,12]))};
+      know:Object.fromEntries(MTNS.map(m=>[m.id,100])),perks:['cool','closer','launch','hunter'],mm:Object.fromEntries(Object.keys(MOVES).filter(k=>!MOVES[k].passive).map(k=>[k,12]))};
     S.drivers.push(d);if(car)car.owner=d.id;addLog('A grey GC8 Type R pulled into the lot before dawn. Bunta Fujiwara lit a cigarette, said nothing, and joined the crew.');AUDIO.unlock();AUDIO.cash();save();renderAll();toast(car?'Bunta Fujiwara joined the crew with his grey GC8':'Bunta Fujiwara joined the crew. No room in the lot for his GC8.')};
   document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1&&(buf+e.key.toLowerCase()).endsWith('bunta')){buf='';legend()}},true);
   let ctaps=[];document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#sCred'))return;const n=performance.now();ctaps=ctaps.filter(x=>n-x<3000);ctaps.push(n);if(ctaps.length>=7){ctaps=[];legend()}});
@@ -3779,7 +3823,7 @@ function showHelp(intro){
   <p><b>Risk.</b> Bald tyres, a battered car, rain and fog make spins, slides off the road, breakdowns and crashes more likely. A crash or breakdown loses that run and costs a tow, and the damage needs repairing in the Garage. A car below 15% condition can't drive.</p>
   <p><b>Traffic.</b> Cars leave the shop about 12 seconds apart in crew order. A faster car that catches a slower one has to follow until a straight, then pass. Rushed passes and sudden stops can end in contact, and both cars take damage.</p>
   <p><b>Tyres and weather.</b> Saturday's race-night forecast appears in the morning, so you can swap tyres before racing. Each car keeps its spare sets, and swapping back costs a small fitting fee. Semi-slicks are fastest in the dry but lose half their grip in the rain and spin easily. Four-wheel drive copes best in the wet, then front-drive, then rear-drive. The day after rain is often damp: no rain, but puddles and a slightly greasy road, which costs street tyres almost nothing and sport tyres only a little. Each day also has a wind, shown next to the weather: a headwind costs top speed on the straights and a tailwind gives a little back. A wet race night can dry out partway, leaving a dry line for the last part of the run. In autumn some corners carry wet leaves, and on winter dawns the tyres are cold for the first few corners, semi-slicks most of all. Downhill, weight and nimbleness count for more than power.</p>
-  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out and Around the Outside. Drivers learn moves as their stats grow, and Iron Wall helps a leader defend. Slipstream works best into a headwind, and Around the Outside works best in the wet. Lights Out is a gamble on wet or damp nights and on autumn leaves: nobody can memorise where the puddles and leaves are, so a blind car can spin or go off, where less steering lock means more speed. Tyres wear through a race, so a patient approach can win late.</p>
+  <p><b>Touge battles.</b> Races start side by side, or as leader and chaser by coin toss. The chaser can draft on straights, pile on pressure until the leader slips, and use special moves: Slipstream, Late Brake, Gutter Run, Feint Drift, Lights Out, Around the Outside, Braking Drift, Grip Racing, Jump Drift, Power Over and the Scandinavian Flick. FF Drift only works in a front-wheel-drive car and 4WD Drift only in an all-wheel-drive car, and Power Over needs 230 PS. Drivers learn moves as their stats grow. Iron Wall helps a leader defend, and Left-Foot Braking lets a chaser sit closer and pile on more pressure. Slipstream works best into a headwind, and Around the Outside works best in the wet. Lights Out is a gamble on wet or damp nights and on autumn leaves: nobody can memorise where the puddles and leaves are, so a blind car can spin or go off, where less steering lock means more speed. Tyres wear through a race, so a patient approach can win late.</p>
   <p><b>Driver progression.</b> Stats grow with every run, more slowly once they pass 80. Each driver also builds knowledge of every pass they drive, which makes them faster there and less likely to make mistakes. Special moves rank up from I to III as a driver lands them in races. At levels ${PERK_LV.join(', ')} a driver picks a permanent perk. Rivals know their home pass well. Anyone on the road when Bunta Fujiwara or YS Khong shows up learns a lot about that pass just from watching them.</p>
   <p><b>Seasons.</b> Spring, summer, autumn and winter each last ${SEASON_WEEKS} weeks. The trees and grass change colour: through spring the sakura open a little more each week, peak, then drop their petals, early summer brings the rainy season, autumn brings fog and winter brings snow. On snow, studless tyres and four-wheel drive matter most. Shiga-Kusatsu closes for winter.</p>
   <p><b>Saturday night.</b> Up to two touge battles, one uphill and one downhill. Local challengers are matched to the driver and car you send: about the same OVR, power, handling and tyres, a little tougher on the harder passes, and they know their home pass a bit better than you. In your first weeks the downhill locals go easy on you while uphill is close to even, and a losing streak eases the next challenger a little. From week 2, the first local you beat asks to join your crew. The rival of the week from Touge Net is only picked from crews within about 10 OVR or 100 PI of yours. Wins earn purses and street cred. Cred unlocks new passes, raises the hotel's price, and convinces beaten rivals to join your crew with their own cars.</p>
@@ -4235,6 +4279,8 @@ const TUT=(()=>{
       b:()=>{const d=S.drivers.find(x=>movesOf(x).includes('slip'));return`${d.first} can now use Slipstream. On a fast straight they tuck in nose-to-tail right behind the rival for a moment, then pull out and slingshot past. It lands far more often into a headwind and hardly ever with the wind at your back, so check the wind arrow up here. It changes every day. More power than the rival helps too.`}},
     {k:'outsideTip',target:'#clock .pill:nth-child(3)',t:'New move: Around the outside',when:()=>calm()&&S.drivers.some(d=>movesOf(d).includes('outside')),
       b:()=>{const d=S.drivers.find(x=>movesOf(x).includes('outside'));return`${d.first} can now go Around the outside on fast sweepers. It's at its best in the wet: with less grip, the wide line needs less steering lock, so the car carries more speed than a rival squeezing the inside. On damp roads it helps a little, and in the dry it's a straight cornering contest.`}},
+    ...['brkdrift','grip','ffdrift','awd','power','jump','lfb','flick'].map(k=>({k:k+'Tip',target:'#clock .pill:nth-child(3)',t:'New move: '+MOVES[k].name,when:()=>calm()&&S.drivers.some(d=>movesOf(d).includes(k)),
+      b:()=>{const d=S.drivers.find(x=>movesOf(x).includes(k)),M=MOVES[k],c=carById(d.carId);return`${d.first} learned ${M.name}. ${M.desc}${M.car?(moveFits(k,c)?` ${d.first}'s car can do it.`:` ${d.first} needs a ${M.carNote} to use it.`):''}`}})),
     {k:'rosterTour',when:()=>calm()&&S.phase==='pre'&&S.drivers.length>1&&!!S.tut.tips.recruit,steps:[
       {side:'left',target:'.card.roster',t:'Your dawn roster',b:'With two or more drivers you choose who does the dawn run each day. Rows are drivers and columns are days. Tap a square to put a driver on or off that morning. The week repeats until you change it, and each driver card has the same day buttons under Dawn runs.',enter:()=>openTab('crew')},
       {side:'left',target:'.card.roster .rg',t:'Runs against presses',b:'The bottom row counts each day\'s runs against your presses. Green means every press is busy. Red means someone is rostered but benched, because each press fills one car. Amber means a press sits idle. "rest" means the shop stays shut that day.',enter:()=>openTab('crew')},
