@@ -171,6 +171,7 @@ kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(
 @media (hover:hover) and (pointer:fine){#tabs .tab[data-key]{position:relative}#tabs .tab[data-key]::after{content:attr(data-key);position:absolute;top:3px;right:4px;font-family:var(--f-dot);font-size:9px;line-height:1;color:var(--dim);opacity:.8}
   .btn.kspace::after{content:'SPACE';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}
   .btn.sm.kspace::after{font-size:8px;margin-left:6px;padding:0 3px}
+.loanopts{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin:12px 0}.loanopts .btn{display:flex;flex-direction:column;gap:2px;padding:10px}.loanopts small{opacity:.7;font-size:11px}
 .kback::after{content:'ESC';font-family:var(--f-dot);font-size:9px;font-weight:400;letter-spacing:.06em;margin-left:8px;padding:1px 4px;border:1px solid currentColor;border-radius:4px;opacity:.55;vertical-align:middle}}
 .keeph{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:var(--mute);margin-top:8px;cursor:pointer}.keeph input{margin-top:2px;accent-color:var(--sodium)}.keeph b{color:var(--ink)}
 .wxnote{color:var(--cyan)!important;font-size:13px}
@@ -559,7 +560,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v132</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v134</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -993,9 +994,17 @@ function giveXP(d,xp,notes){
 }
 function modCost(c,mk,lvl){const md=MODS.find(m=>m.k===mk);if(mk==='cradle')return 25000;const ref=CARS[c.model].modRef||clamp(CARS[c.model].price,300000,3000000);return Math.round(Math.max(md.min[lvl],ref*md.pct[lvl])/1000)*1000}
 /* repairs: the cost to bring a car up to a given condition, and the way out when the shop is broke */
+const LOAN_RATE=.1,LOAN_WEEKS=8;
+/* how much the bank will lend in total: half of what your cars are worth, at least ¥200,000 */
+const loanLimit=()=>Math.min(3000000,Math.max(200000,Math.round(S.cars.reduce((a,c)=>a+CARS[c.model].price,0)*.5/100000)*100000));
+const loanRoom=()=>Math.max(0,loanLimit()-(S.loan?S.loan.left:0));
+const loanPer=a=>Math.ceil(a*(1+LOAN_RATE)/LOAN_WEEKS/100)*100;
+function loanOpts(){const room=loanRoom();let o=[200000,500000,1000000,2000000].filter(a=>a<=room);if(!o.length&&stuck()&&room>=50000)o=[Math.floor(room/10000)*10000];return o}
 const TAB_COND=40;
 function repairTo(c,to){const ref=Math.max(CARS[c.model].price,300000);return Math.round(Math.max(0,to-c.cond)*Math.max(900,ref*.0012)/100)*100}
 /* stuck: nobody can drive, and there isn't enough money to make even one car roadworthy */
+/* saves from v131 that still owe the mechanic: turn the tab into an ordinary loan */
+function tabToLoan(){if(S&&S.debt>0){S.loan=S.loan||{left:0,per:0};S.loan.left+=S.debt;S.loan.per+=Math.ceil(S.debt/LOAN_WEEKS/100)*100;S.debt=0}}
 function stuck(){if(!S||!S.drivers.length||!S.cars.length)return false;if(S.drivers.some(d=>carOK(carById(d.carId))))return false;const cheapest=Math.min(...S.cars.map(c=>repairTo(c,TAB_COND)));return S.money<cheapest}
 /* how far the money in hand gets a car (whole percent) */
 function patchTo(c){if(S.money<=0)return c.cond;const per=repairTo(c,c.cond+1)||1;return Math.min(99,Math.floor(c.cond+S.money/per))}
@@ -2590,7 +2599,7 @@ function renderAction(){
   document.documentElement.classList.toggle('busy',!!busy);const a=$('#actionbar');let h='';
   if(busy)h=`<button class="btn" data-act="skip">Skip to results</button>`;
   else if(S.phase==='pre'){const runs=plannedRuns();
-    if(!runs.length){if(stuck()){h=`<span class="why">Every car is wrecked and there's no money for repairs.</span><button class="btn" data-act="restDay">Rest today</button><button class="btn primary big" data-act="mechOffer">Ask the mechanic</button>`}else{const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}}
+    if(!runs.length){if(stuck()){h=`<span class="why">Every car is wrecked and there's no money for repairs.</span><button class="btn" data-act="restDay">Rest today</button><button class="btn primary big" data-act="loanOffer">Take a loan</button>`}else{const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}}
     else{const ready=readyDrivers().length,extra=ready-runs.length;
       if(extra>0)h=`<span class="why">${extra} driver${extra>1?'s':''} waiting: only ${S.prod} press${S.prod>1?'es':''}.</span>`+(S.prod<6?`<button class="btn" data-act="tab" data-t="shop">${S.money>=PROD[S.prod]?'Add press '+yenK(PROD[S.prod]):'Press costs '+yenK(PROD[S.prod])}</button>`:'');
       h+=`<button class="btn primary big" data-act="dispatch">Dispatch ${runs.length} run${runs.length>1?'s':''} <small>04:30</small></button>`}}
@@ -2608,7 +2617,7 @@ function renderPanel(){
 }
 let lastView='';
 function syncView(){const key=S.phase+'|'+S.day+'|'+S.week;if(key===lastView)return;lastView=key;if((S.phase==='pre'||S.phase==='post')&&!busy)MAP.focusShop()}
-function renderAll(){syncSecret();{const b=document.getElementById('dirBtn');if(b&&window.MAP)b.classList.toggle('on',MAP.directorOn())}renderHUD();renderAction();renderTabs();renderPanel();syncView()}
+function renderAll(){tabToLoan();syncSecret();{const b=document.getElementById('dirBtn');if(b&&window.MAP)b.classList.toggle('on',MAP.directorOn())}renderHUD();renderAction();renderTabs();renderPanel();syncView()}
 
 function carLabel(c){const m=CARS[c.model];return`${m.code} ${m.name}`}
 function carOptions(d){let h=`<option value="0">No car</option>`;S.cars.forEach(c=>{const o=driverOfCar(c.id);h+=`<option value="${c.id}" ${d.carId===c.id?'selected':''}>${esc(CARS[c.model].code)} ${esc(CARS[c.model].name)}${o&&o.id!==d.id?' ('+esc(o.first)+')':''}</option>`});return h}
@@ -2653,8 +2662,10 @@ function progHTML(d){
 function meter(label,val,col,txt){return`<div class="meter"><span>${label}</span><i><em style="width:${clamp(val,0,100)}%;background:${col}"></em></i><b>${txt}</b></div>`}
 function garageHTML(){
   let h=`<div><h2>Garage<span class="jp">車庫</span></h2><p class="sub">${S.cars.length} car${S.cars.length>1?'s':''}. Fresh tyres and a stiff chassis keep the tofu in one piece.</p></div>`;
-  if(stuck())h+=`<div class="note" style="border:1px solid var(--brake);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">Every car is too damaged to drive and there isn't enough money to fix one.<button class="btn sm primary" data-act="mechOffer">Ask the mechanic</button></div>`;
-  else if(S.debt>0)h+=`<p class="note">Mechanic's tab: <b>${yen(S.debt)}</b> left. Half of each day's delivery profit goes to paying it off.</p>`;
+  if(stuck())h+=`<div class="note" style="border:1px solid var(--brake);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">Every car is too damaged to drive and there isn't enough money to fix one.<button class="btn sm primary" data-act="loanOffer">Take a loan</button></div>`;
+  if(S.loan)h+=`<p class="note">Shinkin bank loan: <b>${yen(S.loan.left)}</b> left, ${yen(Math.min(S.loan.per,S.loan.left))} taken each time you close a week.${loanOpts().length?' <button class="btn sm" data-act="loanOffer">Borrow more</button>':''}</p>`;
+  else if(!stuck())h+=`<p class="note">Short on money? <button class="btn sm" data-act="loanOffer">Borrow from the bank</button>${NET.isOn()?' or a friend':''}</p>`;
+  h+=NET.owedHtml();
   if(S.cars.length>1)h+=sortBar('sortC',S.sortC||'join',[['join','Order bought'],['pi','PI'],['name','Name'],['cond','Needs work'],['tyre','Tyres worn']]);
   sortedCars().forEach(c=>{
     const m=CARS[c.model],sp=spec(c),drv=driverOfCar(c.id),wear=c.tyre.wear;
@@ -2829,8 +2840,6 @@ function finishDelivery(list){
   });
   const tow=rows.reduce((s,r)=>s+(r.res.tow||0),0),net=rev-prod-fuel-wages-tow;
   S.money+=net;S.weekRev+=net;S.batches+=list.length;
-  /* the mechanic's tab is paid back from half of each profitable day */
-  let tabPaid=0;if(S.debt>0&&net>0){tabPaid=Math.min(S.debt,Math.round(net*.5/100)*100||Math.min(S.debt,net));S.money-=tabPaid;S.debt-=tabPaid;addLog(S.debt>0?`Paid ${yen(tabPaid)} off the mechanic's tab. ${yen(S.debt)} to go.`:`Paid off the mechanic's tab.`)}S.earned+=rev;if(S.day===6)S.satRan={w:S.week,ids:rows.map(r=>r.d.id)};
   const fin=rows.filter(r=>r.res.dnf==null),best=fin.length?fin.reduce((a,b)=>a.res.time<b.res.time?a:b):null;
   addLog(`Delivered ${fin.length} of ${list.length} batch${list.length>1?'es':''} for ${yen(rev)}.${best?` Best run ${best.d.first}, ${fmtT(best.res.time)}.`:''}`);
   S.phase='post';MAP.setDark(S.day===6?.05:.12);save();renderAll();if(rev>0)AUDIO.cash();
@@ -2838,7 +2847,7 @@ function finishDelivery(list){
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th class="num">Time</th><th class="num">Fresh</th><th class="num">Damage</th><th class="num" title="Water left in the cup on the dashboard">Cup</th><th class="num">Paid</th><th class="num">XP</th><th>Notes</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num ${r.res.dnf!=null?'neg':''}">${r.res.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${r.res.dnf!=null?'-':Math.round(r.res.fresh*100)+'%'}</td><td class="num ${r.res.dmg>8?'neg':r.res.dmg<2?'pos':''}">${r.res.dnf!=null?'Lost':r.res.dmg.toFixed(1)+'%'}</td><td class="num ${r.cup==null?'':r.cup>80?'pos':r.cup<50?'neg':''}">${r.cup==null?'-':r.cup+'%'}</td><td class="num">${yen(r.res.price)}</td><td class="num">+${r.res.xp}</td><td class="tagline">${r.notes.join(' · ')}</td></tr>`).join('')}
   </tbody></table></div>
-  <div class="tot"><div><span>Hotel paid</span><b>${yen(rev)}</b></div><div><span>Beans and nigari</span><b class="neg">${yen(-prod)}</b></div><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Wages</span><b class="neg">${yen(-wages)}</b></div>${tow?`<div><span>Tow truck</span><b class="neg">${yen(-tow)}</b></div>`:''}<div><span>Net today</span><b class="${net>=0?'pos':'neg'}">${yen(net)}</b></div>${tabPaid?`<div><span>Mechanic's tab${S.debt>0?` (${yenK(S.debt)} left)`:' (paid off)'}</span><b class="neg">${yen(-tabPaid)}</b></div>`:''}</div>
+  <div class="tot"><div><span>Hotel paid</span><b>${yen(rev)}</b></div><div><span>Beans and nigari</span><b class="neg">${yen(-prod)}</b></div><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Wages</span><b class="neg">${yen(-wages)}</b></div>${tow?`<div><span>Tow truck</span><b class="neg">${yen(-tow)}</b></div>`:''}<div><span>Net today</span><b class="${net>=0?'pos':'neg'}">${yen(net)}</b></div></div>
   <div class="mact"><button class="btn primary" data-act="close">${S.day===6?'Back to the shop':'Continue'}</button></div>`);
 }
 function nextDay(){
@@ -2847,9 +2856,14 @@ function nextDay(){
   save();renderAll();
 }
 function endWeek(){
+  /* loan instalment, taken once per week from what's in the till */
+  let lp=null;if(S.loan&&S.loanWeek!==S.week){S.loanWeek=S.week;const due=Math.min(S.loan.per,S.loan.left),pay=Math.min(due,Math.max(0,S.money));S.money-=pay;S.loan.left-=pay;lp={pay,short:due-pay};if(S.loan.left<=0){S.loan=null;addLog('Loan paid off.')}else addLog(`Loan instalment ${yen(pay)}${lp.short?`, ${yen(lp.short)} short`:''}. ${yen(S.loan.left)} left.`);save()}
+  const fp=NET.payWeek(),fpt=fp.reduce((a,x)=>a+x.pay,0);
   const credGain=Math.round(S.cred-S.weekCredStart);
   modal(`<div class="eyebrow">Week ${S.week} closed</div><h2>The ledger</h2>
-  <div class="tot"><div><span>Net this week</span><b class="${S.weekRev>=0?'pos':'neg'}">${yen(S.weekRev)}</b></div><div><span>Street cred</span><b>${credGain>=0?'+':''}${credGain}</b></div><div><span>Races</span><b>${S.weekRaces.filter(x=>x).length}W ${S.weekRaces.filter(x=>!x).length}L</b></div><div><span>Funds</span><b>${yen(S.money)}</b></div></div>
+  <div class="tot"><div><span>Net this week</span><b class="${S.weekRev>=0?'pos':'neg'}">${yen(S.weekRev)}</b></div><div><span>Street cred</span><b>${credGain>=0?'+':''}${credGain}</b></div><div><span>Races</span><b>${S.weekRaces.filter(x=>x).length}W ${S.weekRaces.filter(x=>!x).length}L</b></div>${lp?`<div><span>Loan instalment</span><b class="neg">${yen(-lp.pay)}</b></div>`:''}${fp.length?`<div><span>Paid back to friends</span><b class="neg">${yen(-fpt)}</b></div>`:''}<div><span>Funds</span><b>${yen(S.money)}</b></div></div>
+  ${lp?`<p class="note">${S.loan?`${yen(S.loan.left)} still owed to the bank.`:'The loan is paid off.'}${lp.short?` The till was ${yen(lp.short)} short, so that rolls over to next week.`:''}</p>`:''}
+  ${fp.map(x=>`<p class="note">@${esc(x.h)}: ${yen(x.pay)} paid back. ${x.left>0?`${yen(x.left)} left${x.short?`, and ${yen(x.short)} of this week's payment waits until next week`:''}.`:'All paid off.'}</p>`).join('')}
   <p>${weekQuip()}</p>
   <div class="mact"><button class="btn primary" data-act="startWeek">Start week ${S.week+1}</button></div>`);
 }
@@ -2862,7 +2876,7 @@ function raceReady(d){return d&&carOK(carById(d.carId))}
 function openRacePlanner(){
   const ds=S.drivers.filter(raceReady);
   if(!ds.length){/* nobody can race: say why and let the night pass, instead of a dead end */
-    modal(`<div class="eyebrow">Saturday Night Touge</div><h2>No car can race tonight</h2><p>${stuck()?"Every car is too damaged to drive and there's no money for repairs. Skip tonight, or ask the mechanic to patch one up on the tab and race after all.":'No driver has a car in good enough shape to race. Repair one in the Garage, or skip tonight.'}</p><div class="mact"><button class="btn" data-act="skipRaces">Skip racing tonight</button>${stuck()?'<button class="btn primary" data-act="mechOffer">Ask the mechanic</button>':'<button class="btn primary" data-act="tab" data-t="garage">Go to the Garage</button>'}</div>`);return}
+    modal(`<div class="eyebrow">Saturday Night Touge</div><h2>No car can race tonight</h2><p>${stuck()?"Every car is too damaged to drive and there's no money for repairs. Skip tonight, or take a loan from the bank, fix a car and race after all.":'No driver has a car in good enough shape to race. Repair one in the Garage, or skip tonight.'}</p><div class="mact"><button class="btn" data-act="skipRaces">Skip racing tonight</button>${stuck()?'<button class="btn primary" data-act="loanOffer">Take a loan</button>':'<button class="btn primary" data-act="tab" data-t="garage">Go to the Garage</button>'}</div>`);return}
   const best=ds.slice().sort((a,b)=>dskill(b)-dskill(a))[0];
   const open=MTNS.filter(passOpen);const top=open[open.length-1];
   const vs=NET.defaultVs();RP={up:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs},down:{on:true,m:top.id,d:best.id,tac:'bal',start:'side',vs}};
@@ -3162,12 +3176,14 @@ const NET=(()=>{
     const n=++chkN;say('Checking…');chkT=setTimeout(async()=>{try{const dh=await sha(devTok()),g=await db.doc('handles/'+keyOf(h)).get(),x=g.exists?g.data():null;if(n!==chkN)return;
       if(x&&x.h&&x.dh!==dh)say(`@${str(x.h,16)} is taken. Try another.`,'var(--brake)');else say(`@${h} is available.`,'var(--good)')}catch(e){if(n===chkN)say('')}},350)}
   function subscribe(){
-    unsub.forEach(f=>{try{f()}catch(e){}});unsub=[];chIn=[];chOut=[];
+    unsub.forEach(f=>{try{f()}catch(e){}});unsub=[];chIn=[];chOut=[];lnIn=[];lnOut=[];lnInOk=lnOutOk=false;
     unsub.push(db.collection('players').orderBy('ovr','desc').limit(500).onSnapshot(q=>{players={};plList=[];q.docs.forEach(d=>{const p=cleanP(d.id,d.data());if(p){players[d.id]=p;plList.push(p)}});if(!q.metadata.fromCache){loaded=true;slow=false}else if(q.size)loaded=true;render()},err));
     if(!S.hkey||S.hpend)return;const k=S.hkey;
     unsub.push(db.collection('challenges').where('to','==',k).onSnapshot(q=>{chIn=q.docs.map(cleanC).filter(Boolean);onCh()},err));
     unsub.push(db.collection('challenges').where('from','==',k).onSnapshot(q=>{chOut=q.docs.map(cleanC).filter(Boolean);onCh()},err));
     unsub.push(db.collection('players/'+k+'/inbox').onSnapshot(q=>onInbox(q.docs),err));
+    unsub.push(db.collection('loans').where('to','==',k).onSnapshot(q=>{lnIn=q.docs.map(cleanL).filter(Boolean);lnInOk=true;onLoans()},err));
+    unsub.push(db.collection('loans').where('from','==',k).onSnapshot(q=>{lnOut=q.docs.map(cleanL).filter(Boolean);lnOutOk=true;onLoans()},err));
   }
 
   /* ---- handle ---- */
@@ -3373,6 +3389,83 @@ const NET=(()=>{
     touch();
   }
 
+  /* ---- loans between handles: interest-free, paid back a little each week when the borrower closes the week ---- */
+  const LN_AMTS=[50000,100000,200000,300000,500000,1000000],LN_WKS=[4,8,12];
+  let lnIn=[],lnOut=[],lnInOk=false,lnOutOk=false;const pushing={};
+  const lnPer=(a,w)=>Math.ceil(a/w/100)*100;
+  function cleanL(d){const x=d.data();if(!x||typeof x.from!=='string'||typeof x.to!=='string')return null;const amt=LN_AMTS.includes(+x.amt)?+x.amt:0;if(!amt)return null;const wks=LN_WKS.includes(+x.wks)?+x.wks:8;
+    return{id:d.id,from:x.from,to:x.to,fh:str(x.fh||x.from,16),th:str(x.th||x.to,16),amt,wks,per:lnPer(amt,wks),st:['ask','lent','no','done','free'].includes(x.st)?x.st:'ask',t:num(x.t,0,9e15,0),paid:Math.round(num(x.paid,0,amt,0)),msg:str(x.msg,60),bank:Math.round(num(x.bank,0,1e8,0))}}
+  const allL=()=>{const m=new Map();[...lnIn,...lnOut].forEach(x=>m.set(x.id,x));return[...m.values()].sort((a,b)=>b.t-a.t)};
+  const loanWith=k=>allL().some(x=>(x.from===k||x.to===k)&&(x.st==='ask'||x.st==='lent'));
+  const fb=()=>S.fb||(S.fb={}),fl=()=>S.fl||(S.fl={});
+  const canNet=()=>ready&&!ro&&!!S.hkey&&!S.hpend&&!SANDBOX;
+  const canLn=k=>canNet()&&k!==S.hkey&&live(players[k])&&!loanWith(k);
+  function onLoans(){let cash=false;
+    allL().forEach(x=>{const id=x.id;
+      if(x.from===S.hkey){const b=fb()[id];
+        if(x.st==='lent'&&!b&&!seen()['lr'+id]){markSeen('lr'+id);S.money+=x.amt;fb()[id]={k:x.to,h:x.th,amt:x.amt,left:x.amt-x.paid,per:x.per,paid:x.paid};cash=true;
+          addLog(`@${x.th} lent you ${yen(x.amt)}. You pay it back ${yen(x.per)} a week when you close each week, no interest.`);notices.push({k:'lent',x});save()}
+        else if(x.st==='no'&&!seen()['ld'+id]){markSeen('ld'+id);save();toast(`@${x.th} can't lend you money right now`);addLog(`@${x.th} turned down your loan request.`);if(db)db.doc('loans/'+id).delete().catch(()=>{})}
+        else if(x.st==='free'&&b){delete fb()[id];addLog(`@${x.th} let the rest of the loan go. You owed ${yen(b.left)}, now nothing.`);notices.push({k:'free',x,left:b.left});save();cash=true;if(db)db.doc('loans/'+id).delete().catch(()=>{})}
+        else if(b&&x.st==='lent'&&x.paid<b.paid)push(id);
+        else if(b&&x.st==='done'){delete fb()[id];save()}}
+      if(x.to===S.hkey){
+        if(x.st==='ask'&&!seen()['ln'+id]&&now()-x.t<14*DAY){markSeen('ln'+id);save();notices.push({k:'loan',x})}
+        const g=fl()[id];
+        if(g!=null&&x.paid>g){const d=x.paid-g;fl()[id]=x.paid;S.money+=d;cash=true;addLog(`@${x.fh} paid back ${yen(d)}.${x.paid>=x.amt?' The loan is fully repaid.':` ${yen(x.amt-x.paid)} still to come.`}`);toast(`@${x.fh} paid you back ${yen(d)}`);save()}
+        if(g!=null&&(x.st==='done'||x.st==='free')&&fl()[id]>=x.paid){delete fl()[id];save();if(x.st==='done'&&db)db.doc('loans/'+id).delete().catch(()=>{})}}
+    });
+    if(lnOutOk)Object.keys(fb()).forEach(id=>{if(!lnOut.some(x=>x.id===id)){const b=fb()[id];delete fb()[id];if(b.left>0)addLog(`The loan from @${b.h} has been closed.`);save()}});
+    if(lnInOk)Object.keys(fl()).forEach(id=>{if(!lnIn.some(x=>x.id===id)){delete fl()[id];save()}});
+    if(cash)renderAll();else render();
+  }
+  async function push(id){const b=fb()[id];if(!b||!db||pushing[id])return;pushing[id]=1;try{await db.doc('loans/'+id).update({paid:b.paid,st:b.left<=0?'done':'lent',tPay:now()});if(b.left<=0){delete fb()[id];save()}}catch(e){}pushing[id]=0}
+  /* called when the week closes, after the bank has had its instalment */
+  function payWeek(){const out=[];if(!S.fb||S.fbWeek===S.week)return out;S.fbWeek=S.week;
+    Object.keys(fb()).forEach(id=>{const b=fb()[id];if(b.left<=0){push(id);return}const due=Math.min(b.per,b.left),pay=Math.min(due,Math.max(0,S.money));S.money-=pay;b.left-=pay;b.paid+=pay;
+      out.push({h:b.h,pay,short:due-pay,left:b.left});addLog(b.left<=0?`Paid ${yen(pay)} back to @${b.h}. That loan is cleared.`:`Paid ${yen(pay)} back to @${b.h}${due>pay?`, ${yen(due-pay)} short`:''}. ${yen(b.left)} left.`);if(pay)push(id)});
+    save();return out}
+  function owedHtml(){return Object.values(S.fb||{}).filter(b=>b.left>0).map(b=>`<p class="note">Owed to <b>@${esc(b.h)}</b>: ${yen(b.left)}, ${yen(Math.min(b.per,b.left))} paid back each time you close a week.</p>`).join('')}
+  function friendsHtml(){if(!canNet())return'';const fs=friends().filter(canLn).map(k=>players[k]);
+    return`<h3>Or ask a friend</h3>${fs.length?`<p class="note">No interest between friends. They decide whether to lend, and you pay it back a little each week.</p><div class="row">${fs.slice(0,8).map(p=>`<button class="btn sm" data-act="netLn" data-k="${esc(p.key)}">@${esc(p.h)}</button>`).join('')}</div>`:`<p class="note">${friends().length?'None of your friends can be asked right now.':'Add friends in the Battle tab, then you can ask them for a loan.'}</p>`}`}
+  function lnForm(k){if(!S.hkey||S.hpend){ask();return}if(SANDBOX){toast('Play As is read-only.');return}const p=players[k];if(!p)return;if(!canLn(k)){toast(loanWith(k)?`You already have a loan open with @${p.h}.`:`You can't ask @${p.h} for a loan right now.`);return}
+    modal(`<div class="eyebrow">Ask a friend · 借金</div><h2>Borrow from @${esc(p.h)}</h2><p>No interest. If @${esc(p.h)} says yes, the money lands in your till straight away and you pay it back in equal amounts each time you close a week. If the till is short, the rest waits until the next week.</p>
+    <div class="chf"><label class="fld" for="lnA">Amount</label><select id="lnA" data-chg="lnPv">${LN_AMTS.map(a=>`<option value="${a}" ${a===200000?'selected':''}>${yen(a)}</option>`).join('')}</select>
+    <label class="fld" for="lnW">Pay back over</label><select id="lnW" data-chg="lnPv">${LN_WKS.map(w=>`<option value="${w}" ${w===8?'selected':''}>${w} weeks</option>`).join('')}</select></div>
+    <p class="note" id="lnPv"></p><input id="lnT" class="tin" maxlength="60" placeholder="A note for @${esc(p.h)} (optional)" style="width:100%" aria-label="Note">
+    <p class="note" id="lnMsg" role="status"></p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnSend" data-k="${esc(k)}">Send request</button></div>`);lnPv()}
+  function lnPv(){const a=+($('#lnA')||{}).value||0,w=+($('#lnW')||{}).value||8,e=$('#lnPv');if(e)e.textContent=`${yen(lnPer(a,w))} a week for ${w} weeks.`}
+  async function lnSend(k){const p=players[k],b=document.querySelector('[data-act=netLnSend]'),m=$('#lnMsg');if(!p||!b||!canLn(k))return;
+    const amt=+$('#lnA').value,wks=+$('#lnW').value;if(!LN_AMTS.includes(amt)||!LN_WKS.includes(wks))return;
+    b.disabled=true;b.textContent='Sending…';const id=(S.hkey+'_'+k+'_L'+now().toString(36)).replace(/[^A-Za-z0-9_.-]/g,'');
+    try{await db.doc('loans/'+id).set({from:S.hkey,to:k,fh:S.handle,th:p.h,amt,wks,st:'ask',paid:0,t:now(),bank:S.loan?S.loan.left:0,msg:str(($('#lnT')||{}).value,60).trim()});
+      closeModal();addLog(`Asked @${p.h} to lend you ${yen(amt)}.`);save();toast(`Loan request sent to @${p.h}`);render()}
+    catch(e){if(m){m.textContent=wErr(e);m.style.color='var(--brake)'}b.disabled=false;b.textContent='Send request'}}
+  function lnAns(id,fresh){const x=allL().find(v=>v.id===id);if(!x||x.st!=='ask'||x.to!==S.hkey)return;const ok=S.money>=x.amt;if(fresh)AUDIO.stinger&&AUDIO.stinger(true);
+    modal(`<div class="eyebrow">A friend needs a hand</div><h2>@${esc(x.fh)} asks to borrow ${yen(x.amt)}</h2>${x.msg?`<p class="taunt">“${esc(x.msg)}”</p>`:''}<p>No interest. They pay you back ${yen(x.per)} a week for ${x.wks} weeks, taken from their till each time they close a week. If they have a bad week, the payment slips to the next one.</p>
+    <div class="tot"><div><span>Your till</span><b>${yen(S.money)}</b></div><div><span>After lending</span><b class="${ok?'':'neg'}">${yen(S.money-x.amt)}</b></div>${x.bank?`<div><span>They owe the bank</span><b>${yen(x.bank)}</b></div>`:''}</div>
+    ${ok?'':`<p class="note" style="color:var(--brake)">You don't have ${yen(x.amt)} in the till right now.</p>`}<p class="note" id="lnMsg" role="status"></p>
+    <div class="mact"><button class="btn" data-act="netLnDec" data-id="${esc(id)}">Decline</button><button class="btn" data-act="close">Later</button><button class="btn primary" data-act="netLnLend" data-id="${esc(id)}" ${ok?'':'disabled'}>Lend ${yen(x.amt)}</button></div>`)}
+  async function lnLend(id){const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey||SANDBOX)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
+    if(b){b.disabled=true;b.textContent='Lending…'}
+    try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(!cur||cur.st!=='ask'){closeModal();toast(`@${x.fh} withdrew the request.`);return}
+      await db.doc('loans/'+id).update({st:'lent',tAcc:now(),paid:0});S.money-=x.amt;fl()[id]=0;AUDIO.cash&&AUDIO.cash();addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save();closeModal();toast(`${yen(x.amt)} lent to @${x.fh}`);renderAll()}
+    catch(e){if(m){m.textContent=wErr(e);m.style.color='var(--brake)'}if(b){b.disabled=false;b.textContent='Lend '+yen(x.amt)}}}
+  async function lnDec(id){const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
+  async function lnCancel(id){const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask'||SANDBOX)return;
+    try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(cur&&cur.st!=='ask'){toast('They already answered.');return}await db.doc('loans/'+id).delete();lnOut=lnOut.filter(v=>v.id!==id);toast('Loan request withdrawn');render()}catch(e){toast(wErr(e))}}
+  function lnRepay(id){const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
+    S.money-=b.left;b.paid+=b.left;const was=b.left;b.left=0;addLog(`Paid back the last ${yen(was)} to @${b.h}. That loan is cleared.`);AUDIO.cash&&AUDIO.cash();toast(`Loan from @${b.h} paid off`);save();push(id);renderAll()}
+  function lnFreeAsk(id){const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey||x.st!=='lent')return;
+    modal(`<div class="eyebrow">Loan to @${esc(x.fh)}</div><h2>Call it a gift?</h2><p>@${esc(x.fh)} still owes you ${yen(x.amt-x.paid)}. If you let it go, they stop paying and you won't get the rest back.</p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnFreeGo" data-id="${esc(id)}">Let it go</button></div>`)}
+  async function lnFree(id){const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
+  function lnRow(x){const inc=x.to===S.hkey,o=inc?x.fh:x.th,k=inc?x.from:x.to;let s,t,btn='';
+    if(x.st==='ask'){if(inc){t=`${hl(k,o)} asks to borrow ${yen(x.amt)}`;s=`Paid back over ${x.wks} weeks, ${yen(x.per)} a week`;btn=`<button class="btn sm primary" data-act="netLnAns" data-id="${esc(x.id)}">Answer</button>`}
+      else{t=`You asked ${hl(k,o)} for ${yen(x.amt)}`;s='Waiting for their answer';btn=`<button class="btn sm" data-act="netLnCancel" data-id="${esc(x.id)}">Withdraw</button>`}}
+    else{if(inc){t=`${hl(k,o)} owes you ${yen(x.amt-x.paid)}`;s=`Lent ${yen(x.amt)} · ${yen(x.paid)} paid back so far`;btn=`<button class="btn sm" data-act="netLnFree" data-id="${esc(x.id)}">Call it a gift</button>`}
+      else{const b=fb()[x.id],left=b?b.left:x.amt-x.paid;t=`You owe ${hl(k,o)} ${yen(left)}`;s=`${yen(Math.min(x.per,left))} paid back each time you close a week`;if(left>0&&S.money>=left)btn=`<button class="btn sm" data-act="netLnRepay" data-id="${esc(x.id)}">Pay it all back</button>`}}
+    return`<div class="chrow"><div><b>${t}</b><div class="meta">${s}</div></div>${btn}</div>`}
+
   /* ---- incoming: results, challenges, ghost runs ---- */
   function onCh(){
     allCh().forEach(x=>{
@@ -3432,6 +3525,9 @@ const NET=(()=>{
   }
   function watchDone(){closeModal();watching=null;WX_OVR=null;RACE_M=null;MAP.loadWorld('usuzumi');MAP.setDarkNow(S.phase==='post'?.12:1);lastView='';renderAll()}
   function showNotice(){const n=notices.shift();if(!n)return;const x=n.x;
+    if(n.k==='loan'){lnAns(x.id,true);return}
+    if(n.k==='lent'){AUDIO.cash&&AUDIO.cash();modal(`<div class="eyebrow">Touge Net · a friend came through</div><h2>@${esc(x.th)} lent you ${yen(x.amt)}</h2><p>It's in the till now. You pay it back ${yen(x.per)} a week for ${x.wks} weeks, taken when you close each week. No interest.</p><div class="mact"><button class="btn primary" data-act="close">Thanks</button></div>`);return}
+    if(n.k==='free'){modal(`<div class="eyebrow">Touge Net · a friend indeed</div><h2>@${esc(x.th)} called it a gift</h2><p>You don't have to pay back the last ${yen(n.left)}.</p><div class="mact"><button class="btn primary" data-act="close">Thanks</button></div>`);return}
     if(n.k==='new'){AUDIO.stinger&&AUDIO.stinger(true);modal(`<div class="eyebrow">A challenge out of nowhere</div><h2>@${esc(x.fh)} wants a race</h2>${x.msg?`<p class="taunt">“${esc(x.msg)}”</p>`:''}<p>${esc(critLine(x.crit))}.</p><div class="mact"><button class="btn" data-act="close">Later</button><button class="btn race" data-act="netAcc" data-id="${esc(x.id)}">See the challenge</button></div>`)}
     else{if(seen()['r'+x.id])return;AUDIO.stinger&&AUDIO.stinger(true);modal(`<div class="eyebrow">Challenge result is in</div><h2>@${esc(otherH(x))} took your challenge</h2><p>${esc(critLine(x.crit))}. They picked their car and tyres and raced it straight away.</p><div class="mact"><button class="btn" data-act="netWatch" data-id="${esc(x.id)}" data-skip="1">Skip to the result</button><button class="btn race" data-act="netWatch" data-id="${esc(x.id)}">Watch the race</button></div>`)}}
   function tick(){if(S){backfill();if(ready&&S.hkey&&!S.hpend&&verified!==S.hkey+'|'+S.dev)verifyOwn()}if(!S||busy||!$('#modal').hidden||S.phase==='race')return;const tutDone=!S.tut||S.tut.s===-1;if(!tutDone)return;
@@ -3451,7 +3547,7 @@ const NET=(()=>{
     <div class="kv"><span>Crew OVR <b>${p.ovr}</b></span><span>Rank <b>${rk>=0?'#'+(rk+1)+' of '+plList.length:'–'}</b></span><span>Battles <b>${p.w}W ${p.l}L</b></span><span>All races <b>${p.rw}W ${p.rl}L</b></span>${p.me?'':`<span>Last seen <b>${p.t?ago(p.t):'–'}</b></span>`}</div>
     <h3>Drivers</h3><div class="card pdrv">${drv}${p.old?`<div class="meta">Showing @${esc(p.h)}'s two race drivers. The full crew shows up the next time they play.</div>`:''}</div>
     <h3>Previous races</h3><div class="card phist">${hs}</div>
-    <div class="mact">${!p.me&&S.hkey&&!S.hpend?`<button class="btn ${f?'on':''}" data-act="netFriend" data-k="${esc(p.key)}" data-re="1">${f?'Friend ✓':'+ Friend'}</button>`:''}${canCh?`<button class="btn race" data-act="netCh" data-k="${esc(p.key)}">Challenge</button>`:''}<button class="btn primary" data-act="close">Close</button></div>`,true);
+    <div class="mact">${!p.me&&S.hkey&&!S.hpend?`<button class="btn ${f?'on':''}" data-act="netFriend" data-k="${esc(p.key)}" data-re="1">${f?'Friend ✓':'+ Friend'}</button>`:''}${!p.me&&canLn(p.key)?`<button class="btn" data-act="netLn" data-k="${esc(p.key)}">Ask for a loan</button>`:''}${canCh?`<button class="btn race" data-act="netCh" data-k="${esc(p.key)}">Challenge</button>`:''}<button class="btn primary" data-act="close">Close</button></div>`,true);
   }
   function ago(t){const d=(now()-t)/DAY;return d<1/24?'just now':d<1?Math.round(d*24)+'h ago':Math.round(d)+'d ago'}
   const hl=(k,h)=>`<button class="hlink" data-act="netProf" data-k="${esc(k)}">@${esc(h)}</button>`;
@@ -3478,6 +3574,8 @@ const NET=(()=>{
     if(ready&&!loaded)h+=`<div class="card hint">${slow?'Touge Net is taking a while to answer. It may be out of reach right now.':'Loading Touge Net…'}</div>`;
     const cs=allCh().filter(x=>x.st!=='declined').slice(0,8);
     if(cs.length)h+=`<h3>Challenges</h3><div class="card">${cs.map(chRow).join('')}</div>`;
+    const ls=allL().filter(x=>x.st==='ask'||x.st==='lent');
+    if(ls.length)h+=`<h3 id="tnLoans">Loans</h3><div class="card">${ls.map(lnRow).join('')}</div>`;
     if(ready&&loaded&&S.hkey&&!S.hpend){const r=rival(),me=myPair(),ms=matches(6).filter(m=>!r||m.p.key!==r.key).slice(0,5);
       h+=`<h3 id="tnRival">Rival of the week</h3>${r?`<div class="card">${prow(r)}${(m=>m?mtags(m):'')(matchOf(r,me))}<div class="meta">Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
       h+=`<h3 id="tnMatch">Good matches</h3><div class="card">${me?`<div class="meta">Your race pair: drivers ${me.d} OVR, cars PI ${me.c}. Matched on both, so a great driver in a slow car meets someone similar.</div>`:''}${ms.length?ms.map(m=>`<div class="mrow">${prow(m.p)}${mtags(m)}</div>`).join(''):`<div class="meta">${me?'Nobody else is racing on Touge Net yet. Matches show up here as players join.':'Put a driver in a roadworthy car to get matched.'}</div>`}</div>`;
@@ -3486,13 +3584,14 @@ const NET=(()=>{
     if(ready&&loaded){const top=plList.slice(0,10);h+=`<h3>Top 10</h3><div class="card">${top.length?top.map((p,i)=>prow(p,i)).join(''):'<div class="meta">Nobody on the board yet. Claim a handle and be the first.</div>'}${rk>=10?`<div class="meta">…</div>${prow(plList[rk],rk)}`:''}</div>`}
     return h;
   }
-  function render(){if(!S)return;const t=document.querySelector('.tab[data-t="rivals"]');if(t){const n=allCh().filter(x=>(x.st==='pending'&&x.to===S.hkey)||(x.st==='done'&&x.res&&x.res.by!==S.hkey&&!seen()['r'+x.id])).length;t.dataset.n=n||'';const jp=t.querySelector('.jp');if(jp)jp.dataset.n=n||'';t.classList.toggle('badge',!!n)}if(TAB==='rivals'){const a=document.activeElement,fi=a&&a.id==='fIn'?{v:a.value,s:a.selectionStart}:null;renderPanel();if(fi){const n=$('#fIn');if(n){n.value=fi.v;n.focus();try{n.setSelectionRange(fi.s,fi.s)}catch(e){}}}}}
+  function render(){if(!S)return;const t=document.querySelector('.tab[data-t="rivals"]');if(t){const n=allCh().filter(x=>(x.st==='pending'&&x.to===S.hkey)||(x.st==='done'&&x.res&&x.res.by!==S.hkey&&!seen()['r'+x.id])).length+allL().filter(x=>x.st==='ask'&&x.to===S.hkey).length;t.dataset.n=n||'';const jp=t.querySelector('.jp');if(jp)jp.dataset.n=n||'';t.classList.toggle('badge',!!n)}if(TAB==='rivals'){const a=document.activeElement,fi=a&&a.id==='fIn'?{v:a.value,s:a.selectionStart}:null;renderPanel();if(fi){const n=$('#fIn');if(n){n.value=fi.v;n.focus();try{n.setSelectionRange(fi.s,fi.s)}catch(e){}}}}}
   setInterval(()=>{try{tick()}catch(e){}},1500);
   document.addEventListener('input',e=>{if(e.target&&e.target.id==='hIn')liveCheck()});
   document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target;if(t&&t.id==='hIn'){e.preventDefault();doClaim()}else if(t&&t.id==='fIn'){e.preventDefault();addFriend()}});
   return{init,touch,html,render,ask,hist,prof,doClaim,later:()=>{asked=true;closeModal();toast('You can pick a handle any time in the Battle tab')},toggleFriend,addFriend,watch,watchDone,chForm,chPi,send,accForm,accept,decline,cancel,
+    lnForm,lnPv,lnSend,lnAns,lnLend,lnDec,lnCancel,lnRepay,lnFreeAsk,lnFree,payWeek,owedHtml,friendsHtml,
     afSet,after,vsOptions,defaultVs,oppVs,critLine,otherH,teamOVR,isOn:()=>ready&&!ro&&!!S.hkey&&!S.hpend,mtn,
-    _dbg:()=>({ready,ro,loaded,players:plList.length,chIn:chIn.length,chOut:chOut.length,notices:notices.length})};
+    _dbg:()=>({loans:allL().length,ready,ro,loaded,players:plList.length,chIn:chIn.length,chOut:chOut.length,notices:notices.length})};
 })();
 window.NETR=NET;
 
@@ -3518,13 +3617,14 @@ const ACT={
   swapTyre:d=>{const c=carById(+d.id),t=TYRES[+d.g];if(!fitSpare(c,+d.g))return;toast(`Swapped to the spare ${t.name.toLowerCase()} set`);save();renderAll()},
   repair:d=>{const c=carById(+d.id),k=repairCost(c);if(S.money<k)return;AUDIO.coin();S.money-=k;c.cond=100;toast('Panels straightened');save();renderAll()},
   patch:d=>{const c=carById(+d.id),to=patchTo(c),k=repairTo(c,to);if(to<=c.cond||S.money<k)return;AUDIO.coin();S.money-=k;c.cond=to;toast(`Patched up to ${to}%`);addLog(`${CARS[c.model].code} patched up to ${to}% for ${yen(k)}.`);save();renderAll()},
-  /* the mechanic's tab: when nothing can run and the till is empty, he patches one car now and gets paid from later deliveries */
-  mechTab:()=>{if(!stuck())return;const c=S.cars.slice().sort((a,b)=>repairTo(a,TAB_COND)-repairTo(b,TAB_COND))[0],k=repairTo(c,TAB_COND);c.cond=TAB_COND;S.debt=(S.debt||0)+k;
-    addLog(`The mechanic patched the ${CARS[c.model].code} up to ${TAB_COND}% on the tab: ${yen(k)}. Half of each day's profit pays it back.`);
-    if(!S.drivers.some(d=>d.carId===c.id)){const d=S.drivers.find(x=>!carOK(carById(x.carId)))||S.drivers[0];if(d)d.carId=c.id}
-    closeModal();toast(`${CARS[c.model].code} back on the road`);save();renderAll()},
-  mechOffer:()=>{if(!stuck())return;const c=S.cars.slice().sort((a,b)=>repairTo(a,TAB_COND)-repairTo(b,TAB_COND))[0],k=repairTo(c,TAB_COND);
-    modal(`<div class="eyebrow">Garage · 車庫</div><h2>Put it on the tab?</h2><p>Every car is too damaged to drive, and there's ${S.money<0?'a debt of '+yen(-S.money):'only '+yen(S.money)} in the till. The mechanic down the road will patch the <b>${esc(CARS[c.model].maker)} ${esc(CARS[c.model].code)}</b> up to ${TAB_COND}% now for <b>${yen(k)}</b>, and take half of each day's delivery profit until it's paid off.</p><div class="mact"><button class="btn" data-act="close">Not now</button><button class="btn primary" data-act="mechTab">Put it on the tab</button></div>`)},
+  /* the shinkin bank: one loan account, paid back in fixed instalments at the end of each week */
+  loanOffer:()=>{const av=loanRoom(),need=stuck()?Math.min(...S.cars.map(c=>repairCost(c)))-Math.max(0,S.money):0,opts=loanOpts();
+    if(!opts.length){modal(`<div class="eyebrow">Kasumi Shinkin Bank</div><h2>No more credit for now</h2><p>You already owe ${yen(S.loan.left)}. Pay some of it back and the bank will lend again.</p>${NET.friendsHtml()}<div class="mact"><button class="btn primary" data-act="close">OK</button></div>`);return}
+    modal(`<div class="eyebrow">Kasumi Shinkin Bank · 霞信用金庫</div><h2>Borrow to keep the shop running</h2><p>${stuck()?`Every car is too damaged to drive. A full repair on the cheapest one is ${yen(need+Math.max(0,S.money))}. `:''}The bank adds ${Math.round(LOAN_RATE*100)}% and takes the rest back in ${LOAN_WEEKS} weekly instalments when you close each week. If the till is short one week, what's left over moves to the next.${S.loan?` You owe ${yen(S.loan.left)} already, so this adds to it.`:''}</p>
+      <div class="loanopts">${opts.map(a=>`<button class="btn ${a>=need&&need>0&&a===opts.find(x=>x>=need)?'primary':''}" data-act="takeLoan" data-amt="${a}">${yen(a)}<small>${yen(loanPer(a))} a week</small></button>`).join('')}</div>
+      ${NET.friendsHtml()}<div class="mact"><button class="btn" data-act="close">Not now</button></div>`)},
+  takeLoan:d=>{const a=+d.amt;if(!(a>0)||a>loanRoom())return;const owe=Math.round(a*(1+LOAN_RATE)/100)*100;S.money+=a;S.loan=S.loan?{left:S.loan.left+owe,per:S.loan.per+loanPer(a)}:{left:owe,per:loanPer(a)};
+    AUDIO.cash&&AUDIO.cash();addLog(`Borrowed ${yen(a)} from the shinkin bank. ${yen(S.loan.per)} a week until ${yen(S.loan.left)} is paid back.`);closeModal();toast(`${yen(a)} borrowed`);save();renderAll()},
   sell:d=>{const c=carById(+d.id);if(!c||S.cars.length<2||carOwner(c))return;const v=carValue(c),fam=c.model==='ae86'&&c.paint==='High Tech Two-Tone';modal(`<h2>Sell the ${CARS[c.model].code}?</h2><p>${fam?'This is the family hachi-roku, the car that started the shop. ':''}${esc(CARS[c.model].maker)} ${esc(CARS[c.model].name)} goes to the lot for ${yen(v)}.${driverOfCar(c.id)?(()=>{const sp=S.cars.find(k=>k!==c&&!driverOfCar(k.id));return sp?` ${esc(driverOfCar(c.id).first)} will move into the ${CARS[sp.model].code}.`:' Its driver will be left without a car.'})():''}</p><div class="mact"><button class="btn" data-act="close">Keep it</button><button class="btn primary" data-act="sellYes" data-id="${c.id}">Sell for ${yen(v)}</button></div>`)},
   sellYes:d=>{const c=carById(+d.id);if(!c||S.cars.length<2||carOwner(c))return;const v=carValue(c);S.money+=v;S.cars=S.cars.filter(x=>x!==c);S.drivers.forEach(x=>{if(x.carId===c.id){x.carId=0;const spare=S.cars.find(k=>!driverOfCar(k.id));if(spare){x.carId=spare.id;toast(`${x.first} moves into the ${CARS[spare.model].code}`)}}});addLog(`Sold the ${CARS[c.model].code} for ${yen(v)}.`);closeModal();save();renderAll()},
   buy:d=>{const m=CARS[d.k];if(S.money<m.price||S.cars.length>=GARAGE_MAX)return;if(m.legend&&(S.cred<m.legend||S.cars.some(c=>c.model===d.k)))return;const p=m.paint||PAINTS[Math.floor(R()*PAINTS.length)];AUDIO.coin();S.money-=m.price;const car={id:S.nid++,model:d.k,c1:p[1],c2:shade(p[1],-.4),paint:p[0],engine:0,susp:0,brakes:0,lsd:0,weight:0,cradle:0,tyre:{grade:1,wear:10},cond:96,km:Math.round(40000+R()*90000)};S.cars.push(car);
@@ -3536,6 +3636,7 @@ const ACT={
   fireYes:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||x.son)return;S.drivers=S.drivers.filter(v=>v!==x);const gone=S.cars.filter(k=>k.owner===x.id);if(gone.length){S.cars=S.cars.filter(k=>k.owner!==x.id);S.drivers.forEach(v=>{if(gone.some(k=>k.id===v.carId)){v.carId=0;const sp=S.cars.find(k=>!driverOfCar(k.id));if(sp)v.carId=sp.id}})}addLog(`${x.first} ${x.family} left the crew${gone.length?` and took the ${gone.map(k=>CARS[k.model].code).join(', ')} with them`:''}.`);closeModal();toast(`${x.first} has left the crew`);save();renderAll()},
   raceNight:()=>openRacePlanner(),
   netAsk:()=>NET.ask(),netLater:()=>NET.later(),netClaim:()=>NET.doClaim(),netFriend:d=>{NET.toggleFriend(d.k);if(d.re)NET.prof(d.k)},netProf:d=>NET.prof(d.k),netAddF:()=>NET.addFriend(),
+  netLn:d=>NET.lnForm(d.k),netLnSend:d=>NET.lnSend(d.k),netLnAns:d=>NET.lnAns(d.id),netLnLend:d=>NET.lnLend(d.id),netLnDec:d=>NET.lnDec(d.id),netLnCancel:d=>NET.lnCancel(d.id),netLnRepay:d=>NET.lnRepay(d.id),netLnFree:d=>NET.lnFreeAsk(d.id),netLnFreeGo:d=>NET.lnFree(d.id),
   netCh:d=>NET.chForm(d.k),netSend:d=>NET.send(d.k),netAcc:d=>NET.accForm(d.id),netAccGo:d=>NET.accept(d.id),netDec:d=>NET.decline(d.id),netCancel:d=>NET.cancel(d.id),netWatch:d=>NET.watch(d.id,!!d.skip),netWatchDone:()=>NET.watchDone(),
   startRaces:()=>startRaces(),
   skipRaces:()=>{closeModal();S.phase='raced';addLog('Sat out race night.');save();renderAll()},
@@ -3590,7 +3691,7 @@ const CHG={
   rpS:el=>{RP[el.dataset.dir].start=el.value;renderPlanner()},
   rpV:el=>{RP[el.dataset.dir].vs=el.value;renderPlanner()},
   afD:el=>NET.afSet('d',el.value),afC:el=>NET.afSet('c',el.value),afT:el=>NET.afSet('g',el.value),
-  chPi:()=>NET.chPi(),
+  chPi:()=>NET.chPi(),lnPv:()=>NET.lnPv(),
   bsCustom:el=>{if(!BS)return;BS.c1=el.value;BS.paint='Custom';renderBodyShop()},
   bsTwo:el=>{if(!BS)return;BS.look.two=el.checked?(BS.look.two||'#17181c'):'';renderBodyShop()},
   bsTwoCol:el=>{if(!BS)return;BS.look.two=el.value;renderBodyShop()},
