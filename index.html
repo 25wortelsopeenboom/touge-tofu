@@ -560,7 +560,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v134</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v136</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -2663,8 +2663,8 @@ function meter(label,val,col,txt){return`<div class="meter"><span>${label}</span
 function garageHTML(){
   let h=`<div><h2>Garage<span class="jp">車庫</span></h2><p class="sub">${S.cars.length} car${S.cars.length>1?'s':''}. Fresh tyres and a stiff chassis keep the tofu in one piece.</p></div>`;
   if(stuck())h+=`<div class="note" style="border:1px solid var(--brake);border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">Every car is too damaged to drive and there isn't enough money to fix one.<button class="btn sm primary" data-act="loanOffer">Take a loan</button></div>`;
-  if(S.loan)h+=`<p class="note">Shinkin bank loan: <b>${yen(S.loan.left)}</b> left, ${yen(Math.min(S.loan.per,S.loan.left))} taken each time you close a week.${loanOpts().length?' <button class="btn sm" data-act="loanOffer">Borrow more</button>':''}</p>`;
-  else if(!stuck())h+=`<p class="note">Short on money? <button class="btn sm" data-act="loanOffer">Borrow from the bank</button>${NET.isOn()?' or a friend':''}</p>`;
+  if(S.loan)h+=`<p class="note">Shinkin bank loan: <b>${yen(S.loan.left)}</b> left, ${yen(Math.min(S.loan.per,S.loan.left))} taken each time you close a week.</p>`;
+  if(!stuck()||NET.isOn())h+=`<p class="note">Need money? <button class="btn sm" data-act="loanOffer">Borrow from the bank</button>${NET.isOn()?' <button class="btn sm" data-act="netLnPick">Ask a friend</button>':''}</p>`;
   h+=NET.owedHtml();
   if(S.cars.length>1)h+=sortBar('sortC',S.sortC||'join',[['join','Order bought'],['pi','PI'],['name','Name'],['cond','Needs work'],['tyre','Tyres worn']]);
   sortedCars().forEach(c=>{
@@ -3398,44 +3398,46 @@ const NET=(()=>{
   const allL=()=>{const m=new Map();[...lnIn,...lnOut].forEach(x=>m.set(x.id,x));return[...m.values()].sort((a,b)=>b.t-a.t)};
   const loanWith=k=>allL().some(x=>(x.from===k||x.to===k)&&(x.st==='ask'||x.st==='lent'));
   const fb=()=>S.fb||(S.fb={}),fl=()=>S.fl||(S.fl={});
-  const canNet=()=>ready&&!ro&&!!S.hkey&&!S.hpend&&!SANDBOX;
+  const canNet=()=>ready&&!ro&&!!S.hkey&&!S.hpend;
+  const sbxNo=()=>{if(!SANDBOX)return false;toast('Loans move real money, so they are off in Play As. Ask from the player\'s own game.');return true};
   const canLn=k=>canNet()&&k!==S.hkey&&live(players[k])&&!loanWith(k);
   function onLoans(){let cash=false;
     allL().forEach(x=>{const id=x.id;
       if(x.from===S.hkey){const b=fb()[id];
         if(x.st==='lent'&&!b&&!seen()['lr'+id]){markSeen('lr'+id);S.money+=x.amt;fb()[id]={k:x.to,h:x.th,amt:x.amt,left:x.amt-x.paid,per:x.per,paid:x.paid};cash=true;
           addLog(`@${x.th} lent you ${yen(x.amt)}. You pay it back ${yen(x.per)} a week when you close each week, no interest.`);notices.push({k:'lent',x});save()}
-        else if(x.st==='no'&&!seen()['ld'+id]){markSeen('ld'+id);save();toast(`@${x.th} can't lend you money right now`);addLog(`@${x.th} turned down your loan request.`);if(db)db.doc('loans/'+id).delete().catch(()=>{})}
-        else if(x.st==='free'&&b){delete fb()[id];addLog(`@${x.th} let the rest of the loan go. You owed ${yen(b.left)}, now nothing.`);notices.push({k:'free',x,left:b.left});save();cash=true;if(db)db.doc('loans/'+id).delete().catch(()=>{})}
+        else if(x.st==='no'&&!seen()['ld'+id]){markSeen('ld'+id);save();toast(`@${x.th} can't lend you money right now`);addLog(`@${x.th} turned down your loan request.`);if(db&&!SANDBOX)db.doc('loans/'+id).delete().catch(()=>{})}
+        else if(x.st==='free'&&b){delete fb()[id];addLog(`@${x.th} let the rest of the loan go. You owed ${yen(b.left)}, now nothing.`);notices.push({k:'free',x,left:b.left});save();cash=true;if(db&&!SANDBOX)db.doc('loans/'+id).delete().catch(()=>{})}
         else if(b&&x.st==='lent'&&x.paid<b.paid)push(id);
         else if(b&&x.st==='done'){delete fb()[id];save()}}
       if(x.to===S.hkey){
         if(x.st==='ask'&&!seen()['ln'+id]&&now()-x.t<14*DAY){markSeen('ln'+id);save();notices.push({k:'loan',x})}
         const g=fl()[id];
         if(g!=null&&x.paid>g){const d=x.paid-g;fl()[id]=x.paid;S.money+=d;cash=true;addLog(`@${x.fh} paid back ${yen(d)}.${x.paid>=x.amt?' The loan is fully repaid.':` ${yen(x.amt-x.paid)} still to come.`}`);toast(`@${x.fh} paid you back ${yen(d)}`);save()}
-        if(g!=null&&(x.st==='done'||x.st==='free')&&fl()[id]>=x.paid){delete fl()[id];save();if(x.st==='done'&&db)db.doc('loans/'+id).delete().catch(()=>{})}}
+        if(g!=null&&(x.st==='done'||x.st==='free')&&fl()[id]>=x.paid){delete fl()[id];save();if(x.st==='done'&&db&&!SANDBOX)db.doc('loans/'+id).delete().catch(()=>{})}}
     });
     if(lnOutOk)Object.keys(fb()).forEach(id=>{if(!lnOut.some(x=>x.id===id)){const b=fb()[id];delete fb()[id];if(b.left>0)addLog(`The loan from @${b.h} has been closed.`);save()}});
     if(lnInOk)Object.keys(fl()).forEach(id=>{if(!lnIn.some(x=>x.id===id)){delete fl()[id];save()}});
     if(cash)renderAll();else render();
   }
-  async function push(id){const b=fb()[id];if(!b||!db||pushing[id])return;pushing[id]=1;try{await db.doc('loans/'+id).update({paid:b.paid,st:b.left<=0?'done':'lent',tPay:now()});if(b.left<=0){delete fb()[id];save()}}catch(e){}pushing[id]=0}
+  async function push(id){const b=fb()[id];if(!b||!db||SANDBOX||pushing[id])return;pushing[id]=1;try{await db.doc('loans/'+id).update({paid:b.paid,st:b.left<=0?'done':'lent',tPay:now()});if(b.left<=0){delete fb()[id];save()}}catch(e){}pushing[id]=0}
   /* called when the week closes, after the bank has had its instalment */
   function payWeek(){const out=[];if(!S.fb||S.fbWeek===S.week)return out;S.fbWeek=S.week;
     Object.keys(fb()).forEach(id=>{const b=fb()[id];if(b.left<=0){push(id);return}const due=Math.min(b.per,b.left),pay=Math.min(due,Math.max(0,S.money));S.money-=pay;b.left-=pay;b.paid+=pay;
       out.push({h:b.h,pay,short:due-pay,left:b.left});addLog(b.left<=0?`Paid ${yen(pay)} back to @${b.h}. That loan is cleared.`:`Paid ${yen(pay)} back to @${b.h}${due>pay?`, ${yen(due-pay)} short`:''}. ${yen(b.left)} left.`);if(pay)push(id)});
     save();return out}
   function owedHtml(){return Object.values(S.fb||{}).filter(b=>b.left>0).map(b=>`<p class="note">Owed to <b>@${esc(b.h)}</b>: ${yen(b.left)}, ${yen(Math.min(b.per,b.left))} paid back each time you close a week.</p>`).join('')}
-  function friendsHtml(){if(!canNet())return'';const fs=friends().filter(canLn).map(k=>players[k]);
-    return`<h3>Or ask a friend</h3>${fs.length?`<p class="note">No interest between friends. They decide whether to lend, and you pay it back a little each week.</p><div class="row">${fs.slice(0,8).map(p=>`<button class="btn sm" data-act="netLn" data-k="${esc(p.key)}">@${esc(p.h)}</button>`).join('')}</div>`:`<p class="note">${friends().length?'None of your friends can be asked right now.':'Add friends in the Battle tab, then you can ask them for a loan.'}</p>`}`}
-  function lnForm(k){if(!S.hkey||S.hpend){ask();return}if(SANDBOX){toast('Play As is read-only.');return}const p=players[k];if(!p)return;if(!canLn(k)){toast(loanWith(k)?`You already have a loan open with @${p.h}.`:`You can't ask @${p.h} for a loan right now.`);return}
+  function friendsHtml(top){if(!canNet())return'';const fs=friends().filter(canLn).map(k=>players[k]);
+    return`${top?'':'<h3>Or ask a friend</h3>'}${fs.length?`<p class="note">No interest between friends. They decide whether to lend, and you pay it back a little each week.</p><div class="row">${fs.slice(0,8).map(p=>`<button class="btn sm" data-act="netLn" data-k="${esc(p.key)}">@${esc(p.h)}</button>`).join('')}</div>`:`<p class="note">${friends().length?'None of your friends can be asked right now.':'Add friends in the Battle tab, then you can ask them for a loan.'}</p>`}`}
+  function lnPick(){if(!S.hkey||S.hpend){ask();return}modal(`<div class="eyebrow">Touge Net · 借金</div><h2>Ask a friend for a loan</h2>${friendsHtml(1)||'<p class="note">Touge Net isn\'t reachable right now.</p>'}<p class="note">You can also ask any player from their profile.</p><div class="mact"><button class="btn" data-act="close">Cancel</button></div>`)}
+  function lnForm(k){if(!S.hkey||S.hpend){ask();return}if(sbxNo())return;const p=players[k];if(!p)return;if(!canLn(k)){toast(loanWith(k)?`You already have a loan open with @${p.h}.`:`You can't ask @${p.h} for a loan right now.`);return}
     modal(`<div class="eyebrow">Ask a friend · 借金</div><h2>Borrow from @${esc(p.h)}</h2><p>No interest. If @${esc(p.h)} says yes, the money lands in your till straight away and you pay it back in equal amounts each time you close a week. If the till is short, the rest waits until the next week.</p>
     <div class="chf"><label class="fld" for="lnA">Amount</label><select id="lnA" data-chg="lnPv">${LN_AMTS.map(a=>`<option value="${a}" ${a===200000?'selected':''}>${yen(a)}</option>`).join('')}</select>
     <label class="fld" for="lnW">Pay back over</label><select id="lnW" data-chg="lnPv">${LN_WKS.map(w=>`<option value="${w}" ${w===8?'selected':''}>${w} weeks</option>`).join('')}</select></div>
     <p class="note" id="lnPv"></p><input id="lnT" class="tin" maxlength="60" placeholder="A note for @${esc(p.h)} (optional)" style="width:100%" aria-label="Note">
     <p class="note" id="lnMsg" role="status"></p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnSend" data-k="${esc(k)}">Send request</button></div>`);lnPv()}
   function lnPv(){const a=+($('#lnA')||{}).value||0,w=+($('#lnW')||{}).value||8,e=$('#lnPv');if(e)e.textContent=`${yen(lnPer(a,w))} a week for ${w} weeks.`}
-  async function lnSend(k){const p=players[k],b=document.querySelector('[data-act=netLnSend]'),m=$('#lnMsg');if(!p||!b||!canLn(k))return;
+  async function lnSend(k){if(sbxNo())return;const p=players[k],b=document.querySelector('[data-act=netLnSend]'),m=$('#lnMsg');if(!p||!b||!canLn(k))return;
     const amt=+$('#lnA').value,wks=+$('#lnW').value;if(!LN_AMTS.includes(amt)||!LN_WKS.includes(wks))return;
     b.disabled=true;b.textContent='Sending…';const id=(S.hkey+'_'+k+'_L'+now().toString(36)).replace(/[^A-Za-z0-9_.-]/g,'');
     try{await db.doc('loans/'+id).set({from:S.hkey,to:k,fh:S.handle,th:p.h,amt,wks,st:'ask',paid:0,t:now(),bank:S.loan?S.loan.left:0,msg:str(($('#lnT')||{}).value,60).trim()});
@@ -3446,19 +3448,19 @@ const NET=(()=>{
     <div class="tot"><div><span>Your till</span><b>${yen(S.money)}</b></div><div><span>After lending</span><b class="${ok?'':'neg'}">${yen(S.money-x.amt)}</b></div>${x.bank?`<div><span>They owe the bank</span><b>${yen(x.bank)}</b></div>`:''}</div>
     ${ok?'':`<p class="note" style="color:var(--brake)">You don't have ${yen(x.amt)} in the till right now.</p>`}<p class="note" id="lnMsg" role="status"></p>
     <div class="mact"><button class="btn" data-act="netLnDec" data-id="${esc(id)}">Decline</button><button class="btn" data-act="close">Later</button><button class="btn primary" data-act="netLnLend" data-id="${esc(id)}" ${ok?'':'disabled'}>Lend ${yen(x.amt)}</button></div>`)}
-  async function lnLend(id){const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey||SANDBOX)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
+  async function lnLend(id){if(sbxNo())return;const x=allL().find(v=>v.id===id),b=document.querySelector('[data-act=netLnLend]'),m=$('#lnMsg');if(!x||x.to!==S.hkey||SANDBOX)return;if(S.money<x.amt){toast('Not enough money in the till.');return}
     if(b){b.disabled=true;b.textContent='Lending…'}
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(!cur||cur.st!=='ask'){closeModal();toast(`@${x.fh} withdrew the request.`);return}
       await db.doc('loans/'+id).update({st:'lent',tAcc:now(),paid:0});S.money-=x.amt;fl()[id]=0;AUDIO.cash&&AUDIO.cash();addLog(`Lent ${yen(x.amt)} to @${x.fh}. They pay it back ${yen(x.per)} a week.`);save();closeModal();toast(`${yen(x.amt)} lent to @${x.fh}`);renderAll()}
     catch(e){if(m){m.textContent=wErr(e);m.style.color='var(--brake)'}if(b){b.disabled=false;b.textContent='Lend '+yen(x.amt)}}}
-  async function lnDec(id){const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
-  async function lnCancel(id){const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask'||SANDBOX)return;
+  async function lnDec(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'no',tEnd:now()});closeModal();toast(`Declined @${x.fh}'s request`)}catch(e){toast(wErr(e))}}
+  async function lnCancel(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.from!==S.hkey||x.st!=='ask'||SANDBOX)return;
     try{const g=await db.doc('loans/'+id).get(),cur=g.exists?g.data():null;if(cur&&cur.st!=='ask'){toast('They already answered.');return}await db.doc('loans/'+id).delete();lnOut=lnOut.filter(v=>v.id!==id);toast('Loan request withdrawn');render()}catch(e){toast(wErr(e))}}
-  function lnRepay(id){const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
+  function lnRepay(id){if(sbxNo())return;const b=fb()[id];if(!b||b.left<=0)return;if(S.money<b.left){toast(`You need ${yen(b.left)} in the till.`);return}
     S.money-=b.left;b.paid+=b.left;const was=b.left;b.left=0;addLog(`Paid back the last ${yen(was)} to @${b.h}. That loan is cleared.`);AUDIO.cash&&AUDIO.cash();toast(`Loan from @${b.h} paid off`);save();push(id);renderAll()}
-  function lnFreeAsk(id){const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey||x.st!=='lent')return;
+  function lnFreeAsk(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||x.to!==S.hkey||x.st!=='lent')return;
     modal(`<div class="eyebrow">Loan to @${esc(x.fh)}</div><h2>Call it a gift?</h2><p>@${esc(x.fh)} still owes you ${yen(x.amt-x.paid)}. If you let it go, they stop paying and you won't get the rest back.</p><div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="netLnFreeGo" data-id="${esc(id)}">Let it go</button></div>`)}
-  async function lnFree(id){const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
+  async function lnFree(id){if(sbxNo())return;const x=allL().find(v=>v.id===id);if(!x||SANDBOX)return;try{await db.doc('loans/'+id).update({st:'free',tEnd:now()});delete fl()[id];addLog(`You let @${x.fh} off the last ${yen(x.amt-x.paid)} of the loan.`);save();closeModal();toast(`@${x.fh} doesn't owe you anything now`);render()}catch(e){toast(wErr(e))}}
   function lnRow(x){const inc=x.to===S.hkey,o=inc?x.fh:x.th,k=inc?x.from:x.to;let s,t,btn='';
     if(x.st==='ask'){if(inc){t=`${hl(k,o)} asks to borrow ${yen(x.amt)}`;s=`Paid back over ${x.wks} weeks, ${yen(x.per)} a week`;btn=`<button class="btn sm primary" data-act="netLnAns" data-id="${esc(x.id)}">Answer</button>`}
       else{t=`You asked ${hl(k,o)} for ${yen(x.amt)}`;s='Waiting for their answer';btn=`<button class="btn sm" data-act="netLnCancel" data-id="${esc(x.id)}">Withdraw</button>`}}
@@ -3552,10 +3554,10 @@ const NET=(()=>{
   function ago(t){const d=(now()-t)/DAY;return d<1/24?'just now':d<1?Math.round(d*24)+'h ago':Math.round(d)+'d ago'}
   const hl=(k,h)=>`<button class="hlink" data-act="netProf" data-k="${esc(k)}">@${esc(h)}</button>`;
   /* ---- the Rivals tab ---- */
-  function prow(p,i){const me=p.key===S.hkey,f=friends().includes(p.key),a=p.crew[0],car=a&&CARS[a.car.model];
+  function prow(p,i,ln){const me=p.key===S.hkey,f=friends().includes(p.key),a=p.crew[0],car=a&&CARS[a.car.model];
     const canCh=ready&&!ro&&S.hkey&&!S.hpend&&!me&&live(p)&&!openWith(p.key);
     return`<div class="prow ${me?'me':''}">${i!=null?`<span class="rk">${i+1}</span>`:''}<img class="av" src="${avatar(Math.floor(num(a&&a.seed,1,1e9,strHash(p.key))),a&&cleanFace(a.face))}" alt=""><div class="pn"><b>${hl(p.key,p.h)}${me?' <span class="chip">You</span>':''}</b><span class="meta">${a?`${esc(str(a.first,16))} · ${car?esc(car.code):''}${p.crew[1]?' + '+esc(str(p.crew[1].first,16)):''}`:'No car yet'} · ${p.w}W ${p.l}L</span></div><span class="povr"><small>OVR</small>${p.ovr}</span>
-      ${me?'':`<div class="pact">${S.hkey&&!S.hpend?`<button class="btn sm ${f?'on':''}" data-act="netFriend" data-k="${esc(p.key)}" aria-pressed="${f}">${f?'Friend ✓':'+ Friend'}</button>`:''}${canCh?`<button class="btn sm race" data-act="netCh" data-k="${esc(p.key)}">Challenge</button>`:''}</div>`}</div>`}
+      ${me?'':`<div class="pact">${S.hkey&&!S.hpend?`<button class="btn sm ${f?'on':''}" data-act="netFriend" data-k="${esc(p.key)}" aria-pressed="${f}">${f?'Friend ✓':'+ Friend'}</button>`:''}${ln&&canLn(p.key)?`<button class="btn sm" data-act="netLn" data-k="${esc(p.key)}">Loan</button>`:''}${canCh?`<button class="btn sm race" data-act="netCh" data-k="${esc(p.key)}">Challenge</button>`:''}</div>`}</div>`}
   function chRow(x){const o=otherH(x),inc=x.to===S.hkey;let s,btn='';
     if(x.st==='pending'){s=inc?'Waiting for your answer':'Waiting for their answer';btn=inc?`<button class="btn sm race" data-act="netAcc" data-id="${esc(x.id)}">Answer</button>`:`<button class="btn sm" data-act="netCancel" data-id="${esc(x.id)}">Withdraw</button>`}
     else if(x.st==='accepted'||x.st==='running')s='Racing now…';
@@ -3580,7 +3582,7 @@ const NET=(()=>{
       h+=`<h3 id="tnRival">Rival of the week</h3>${r?`<div class="card">${prow(r)}${(m=>m?mtags(m):'')(matchOf(r,me))}<div class="meta">Pick @${esc(r.h)} as the opponent on Saturday night, or send a challenge.</div></div>`:`<div class="card hint">No one close to your level on Touge Net yet, so Saturday's challengers are local.</div>`}`;
       h+=`<h3 id="tnMatch">Good matches</h3><div class="card">${me?`<div class="meta">Your race pair: drivers ${me.d} OVR, cars PI ${me.c}. Matched on both, so a great driver in a slow car meets someone similar.</div>`:''}${ms.length?ms.map(m=>`<div class="mrow">${prow(m.p)}${mtags(m)}</div>`).join(''):`<div class="meta">${me?'Nobody else is racing on Touge Net yet. Matches show up here as players join.':'Put a driver in a roadworthy car to get matched.'}</div>`}</div>`;
       const fs=friends().map(k=>players[k]).filter(Boolean);
-      h+=`<h3 id="tnFriends">Friends</h3><div class="card">${fs.length?fs.map(p=>prow(p)).join(''):'<div class="meta">No friends yet. Add someone by handle, or tap + Friend on the board.</div>'}<div class="hrow"><span class="at">@</span><input id="fIn" class="tin" maxlength="17" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Friend's handle" aria-describedby="fMsg"><button class="btn sm" data-act="netAddF">Add</button></div><div class="note" id="fMsg" role="status"></div></div>`}
+      h+=`<h3 id="tnFriends">Friends</h3><div class="card">${fs.length?fs.map(p=>prow(p,null,1)).join(''):'<div class="meta">No friends yet. Add someone by handle, or tap + Friend on the board.</div>'}<div class="hrow"><span class="at">@</span><input id="fIn" class="tin" maxlength="17" placeholder="handle" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Friend's handle" aria-describedby="fMsg"><button class="btn sm" data-act="netAddF">Add</button></div><div class="note" id="fMsg" role="status"></div></div>`}
     if(ready&&loaded){const top=plList.slice(0,10);h+=`<h3>Top 10</h3><div class="card">${top.length?top.map((p,i)=>prow(p,i)).join(''):'<div class="meta">Nobody on the board yet. Claim a handle and be the first.</div>'}${rk>=10?`<div class="meta">…</div>${prow(plList[rk],rk)}`:''}</div>`}
     return h;
   }
@@ -3589,7 +3591,7 @@ const NET=(()=>{
   document.addEventListener('input',e=>{if(e.target&&e.target.id==='hIn')liveCheck()});
   document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const t=e.target;if(t&&t.id==='hIn'){e.preventDefault();doClaim()}else if(t&&t.id==='fIn'){e.preventDefault();addFriend()}});
   return{init,touch,html,render,ask,hist,prof,doClaim,later:()=>{asked=true;closeModal();toast('You can pick a handle any time in the Battle tab')},toggleFriend,addFriend,watch,watchDone,chForm,chPi,send,accForm,accept,decline,cancel,
-    lnForm,lnPv,lnSend,lnAns,lnLend,lnDec,lnCancel,lnRepay,lnFreeAsk,lnFree,payWeek,owedHtml,friendsHtml,
+    lnPick,lnForm,lnPv,lnSend,lnAns,lnLend,lnDec,lnCancel,lnRepay,lnFreeAsk,lnFree,payWeek,owedHtml,friendsHtml,
     afSet,after,vsOptions,defaultVs,oppVs,critLine,otherH,teamOVR,isOn:()=>ready&&!ro&&!!S.hkey&&!S.hpend,mtn,
     _dbg:()=>({loans:allL().length,ready,ro,loaded,players:plList.length,chIn:chIn.length,chOut:chOut.length,notices:notices.length})};
 })();
@@ -3636,7 +3638,7 @@ const ACT={
   fireYes:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||x.son)return;S.drivers=S.drivers.filter(v=>v!==x);const gone=S.cars.filter(k=>k.owner===x.id);if(gone.length){S.cars=S.cars.filter(k=>k.owner!==x.id);S.drivers.forEach(v=>{if(gone.some(k=>k.id===v.carId)){v.carId=0;const sp=S.cars.find(k=>!driverOfCar(k.id));if(sp)v.carId=sp.id}})}addLog(`${x.first} ${x.family} left the crew${gone.length?` and took the ${gone.map(k=>CARS[k.model].code).join(', ')} with them`:''}.`);closeModal();toast(`${x.first} has left the crew`);save();renderAll()},
   raceNight:()=>openRacePlanner(),
   netAsk:()=>NET.ask(),netLater:()=>NET.later(),netClaim:()=>NET.doClaim(),netFriend:d=>{NET.toggleFriend(d.k);if(d.re)NET.prof(d.k)},netProf:d=>NET.prof(d.k),netAddF:()=>NET.addFriend(),
-  netLn:d=>NET.lnForm(d.k),netLnSend:d=>NET.lnSend(d.k),netLnAns:d=>NET.lnAns(d.id),netLnLend:d=>NET.lnLend(d.id),netLnDec:d=>NET.lnDec(d.id),netLnCancel:d=>NET.lnCancel(d.id),netLnRepay:d=>NET.lnRepay(d.id),netLnFree:d=>NET.lnFreeAsk(d.id),netLnFreeGo:d=>NET.lnFree(d.id),
+  netLnPick:()=>NET.lnPick(),netLn:d=>NET.lnForm(d.k),netLnSend:d=>NET.lnSend(d.k),netLnAns:d=>NET.lnAns(d.id),netLnLend:d=>NET.lnLend(d.id),netLnDec:d=>NET.lnDec(d.id),netLnCancel:d=>NET.lnCancel(d.id),netLnRepay:d=>NET.lnRepay(d.id),netLnFree:d=>NET.lnFreeAsk(d.id),netLnFreeGo:d=>NET.lnFree(d.id),
   netCh:d=>NET.chForm(d.k),netSend:d=>NET.send(d.k),netAcc:d=>NET.accForm(d.id),netAccGo:d=>NET.accept(d.id),netDec:d=>NET.decline(d.id),netCancel:d=>NET.cancel(d.id),netWatch:d=>NET.watch(d.id,!!d.skip),netWatchDone:()=>NET.watchDone(),
   startRaces:()=>startRaces(),
   skipRaces:()=>{closeModal();S.phase='raced';addLog('Sat out race night.');save();renderAll()},
