@@ -296,6 +296,7 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute
 .cvlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:10px 0}.cvd{display:flex;align-items:center;gap:8px;text-align:left;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--mute);cursor:pointer;font:inherit}.cvd .av{width:34px;height:34px}.cvd b{display:block;color:var(--ink);font-size:13px}.cvd small{font-size:11px}.cvd.on{border-color:var(--sodium);background:rgba(255,176,59,.08)}.cvd:not(.on){opacity:.55}
 .pvrow{align-items:center;gap:6px;margin-top:8px}.pvrow .btn.on{border-color:var(--sodium);color:var(--sodium)}.card.mtn.pv{border-color:var(--sodium)}.pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:2}
 .djp{margin-left:3px;font-size:.92em;opacity:.8;font-weight:400}.rh .djp{display:block;margin:1px 0 0}.dwd .djp{margin-left:1px}
+[id^=car-].card,[id^=drv-].card{scroll-margin-top:10px}.carthumb .drv[data-act]{cursor:pointer}.carthumb .drv[data-act]:hover{outline:1px solid var(--sodium)}.lnk{background:none;border:0;padding:0;font:inherit;color:var(--sodium);text-decoration:underline dotted;text-underline-offset:2px;cursor:pointer}.lnk:hover{text-decoration-style:solid}button.carmini{cursor:pointer;font:inherit;color:inherit}button.carmini:hover{border-color:var(--sodium)}@keyframes cflash{0%,60%{box-shadow:0 0 0 2px var(--sodium)}100%{box-shadow:0 0 0 2px transparent}}.card.flash{animation:cflash 1.8s ease-out}
 .chip.mv{font-weight:700}.chip.mv.off{opacity:.45;border-style:dashed}
 .chip.good{color:var(--good);border-color:rgba(91,211,138,.45)}
 .av{image-rendering:pixelated;border-radius:8px;display:block;background:#1a2040}
@@ -565,7 +566,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v163</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v174</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -1834,23 +1835,25 @@ const MAP=(()=>{
               c.fillStyle='rgba(255,240,190,.6)';c.beginPath();c.arc(cv+.22,cu,.035,0,7);c.fill()}}
           else if(lod){rect(c,cv-.22,cu-.04,.44,.04,'#c7951c')}})}
       {const dv=sv+6.4,du=su+.2,W=2.2,D=1.0,H=.62;spots.dealer={v:dv+W/2,u:du+D+1.1,b:{v0:dv-.7,v1:dv+W+.55,u0:du-H-.15,u1:du+D+2.05}};reserved.push([du-1.3,du+4,dv-1.1,dv+W+1.3]);
-        const lot=[],rq=mulberry32(9917),ms=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&!CARS[k].noCpu);for(let r=0;r<2;r++)for(let k=0;k<4;k++){const m=ms[Math.floor(rq()*ms.length)],P=PAINTS[Math.floor(rq()*PAINTS.length)];lot.push({v:dv-.2+k*.68,u:du+D+.75+r*.78,a:r?Math.PI/2:-Math.PI/2,c1:P[1],c2:'#1b1c20',model:m,lights:0,brake:false,steer:0})}
-        addObj(du,dv+W/2,W+1,(c,lod)=>{rect(c,dv-.6,du+D-.05,W+1.1,2.05,'#6f7278');if(lod){c.fillStyle='rgba(240,240,230,.55)';for(let r=0;r<2;r++)for(let k=0;k<=4;k++)c.fillRect(dv-.54+k*.68,du+D+.42+r*.78,.012,.62)}},'b');
+        const lot=[],rq=mulberry32(9917),ms=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&!CARS[k].noCpu);for(let r=0;r<2;r++)for(let k=0;k<4;k++){const m=ms[Math.floor(rq()*ms.length)],P=PAINTS[Math.floor(rq()*PAINTS.length)];lot.push({v:dv+W/2-.05+(k-1.5)*.68,u:du+D+.75+r*.78,a:r?Math.PI/2:-Math.PI/2,c1:P[1],c2:'#1b1c20',model:m,lights:0,brake:false,steer:0})}
+        addObj(du,dv+W/2,W+1,(c,lod)=>{rect(c,dv-.6,du+D-.05,W+1.1,2.05,'#6f7278');if(lod){c.fillStyle='rgba(240,240,230,.55)';for(let r=0;r<2;r++)for(let k=0;k<=4;k++)c.fillRect(dv+W/2-.05+(k-2)*.68-.006,du+D+.42+r*.78,.012,.62)}},'b');
         bldg({v:dv,u:du,w:W,d:D,hl:H,wall:'#eef1f4',roof:'#c23b32',flat:true,win:[[.06,.62,.06,.5],[.7,.94,.06,.5]],litP:1,extra:(c,lod)=>{if(!lod)return;const U=f=>du+D-H*f,X=f=>dv+W*f,R=(x0,x1,y0,y1,col)=>rect(c,X(x0),U(y1),X(x1)-X(x0),U(y0)-U(y1),col);
+          {/* standing-seam metal roof: ribs running front to back, each with a light edge */const ru=du-H,n=16;for(let k=1;k<n;k++){const x=dv+.04+(W-.08)*k/n;rect(c,x,ru+.04,.012,D-.08,'rgba(0,0,0,.22)');rect(c,x+.012,ru+.04,.006,D-.08,'rgba(255,255,255,.14)')}rect(c,dv+.04,ru+D*.5-.006,W-.08,.012,'rgba(0,0,0,.12)')}
           if(dark<=.45){R(.06,.62,.06,.5,'#9fc4dc');R(.7,.94,.06,.5,'#9fc4dc');c.fillStyle='rgba(255,255,255,.35)';c.fillRect(X(.1),U(.48),.04,U(.1)-U(.48))}
           R(.06,.62,.38,.47,'#f2c94c');wtext(c,'★ 大決算セール SALE ★',X(.34),U(.425)+.02,.06,'bold','#c23b32');[[.2,.2],[.48,.2],[.82,.26]].forEach(([x,y])=>{circ(c,X(x),U(y),.1,'#ffd21f');circ(c,X(x),U(y),.085,'#d62828');wtext(c,'特価',X(x),U(y)+.02,.06,'bold','#fff')});
           R(.04,.96,.56,.86,'#c23b32');R(.04,.96,.56,.58,'#f2c94c');wtext(c,'中古車センター',X(.5),U(.73)+.03,.085,'bold','#fff6e0');wtext(c,'USED CARS',X(.5),U(.6)+.02,.045,'bold','#f2c94c')}});
 
         // promotional nobori banners in front of the showroom, and sale stickers on the glass
-        {const NB=[[-.5,.3,'決算セール','#d62828','#fff'],[-.5,1.1,'低金利','#1f5fbf','#fff'],[-.5,1.9,'保証付','#f2c94c','#c23b32'],[W+.38,.3,'ローンOK','#1f8f4a','#fff'],[W+.38,1.1,'下取り強化','#ff7a1a','#fff'],[W+.38,1.9,'決算セール','#d62828','#fff']];
+        {const NB=[[-.5,.3,'決算セール','#d62828','#fff'],[-.5,1.45,'低金利','#1f5fbf','#fff'],[W+.38,.3,'ローンOK','#1f8f4a','#fff'],[W+.38,1.45,'下取り強化','#ff7a1a','#fff']];
           addObj(du+D+2.1,dv+W/2,W+1,(c,lod)=>{const t=performance.now()/600;NB.forEach(([x,y,txt,bg,fg],k)=>{const v=dv+x,b=du+D+y+.5,sw=Math.sin(t+k)*.012;
             rect(c,v-.01,b-.82,.02,.82,'#9aa0a8');rect(c,v+.01,b-.8,.15+sw,.62,bg);rect(c,v+.01,b-.8,.15+sw,.03,'rgba(255,255,255,.55)');rect(c,v+.01,b-.21,.15+sw,.03,'rgba(0,0,0,.25)');
             if(lod){const ch=[...txt],n=ch.length,step=Math.min(.11,.54/n);ch.forEach((q,i)=>wtext(c,q,v+.085,b-.74+step*(i+.75),step*.95,'bold',fg))}})})}
         // the lot: cars for sale with price boards, and a string of bunting
         addObj(du+D+2,dv+W/2,W+1,(c,lod)=>{lot.forEach(s=>{drawCar(c,s);if(lod){rect(c,s.v-.07,s.u+(s.a>0?-.36:.26),.14,.08,'#fff8e6');rect(c,s.v-.07,s.u+(s.a>0?-.36:.26),.14,.02,'#c23b32')}});
-          if(lod){const y=du+D+.12,x0=dv-.55,x1=dv+W+.45,cols=['#c23b32','#f2c94c','#2f62b8','#3aa05a'];c.strokeStyle='rgba(60,60,60,.6)';c.lineWidth=.01;c.beginPath();c.moveTo(x0,y);c.quadraticCurveTo((x0+x1)/2,y+.12,x1,y);c.stroke();
-            for(let k=0;k<14;k++){const t=(k+.5)/14,x=x0+(x1-x0)*t,yy=y+.12*4*t*(1-t)*.5*2;c.fillStyle=cols[k%4];c.beginPath();c.moveTo(x-.04,yy);c.lineTo(x+.04,yy);c.lineTo(x,yy+.08);c.fill()}
-            rect(c,x0-.03,y-.25,.03,.3,'#888');rect(c,x1,y-.25,.03,.3,'#888')}})}
+          /* top string on its own posts; the second string hangs between the tops of the lower banner poles */
+          if(lod)[[du+D+.12,['#c23b32','#f2c94c','#2f62b8','#3aa05a'],dv-.55,dv+W+.45,1],[du+D+1.95-.81,['#3aa05a','#ff7a1a','#c23b32','#f2c94c','#2f62b8'],dv-.5,dv+W+.38,0]].forEach(([y,cols,x0,x1,posts])=>{c.strokeStyle='rgba(60,60,60,.6)';c.lineWidth=.01;c.beginPath();c.moveTo(x0,y);c.quadraticCurveTo((x0+x1)/2,y+.12,x1,y);c.stroke();
+            for(let k=0;k<14;k++){const t=(k+.5)/14,x=x0+(x1-x0)*t,yy=y+.12*4*t*(1-t)*.5*2;c.fillStyle=cols[k%cols.length];c.beginPath();c.moveTo(x-.04,yy);c.lineTo(x+.04,yy);c.lineTo(x,yy+.08);c.fill()}
+            if(posts){rect(c,x0-.03,y-.25,.03,.3,'#888');rect(c,x1,y-.25,.03,.3,'#888')}})})}
       for(let k=0;k<10;k++)shopSlots.push({v:sv-.05+k*.26,u:su+1.4,a:-Math.PI/2});for(let k=0;k<10;k++)shopSlots.push({v:sv-.05+k*.26,u:su+2.12,a:Math.PI/2,row:2});
       const hv=end.v-1.8,hu=end.u-.45-1.45;hotelRect={v:hv,u:hu-1,w:3.6,d:2.45};reserved.push([hu-1.4,end.u+1.2,hv-2,hv+5.6]);
       const hw=[];for(let r=0;r<4;r++)for(let k=0;k<9;k++)hw.push([(k+.2)/9,(k+.7)/9,.1+r*.22,.24+r*.22]);
@@ -2005,7 +2008,11 @@ const MAP=(()=>{
     else{rect(c,CL/2-.022,-CW/2+.016,.016,.03,lon?'#fff4cf':'#d6d3c8');rect(c,CL/2-.022,CW/2-.046,.016,.03,lon?'#fff4cf':'#d6d3c8')}
     rect(c,-CL/2,-CW/2+.016,.014,.032,s.brake?'#ff3030':'#9a1a1a');rect(c,-CL/2,CW/2-.048,.014,.032,s.brake?'#ff3030':'#9a1a1a');
     {const lk=s.look||{},wg=lk.wing&&lk.wing!=='stock'?lk.wing:(WING[s.model]?'factory':'none');
-      if(lk.livery==='stripes'){c.fillStyle=lk.livCol||'#f4f4f0';c.fillRect(-CL/2+.01,-.014,CL-.02,.01);c.fillRect(-CL/2+.01,.004,CL-.02,.01)}
+      if(lk.livery==='stripes'){c.fillStyle=lk.livCol||'#f4f4f0';
+        /* stripes stay on the paint: they skip the windscreen, the rear window, an open cockpit and the bonnet scoop */
+        const gaps=[];if(P.open&&!topUp)gaps.push([X(P.ck[0]),wf+.006]);else{gaps.push([Math.min(wb,wf)-.004,Math.max(wb,wf)+.006]);if(topUp)gaps.push([X(P.ck[0]),X(P.ck[0])+.02]);else if(P.rw)gaps.push([X(P.rw[0])-.004,X(P.roof[0])+.004])}if(SCOOP[s.model])gaps.push([wf+(CL/2-wf)*.16-.004,wf+(CL/2-wf)*.52+.004]);
+        let segs=[[-CL/2+.01,CL/2-.01]];gaps.forEach(([g0,g1])=>{segs=segs.flatMap(([a0,a1])=>g1<=a0||g0>=a1?[[a0,a1]]:[[a0,Math.min(a1,g0)],[Math.max(a0,g1),a1]])});
+        segs.forEach(([a0,a1])=>{if(a1-a0>.004){c.fillRect(a0,-.014,a1-a0,.01);c.fillRect(a0,.004,a1-a0,.01)}})}
       if(wg==='factory'){rect(c,-CL/2+.012,-CW/2+.006,.03,CW-.012,shade(s.c1,-.25));rect(c,-CL/2+.018,-CW/2+.01,.012,CW-.02,'rgba(0,0,0,.25)')}
       else if(wg==='gt'){rect(c,-CL/2-.004,-CW/2-.004,.036,CW+.008,'#18191d');rect(c,-CL/2+.004,-CW/2,.01,CW,'rgba(255,255,255,.12)')}
       else if(wg==='duck')rect(c,-CL/2+.004,-CW/2+.012,.014,CW-.024,shade(s.c1,-.3))}
@@ -2811,6 +2818,8 @@ let PV=null;
 function restoreLight(){MAP.setDark(S.phase==='pre'?(isConvoyDay()?0:1):S.phase==='post'?(isConvoyDay()?0:S.day===6?.05:.12):1)}
 function stopPreview(){if(!PV)return;PV=null;MAP.stopPreview();restoreLight()}
 function startPreview(mid,dir){if(busy)return;const m=MTNS.find(x=>x.id===mid);if(!m)return;PV={m:mid,dir};MAP.preview(mid,dir);MAP.setDark(.1);renderPanel();toast(`Previewing ${m.name}, ${dir==='up'?'uphill':'downhill'}`)}
+function jumpTo(tab,id){if(TAB!==tab){TAB=tab;renderTabs();renderPanel();viewForTab()}
+  requestAnimationFrame(()=>{const el=document.getElementById(id);if(!el)return;/* scroll only the side panel (or the page, when the panel isn't its own scroller on a phone), never the whole game frame */const pb=$('#pbody');if(pb&&pb.scrollHeight>pb.clientHeight+2){pb.scrollTo({top:el.getBoundingClientRect().top-pb.getBoundingClientRect().top+pb.scrollTop-10,behavior:'smooth'})}else window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-10,behavior:'smooth'});el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1800)})}
 function viewForTab(){if(TAB!=='touge'&&PV){stopPreview();if(busy||!S||!(S.phase==='pre'||S.phase==='post')){MAP.focusShop();return}}if(busy||!S||!(S.phase==='pre'||S.phase==='post'))return;const k={garage:'garage',dealer:'dealer'}[TAB];if(k)MAP.focusSpot(k);else if(TAB!=='touge')MAP.focusShop()}
 function openTab(t){if(TAB!==t){TAB=t;renderTabs();renderPanel();viewForTab()}const pb=$('#pbody');if(pb)pb.scrollTop=0}
 function renderPanel(){
@@ -2840,13 +2849,13 @@ function crewHTML(){
   if(n>1)h+=sortBar('sortD',S.sortD||'join',[['join','Order joined'],['ovr','OVR'],['lv','Level'],['name','Name'],['wins','Wins']]);
   sortedDrivers().forEach(d=>{
     const L=levelInfo(d.xp);
-    h+=`<div class="card ${d.star?'fav':''}"><div class="drv-top"><button class="avbtn" data-act="studio" data-id="${d.id}" aria-label="Change ${esc(d.first)}'s look and name"><img class="av" src="${avatar(d.seed,d.face)}" alt="Portrait of ${esc(d.first)}"><span class="avedit" aria-hidden="true">✎</span></button><div style="min-width:0"><div class="nm">${starBtn('starD',d.id,d.star,d.first)}${esc(d.first)} ${esc(d.family)} ${d.son?'<span class="chip amber">Son</span>':d.legend?'<span class="chip legend">Legend</span>':`<span class="chip">ex ${esc(d.team)}</span>`}</div><div class="meta">Lv ${L.lv} · ${d.runs} runs · ${d.wins}W ${d.losses}L</div><div class="xpbar"><i style="width:${L.pct}%"></i></div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(d)*100)}</b></div></div>${vitHTML(d)}
+    h+=`<div class="card ${d.star?'fav':''}" id="drv-${d.id}"><div class="drv-top"><button class="avbtn" data-act="studio" data-id="${d.id}" aria-label="Change ${esc(d.first)}'s look and name"><img class="av" src="${avatar(d.seed,d.face)}" alt="Portrait of ${esc(d.first)}"><span class="avedit" aria-hidden="true">✎</span></button><div style="min-width:0"><div class="nm">${starBtn('starD',d.id,d.star,d.first)}${esc(d.first)} ${esc(d.family)} ${d.son?'<span class="chip amber">Son</span>':d.legend?'<span class="chip legend">Legend</span>':`<span class="chip">ex ${esc(d.team)}</span>`}</div><div class="meta">Lv ${L.lv} · ${d.runs} runs · ${d.wins}W ${d.losses}L</div><div class="xpbar"><i style="width:${L.pct}%"></i></div></div><div class="ovr"><span>OVR</span><b>${Math.round(dskill(d)*100)}</b></div></div>${vitHTML(d)}
     ${statGrid(d.stats)}
     <div class="trait"><span class="chip amber">${TRAITS[d.trait].name}</span> ${TRAITS[d.trait].desc}</div>
     ${d.trait2?`<div class="trait"><span class="chip amber">${TRAITS[d.trait2].name}</span> ${TRAITS[d.trait2].desc}</div>`:''}
     <div class="mvrow">${movesChips(d)}</div>
     ${progHTML(d)}
-    <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<span class="carmini" title="${esc(CARS[c.model].maker+' '+CARS[c.model].name)}"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></span>`:''})()}
+    <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<button class="carmini" data-act="goCar" data-id="${c.id}" title="Open the ${esc(CARS[c.model].maker+' '+CARS[c.model].name)} in the Garage"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></button>`:''})()}
     <span class="wage">${d.wage?yen(d.wage)+' per run':d.legend?'Drives for free':'Family, unpaid'}</span></div>
     <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${dayH(i)}</button>`).join('')}</div></div>
     <div class="row"><button class="btn sm" data-act="studio" data-id="${d.id}">Look and name</button>${d.son?'':`<button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button>`}</div>
@@ -2873,8 +2882,8 @@ function garageHTML(){
   sortedCars().forEach(c=>{
     const m=CARS[c.model],sp=spec(c),drv=driverOfCar(c.id),wear=c.tyre.wear;
     const wc=wear>75?'var(--brake)':wear>50?'var(--warn)':'var(--good)';
-    h+=`<div class="card ${c.star?'fav':''}"><div class="carhead"><div style="min-width:0"><div class="carname">${starBtn('starC',c.id,c.star,m.code)}<span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}${m.legend?' <span class="chip amber">Legend</span>':''}</div><div class="meta"><span class="swatch" style="background:${c.c1}"></span>${esc(c.paint)} · ${Math.round(c.km).toLocaleString('en-US')} km · ${drv?'Driven by '+esc(drv.first):'Unassigned'}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
-    <button class="carthumb" data-act="bodyShop" data-id="${c.id}" aria-label="Open the body shop for the ${esc(m.code)}"><img src="${SPR.url(c,132,84)}" alt="">${drv?`<span class="drv"><img src="${avatar(drv.seed,drv.face)}" alt=""><span class="t"><b>${esc(drv.first)} ${esc(drv.family)}</b><small>Lv ${levelInfo(drv.xp).lv}</small></span></span>`:'<span class="drv none">No driver</span>'}<span class="bs">Body shop</span></button>
+    h+=`<div class="card ${c.star?'fav':''}" id="car-${c.id}"><div class="carhead"><div style="min-width:0"><div class="carname">${starBtn('starC',c.id,c.star,m.code)}<span class="code">${m.code}</span>${esc(m.maker)} ${esc(m.name)}${m.legend?' <span class="chip amber">Legend</span>':''}</div><div class="meta"><span class="swatch" style="background:${c.c1}"></span>${esc(c.paint)} · ${Math.round(c.km).toLocaleString('en-US')} km · ${drv?`Driven by <button class="lnk" data-act="goDrv" data-id="${drv.id}" title="Open ${esc(drv.first)} in the Crew tab">${esc(drv.first)}</button>`:'Unassigned'}</div></div><div class="pi"><span>PI</span><b>${sp.pi}</b></div></div>
+    <button class="carthumb" data-act="bodyShop" data-id="${c.id}" aria-label="Open the body shop for the ${esc(m.code)}"><img src="${SPR.url(c,132,84)}" alt="">${drv?`<span class="drv" data-act="goDrv" data-id="${drv.id}" title="Open ${esc(drv.first)} in the Crew tab"><img src="${avatar(drv.seed,drv.face)}" alt=""><span class="t"><b>${esc(drv.first)} ${esc(drv.family)}</b><small>Lv ${levelInfo(drv.xp).lv}</small></span></span>`:'<span class="drv none">No driver</span>'}<span class="bs">Body shop</span></button>
     <div class="specs"><span class="chip">${sp.hp} PS</span><span class="chip">${sp.kg} kg</span><span class="chip amber">${sp.drive}</span>${sp.cargo>1?`<span class="chip good" title="Carries ${sp.cargo} batches of tofu per run">${sp.cargo}× tofu</span>`:''}${sp.sleeper?'<span class="chip" style="color:var(--brake);border-color:var(--brake)">Swapped</span>':''}<span class="chip">${sp.gears}-speed</span><span class="chip" title="Redline">${redline(c).toLocaleString()} rpm</span><span class="chip">${sp.top} km/h${sp.limited?' limited':''}</span><span class="chip">${TYRES[c.tyre.grade].name} tyres</span></div>
     ${meter('Tyre wear',wear,wc,Math.round(wear)+'%')}
     ${meter('Condition',c.cond,c.cond<70?'var(--brake)':'var(--cyan)',Math.round(c.cond)+'%')}
@@ -3921,6 +3930,8 @@ const ACT={
   trait2Take:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||!perkPending(x)||!TRAITS[d.t])return;x.trait2=d.t;x.perks=(x.perks||[]).concat('second');addLog(`${x.first} picked up a second trait: ${TRAITS[d.t].name}.`);toast(`${x.first}: ${TRAITS[d.t].name}`);AUDIO.coin();closeModal();save();renderAll()},
   bodyShop:d=>openBodyShop(+d.id),
   pv:d=>startPreview(d.m,d.dir),pvStop:()=>{stopPreview();if(!busy)MAP.focusShop();renderPanel()},
+  /* jump between a driver and their car */
+  goCar:d=>jumpTo('garage','car-'+d.id),goDrv:d=>jumpTo('crew','drv-'+d.id),
   convoy:()=>openConvoy(),cvT:d=>{const id=+d.id;CVY.ids=CVY.ids.includes(id)?CVY.ids.filter(x=>x!==id):CVY.ids.concat(id);renderConvoy()},cvGo:()=>convoyGo(),
   restDay:()=>{if(busy||S.phase!=='pre'||plannedRuns().length)return;if(S.day===6)S.satRan={w:S.week,ids:[]};S.phase='post';
     addLog(S.day===6?'No dawn run this Saturday. The whole crew rested for race night.':`${dayT(S.day)}: no dawn run. The shop stayed shut and the crew rested.`);MAP.setDark(S.day===6?.05:.12);save();renderAll();
