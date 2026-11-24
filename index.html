@@ -295,6 +295,7 @@ h3{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--mute
 .dirt{display:inline-flex;align-items:center;white-space:nowrap}.wxi{display:inline-block;vertical-align:-3px;margin-right:5px;image-rendering:pixelated;flex:none}.vit{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin:8px 0 2px}.vb{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;font-size:11px;color:var(--mute);min-width:0}.vb .bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden;display:block}.vb .bar i{display:block;height:100%;border-radius:3px;transition:width .3s}.vb em{font-style:normal;font-weight:700;font-size:11px;white-space:nowrap}
 .cvlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin:10px 0}.cvd{display:flex;align-items:center;gap:8px;text-align:left;padding:7px 9px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--mute);cursor:pointer;font:inherit}.cvd .av{width:34px;height:34px}.cvd b{display:block;color:var(--ink);font-size:13px}.cvd small{font-size:11px}.cvd.on{border-color:var(--sodium);background:rgba(255,176,59,.08)}.cvd:not(.on){opacity:.55}
 .pvrow{align-items:center;gap:6px;margin-top:8px}.pvrow .btn.on{border-color:var(--sodium);color:var(--sodium)}.card.mtn.pv{border-color:var(--sodium)}.pvbar{display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:2}
+.djp{margin-left:3px;font-size:.92em;opacity:.8;font-weight:400}.rh .djp{display:block;margin:1px 0 0}.dwd .djp{margin-left:1px}
 .chip.mv{font-weight:700}.chip.mv.off{opacity:.45;border-style:dashed}
 .chip.good{color:var(--good);border-color:rgba(91,211,138,.45)}
 .av{image-rendering:pixelated;border-radius:8px;display:block;background:#1a2040}
@@ -331,8 +332,8 @@ select{background:#0f1430;border:1px solid var(--line);border-radius:8px;padding
 .rg .rc.sat{border-color:rgba(255,77,77,.55)}.rg .rc.sat.on{background:var(--brake);border-color:var(--brake)}.rg .rc.sat.bench{background:rgba(255,77,77,.22)}.rg .rc.sat.td{box-shadow:0 0 0 1px var(--brake) inset}
 .dwd.sat{border-color:rgba(255,77,77,.55);color:var(--brake)}.dwd.sat.on{background:var(--brake);border-color:var(--brake);color:var(--night)}.dwd.sat.td{box-shadow:0 0 0 1px var(--brake) inset}
 .note.rest{color:var(--mute)}.note.rest.ok{color:var(--good)}
-.dwrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.dw{display:flex;gap:3px;flex-wrap:wrap}
-.dwd{height:26px;min-width:0;padding:0 6px;font-family:var(--f-dot);font-size:10.5px;letter-spacing:.03em;border-radius:6px}
+.dwrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.dw{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.dwd{height:26px;min-width:0;padding:0 2px;white-space:nowrap;overflow:hidden;font-family:var(--f-dot);font-size:10.5px;letter-spacing:.03em;border-radius:6px}
 .dwd.on{background:var(--sodium);border-color:var(--sodium);color:var(--night)}.dwd.td{box-shadow:0 0 0 1px var(--sodium) inset}
 .tog{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mute);cursor:pointer}
 .tog input{accent-color:var(--sodium)}
@@ -564,7 +565,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v153</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v163</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -838,7 +839,7 @@ const mentorK=d=>S.drivers.some(x=>x!==d&&hasP(x,'mentor'))?1.2:1;
    Mood: 0-100, green to red. Wins, clean runs, a good car and time with the crew lift it; losses, wrecks, bald tyres,
    being left off the roster and running on empty drag it down. A hired driver stuck in the red for two weeks quits. */
 const AD=()=>S.week*7+S.day;
-const STA_RUN=16,STA_RACE=12,STA_NIGHT=4,MOOD_HOME=65,RED=20,QUIT_DAYS=14;
+const STA_RUN=14,STA_RACE=10,STA_NIGHT=10,MOOD_HOME=70,MOOD_WEEK=12,RED=20,QUIT_DAYS=14;
 const staOf=d=>d&&d.sta!=null?d.sta:100,moodOf=d=>d&&d.mood!=null?d.mood:70;
 function moodAdd(d,v,why){if(!d||!S.drivers.includes(d))return;d.mood=clamp(Math.round(moodOf(d)+v),0,100);(d.mwhy=d.mwhy||[]).unshift({v:Math.round(v),w:why,ad:AD()});d.mwhy.length=Math.min(d.mwhy.length,6)}
 function staUse(d,v){if(!d||!S.drivers.includes(d))return;d.sta=clamp(Math.round(staOf(d)-v),0,100);d.ranAD=AD()}
@@ -852,7 +853,7 @@ const staWord=s=>s>=85?'Fresh':s>=60?'Fine':s>=30?'Tired':'Exhausted';
 const canQuit=d=>!d.son&&!d.legend;
 function vitHTML(d){const m=moodOf(d),s=staOf(d),why=(d.mwhy||[]).slice(0,4).map(x=>`${x.v>0?'+':''}${x.v} ${x.w}`).join(', ');
   return`<div class="vit"><div class="vb" title="Mood ${m}%: ${moodWord(m)}.${why?' Lately: '+why+'.':''}${d.redDays>=7&&canQuit(d)?' Talking about leaving.':''}"><span>Mood</span><b class="bar"><i style="width:${m}%;background:${moodCol(m)}"></i></b><em style="color:${moodCol(m)}">${moodWord(m)}</em></div>
-    <div class="vb" title="Stamina ${s}%. Every dawn run or race uses some. One day without driving refills it to 100%."><span>Stamina</span><b class="bar"><i style="width:${s}%;background:${staCol(s)}"></i></b><em style="color:${staCol(s)}">${s}%</em></div></div>`}
+    <div class="vb" title="Stamina ${s}%. Every dawn run or race uses some and a night's sleep gives some back. A day without driving refills it to 100%."><span>Stamina</span><b class="bar"><i style="width:${s}%;background:${staCol(s)}"></i></b><em style="color:${staCol(s)}">${s}%</em></div></div>`}
 /* after a dawn run */
 function vitRun(d,c,res,notes){staUse(d,STA_RUN);if(staOf(d)<40)notes.push('Tired');
   if(res.dnf!=null)moodAdd(d,-6,'crashed on the run');else if(res.incs&&res.incs.length)moodAdd(d,-2,'a scrappy run');else if(res.dmg<2)moodAdd(d,2,'a clean run');
@@ -863,10 +864,10 @@ function vitRace(d,win,dnf,notes){staUse(d,STA_RACE);
   if(win){d.lstreak=0;moodAdd(d,8,'won a race')}else{d.lstreak=(d.lstreak||0)+1;moodAdd(d,-5-2*Math.min(3,d.lstreak-1),d.lstreak>1?`${d.lstreak} losses in a row`:'lost a race')}
   if(dnf)moodAdd(d,-4,'crashed out');if(staOf(d)<40)notes.push(`${d.first} is running on empty`)}
 /* end of each day: rest, drift, bench, overwork, and the red zone */
-function dayEnd(){const ad=AD(),out=[];
+function dayEnd(weekly){const ad=AD(),out=[];
   S.drivers.slice().forEach(d=>{if(d.joinAD==null)d.joinAD=ad;
     const drove=d.ranAD===ad;d.sta=drove?Math.min(100,staOf(d)+STA_NIGHT):100;
-    let m=moodOf(d);if(m<MOOD_HOME)d.mood=m+1;else if(m>MOOD_HOME)d.mood=m-1;
+    if(weekly){const m=moodOf(d);if(m<MOOD_HOME)d.mood=Math.min(MOOD_HOME,m+MOOD_WEEK);else if(m>85)d.mood=m-5}
     if(!d.son&&!d.legend&&ad-d.joinAD>=2&&carById(d.carId)&&plannedCount(d)===0&&!drove)moodAdd(d,-3,'left off the roster');
     if(drove&&staOf(d)<30)moodAdd(d,-2,'worn out');
     if(moodOf(d)<RED){d.redDays=(d.redDays||0)+1;if(canQuit(d)&&d.redDays===7){addLog(`${d.first} is fed up and talking about leaving the crew.`);toast(`${d.first} is talking about leaving`)}
@@ -934,7 +935,8 @@ const GENTING={id:'genting',jp:'雲頂高原',name:'Genting Highlands',country:'
 function syncSecret(){const i=MTNS.findIndex(m=>m.id==='genting'),on=!!(S&&S.genting);if(on&&i<0)MTNS.push(GENTING);else if(!on&&i>=0)MTNS.splice(i,1)}
 const tropWx=(w,id)=>id==='genting'&&w==='Snow'?'Wet':w; // no snow in the tropics: it rains instead
 let RACE_M=null;
-const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const DAYS=['SUN','MON','TUE','WED','THU','FRI','SAT'],DAYS_JP=['日','月','火','水','木','金','土'];
+const dayH=i=>`${DAYS[i]}<span class="djp">${DAYS_JP[i]}</span>`,dayT=i=>DAYS[i];
 
 /* ================= avatars =================
    Every portrait comes from the driver's seed. A driver can also carry a "face": the parts the player picked in the
@@ -1044,7 +1046,7 @@ async function gmPull(){const C=window.TOUGE_CLOUD;if(!C||!S||gmBusy||busy)retur
     save();renderAll();await C.ack(done);/* publish the new stats and OVR straight away so the control room catches up */try{NET.touch()}catch(e){}if(swapped)toast('Your save was updated by the Touge Net admin.');/* upload straight away, so a Play As copy opened now already has the change */cloudSave(true)}}catch(e){}gmBusy=false}
 setInterval(gmPull,15000);setTimeout(gmPull,2500);
 function load(){try{const t=localStorage.getItem(SAVE);if(t){const s=JSON.parse(t);if(s&&s.v===1)return s}}catch(e){}return null}
-function addLog(m){S.log.push({t:`W${S.week} ${DAYS[S.day]}`,m});if(S.log.length>60)S.log.shift()}
+function addLog(m){S.log.push({t:`W${S.week} ${dayT(S.day)}`,m});if(S.log.length>60)S.log.shift()}
 const carById=id=>S.cars.find(c=>c.id===id);
 const driverOfCar=id=>S.drivers.find(d=>d.carId===id);
 
@@ -1788,10 +1790,29 @@ const MAP=(()=>{
           for(let k=0;k<3;k++)crate(S0.v,S0.u-.06-k*.095,'#2f62b8','#5a8ce0');for(let k=0;k<2;k++)crate(S0.v+.24,S0.u-.06-k*.095,'#e3b21c','#f3d35a');crate(S0.v+.12,S0.u-.06-3*.095,'#2f62b8','#5a8ce0')})}
 
       /* the mechanic's workshop (garage tab) out to the west and the used-car dealer (dealer tab) out to the east, both well clear of the shop */
-      {const wv=sv-7.2,wu=su+.5,W=2.4,D=1.1,H=.74;spots.garage={v:wv+W/2,u:wu+D+.55,b:{v:wv,u:wu,w:W,d:D}};reserved.push([wu-1.3,wu+3.4,wv-.9,wv+W+.9]);
+      {const wv=sv-7.2,wu=su+.5,W=2.4,D=1.1,H=.74;spots.garage={v:wv+W/2,u:wu+D+.55,b:{v0:wv-.35,v1:wv+W+.35,u0:wu-H-.15,u1:wu+D+1.35}};reserved.push([wu-1.3,wu+3.4,wv-.9,wv+W+.9]);
         // concrete forecourt
         addObj(wu,wv+W/2,W,(c,lod)=>{rect(c,wv-.25,wu+D-.05,W+.5,1.35,'#80838a');if(lod){c.fillStyle='rgba(0,0,0,.12)';for(let k=1;k<6;k++)c.fillRect(wv-.25+k*(W+.5)/6,wu+D-.05,.01,1.35);rect(c,wv-.25,wu+D+1.25,W+.5,.05,'#6a6d73');
-          c.fillStyle='rgba(30,30,30,.25)';c.beginPath();c.ellipse(wv+W*.74,wu+D+.6,.18,.08,0,0,7);c.fill()}},'b');
+          }},'b');
+        // workshop equipment on the forecourt: tool chest, tyre changer, wheel balancer, compressor, engine hoist, floor jack
+        addObj(wu+D+.5,wv+W*.75,1.4,(c,lod)=>{const b=wu+D;
+          // red rolling tool chest against the wall
+          rect(c,wv+1.32,b+.02,.34,.06,'#e05a4e');rect(c,wv+1.32,b+.08,.34,.22,'#b8352b');if(lod){c.fillStyle='rgba(0,0,0,.35)';for(let k=1;k<5;k++)c.fillRect(wv+1.34,b+.08+k*.044,.3,.008);c.fillStyle='#d9d9d9';for(let k=0;k<5;k++)c.fillRect(wv+1.46,b+.095+k*.044,.1,.01)}
+          circ(c,wv+1.36,b+.31,.02,'#222');circ(c,wv+1.62,b+.31,.02,'#222');
+          // tyre changer: grey base, turntable with a tyre, and the mount arm
+          rect(c,wv+1.78,b+.18,.26,.22,'#8e959d');rect(c,wv+1.78,b+.18,.26,.04,'#b3b9c0');circ(c,wv+1.91,b+.29,.11,'#15171b');circ(c,wv+1.91,b+.29,.06,'#9aa3ad');rect(c,wv+2.0,b+.02,.03,.2,'#e0b22a');rect(c,wv+1.9,b+.02,.12,.03,'#e0b22a');
+          // wheel balancer with a wheel on the shaft
+          rect(c,wv+2.14,b+.16,.2,.16,'#3a6fc4');rect(c,wv+2.14,b+.16,.2,.03,'#5a8fe4');circ(c,wv+2.1,b+.22,.07,'#15171b');circ(c,wv+2.1,b+.22,.035,'#c8ccd2');
+          // air compressor tank and hose reel
+          rect(c,wv+2.42,b+.06,.12,.3,'#2f62b8');circ(c,wv+2.48,b+.06,.06,'#3a72cc');circ(c,wv+2.48,b+.36,.06,'#24508f');if(lod){c.strokeStyle='#111';c.lineWidth=.012;c.beginPath();c.moveTo(wv+2.48,b+.2);c.quadraticCurveTo(wv+2.3,b+.55,wv+2.05,b+.5);c.stroke()}
+          // engine hoist (folding crane) in the corner
+          if(lod){c.strokeStyle='#e0b22a';c.lineWidth=.035;c.lineCap='round';c.beginPath();c.moveTo(wv+1.42,b+1.12);c.lineTo(wv+1.42,b+.66);c.lineTo(wv+1.72,b+.74);c.stroke();c.beginPath();c.moveTo(wv+1.3,b+1.14);c.lineTo(wv+1.56,b+1.14);c.stroke();c.strokeStyle='#555';c.lineWidth=.012;c.beginPath();c.moveTo(wv+1.72,b+.74);c.lineTo(wv+1.72,b+.88);c.stroke();rect(c,wv+1.68,b+.88,.08,.04,'#333')}
+          // red floor jack and two jack stands
+          rect(c,wv+2.02,b+.92,.3,.1,'#c0392b');rect(c,wv+2.02,b+.92,.3,.03,'#e05a4e');if(lod){c.strokeStyle='#888';c.lineWidth=.015;c.beginPath();c.moveTo(wv+2.32,b+.97);c.lineTo(wv+2.5,b+.86);c.stroke()}
+          [[2.18,.7],[2.32,.7]].forEach(([x,y])=>{rect(c,wv+x-.03,b+y,.06,.06,'#d35400');rect(c,wv+x-.012,b+y-.07,.024,.08,'#999')});
+          // oil drain pan under the lift and a fire extinguisher by the door
+          circ(c,wv+W*.25,b+.95,.07,'#2b2b2b');circ(c,wv+W*.25,b+.95,.045,'#3d3424');rect(c,wv+W*.47,b-.2,.05,.14,'#d62828');rect(c,wv+W*.47,b-.22,.05,.03,'#222')});
+
         bldg({v:wv,u:wu,w:W,d:D,hl:H,wall:'#b7bfc8',roof:'#7d8a96',flat:false,win:[[.87,.97,.42,.62]],litP:.8,extra:(c,lod)=>{if(!lod)return;const U=f=>wu+D-H*f,X=f=>wv+W*f,R=(x0,x1,y0,y1,col)=>rect(c,X(x0),U(y1),X(x1)-X(x0),U(y0)-U(y1),col);
           // two bays: the left one open with the lift inside, the right one shuttered
           R(.04,.46,0,.62,'#1b1e25');R(.04,.46,.6,.64,'#5c636c');if(dark>.45)R(.06,.44,.5,.6,'rgba(255,236,190,.25)');
@@ -1812,12 +1833,19 @@ const MAP=(()=>{
             if(lod&&(now%900)<520){c.strokeStyle='#ffe08a';c.lineWidth=.015;for(let q=0;q<7;q++){const a=((now*.37+q*97)%628)/100,l=.06+((q*31+now)%40)/300;c.beginPath();c.moveTo(cv+.22,cu);c.lineTo(cv+.22+Math.cos(a)*l,cu+Math.sin(a)*l*.7);c.stroke()}
               c.fillStyle='rgba(255,240,190,.6)';c.beginPath();c.arc(cv+.22,cu,.035,0,7);c.fill()}}
           else if(lod){rect(c,cv-.22,cu-.04,.44,.04,'#c7951c')}})}
-      {const dv=sv+6.4,du=su+.2,W=2.2,D=1.0,H=.62;spots.dealer={v:dv+W/2,u:du+D+1.1,b:{v:dv,u:du,w:W,d:D}};reserved.push([du-1.3,du+4,dv-1.1,dv+W+1.3]);
+      {const dv=sv+6.4,du=su+.2,W=2.2,D=1.0,H=.62;spots.dealer={v:dv+W/2,u:du+D+1.1,b:{v0:dv-.7,v1:dv+W+.55,u0:du-H-.15,u1:du+D+2.05}};reserved.push([du-1.3,du+4,dv-1.1,dv+W+1.3]);
         const lot=[],rq=mulberry32(9917),ms=Object.keys(CARS).filter(k=>!CARS[k].hidden&&!CARS[k].legend&&!CARS[k].noCpu);for(let r=0;r<2;r++)for(let k=0;k<4;k++){const m=ms[Math.floor(rq()*ms.length)],P=PAINTS[Math.floor(rq()*PAINTS.length)];lot.push({v:dv-.2+k*.68,u:du+D+.75+r*.78,a:r?Math.PI/2:-Math.PI/2,c1:P[1],c2:'#1b1c20',model:m,lights:0,brake:false,steer:0})}
         addObj(du,dv+W/2,W+1,(c,lod)=>{rect(c,dv-.6,du+D-.05,W+1.1,2.05,'#6f7278');if(lod){c.fillStyle='rgba(240,240,230,.55)';for(let r=0;r<2;r++)for(let k=0;k<=4;k++)c.fillRect(dv-.54+k*.68,du+D+.42+r*.78,.012,.62)}},'b');
         bldg({v:dv,u:du,w:W,d:D,hl:H,wall:'#eef1f4',roof:'#c23b32',flat:true,win:[[.06,.62,.06,.5],[.7,.94,.06,.5]],litP:1,extra:(c,lod)=>{if(!lod)return;const U=f=>du+D-H*f,X=f=>dv+W*f,R=(x0,x1,y0,y1,col)=>rect(c,X(x0),U(y1),X(x1)-X(x0),U(y0)-U(y1),col);
           if(dark<=.45){R(.06,.62,.06,.5,'#9fc4dc');R(.7,.94,.06,.5,'#9fc4dc');c.fillStyle='rgba(255,255,255,.35)';c.fillRect(X(.1),U(.48),.04,U(.1)-U(.48))}
+          R(.06,.62,.38,.47,'#f2c94c');wtext(c,'★ 大決算セール SALE ★',X(.34),U(.425)+.02,.06,'bold','#c23b32');[[.2,.2],[.48,.2],[.82,.26]].forEach(([x,y])=>{circ(c,X(x),U(y),.1,'#ffd21f');circ(c,X(x),U(y),.085,'#d62828');wtext(c,'特価',X(x),U(y)+.02,.06,'bold','#fff')});
           R(.04,.96,.56,.86,'#c23b32');R(.04,.96,.56,.58,'#f2c94c');wtext(c,'中古車センター',X(.5),U(.73)+.03,.085,'bold','#fff6e0');wtext(c,'USED CARS',X(.5),U(.6)+.02,.045,'bold','#f2c94c')}});
+
+        // promotional nobori banners in front of the showroom, and sale stickers on the glass
+        {const NB=[[-.5,.3,'決算セール','#d62828','#fff'],[-.5,1.1,'低金利','#1f5fbf','#fff'],[-.5,1.9,'保証付','#f2c94c','#c23b32'],[W+.38,.3,'ローンOK','#1f8f4a','#fff'],[W+.38,1.1,'下取り強化','#ff7a1a','#fff'],[W+.38,1.9,'決算セール','#d62828','#fff']];
+          addObj(du+D+2.1,dv+W/2,W+1,(c,lod)=>{const t=performance.now()/600;NB.forEach(([x,y,txt,bg,fg],k)=>{const v=dv+x,b=du+D+y+.5,sw=Math.sin(t+k)*.012;
+            rect(c,v-.01,b-.82,.02,.82,'#9aa0a8');rect(c,v+.01,b-.8,.15+sw,.62,bg);rect(c,v+.01,b-.8,.15+sw,.03,'rgba(255,255,255,.55)');rect(c,v+.01,b-.21,.15+sw,.03,'rgba(0,0,0,.25)');
+            if(lod){const ch=[...txt],n=ch.length,step=Math.min(.11,.54/n);ch.forEach((q,i)=>wtext(c,q,v+.085,b-.74+step*(i+.75),step*.95,'bold',fg))}})})}
         // the lot: cars for sale with price boards, and a string of bunting
         addObj(du+D+2,dv+W/2,W+1,(c,lod)=>{lot.forEach(s=>{drawCar(c,s);if(lod){rect(c,s.v-.07,s.u+(s.a>0?-.36:.26),.14,.08,'#fff8e6');rect(c,s.v-.07,s.u+(s.a>0?-.36:.26),.14,.02,'#c23b32')}});
           if(lod){const y=du+D+.12,x0=dv-.55,x1=dv+W+.45,cols=['#c23b32','#f2c94c','#2f62b8','#3aa05a'];c.strokeStyle='rgba(60,60,60,.6)';c.lineWidth=.01;c.beginPath();c.moveTo(x0,y);c.quadraticCurveTo((x0+x1)/2,y+.12,x1,y);c.stroke();
@@ -2272,8 +2300,8 @@ const MAP=(()=>{
       drawMini(m,window.PHONE?0:fs);
       if(h.count>0){const n=Math.ceil(h.count);txt(m,n>3?'READY':String(n),vw/2,vh/2,clamp(Math.round(vw*.09),36,90),'#ffb03b','center')}
       else if(h.count>-.8)txt(m,'GO!',vw/2,vh/2,clamp(Math.round(vw*.09),36,90),'#3dff5a','center');
-    }else if(window.PHONE)txt(m,`${h.convoy?'SUNDAY CONVOY':'DAWN RUN'} · ${String(WX()).toUpperCase()}${h.cam?' · '+h.cam:''}`,vw/2,22,8,'#cfeeff','center');
-    else{txt(m,h.ghost?`${h.time} ???`:`${h.time} ${h.convoy?'CONVOY':'RUN'} ${h.idx}/${h.n}`,14,vh-16-fs*1.7,fs,h.ghost?'#d8dde4':'#ffd84a');txt(m,`${h.name} ${h.code}`,14,vh-16,fs,'#ffd84a')}
+    }else if(window.PHONE)txt(m,`${h.convoy?'SUNDAY '+h.convoy:'DAWN RUN'} · ${String(WX()).toUpperCase()}${h.cam?' · '+h.cam:''}`,vw/2,22,8,'#cfeeff','center');
+    else{txt(m,h.ghost?`${h.time} ???`:`${h.time} ${h.convoy||'RUN'}${h.convoy==='JOY RIDE'?'':` ${h.idx}/${h.n}`}`,14,vh-16-fs*1.7,fs,h.ghost?'#d8dde4':'#ffd84a');txt(m,`${h.name} ${h.code}`,14,vh-16,fs,'#ffd84a')}
     if(h.status&&!(h.race&&h.count>-.8))txt(m,h.status,vw/2,vh*.68,clamp(Math.round(vw*.045),20,44),h.status==='CRASHED'||h.status==='BROKE DOWN'?'#ff4d4d':'#ffb03b','center');
     const R=clamp(Math.min(vw,vh)*.13,44,84),cx=vw-R-40,cy=vh-R*.98-18,a0=Math.PI*.78,a1=Math.PI*2.22,segs=10,fr=clamp(h.rpm/h.rl,0,1);
     m.lineCap='butt';
@@ -2552,7 +2580,7 @@ const MAP=(()=>{
     if(race&&!runs.cine&&fr&&fr.state==='out'){const o=runs.list.find(r=>r!==fr&&r.state==='run');if(o)fr=o}
     if(fr&&(fr.state==='run'||fr.state==='out'||race)){focus=fr.s;const i=fr.i,kmh=fr.state==='run'?fr.kmhAt(i):0,gb=GB[fr.gbm||fr.model],rl=fr.rl||gb.rl,nG=gb.g.length;let g=0;while(g<nG-1&&gearSpeed(fr.gbm||fr.model,g,rl*.96)<kmh)g++;
       const rpm=fr.state==='run'?clamp(kmh*1000*gb.g[g]*gb.fd/(60*tyreCirc(gb.t)),1000,rl):(fr.state==='wait'?3500+Math.sin(now/90)*900:900),tt=Math.max(0,el-fr.delay);
-      hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.max(0,Math.min(tt,fr.dur))/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:runs.convoy?null:(fr.cupT||null),convoy:!!runs.convoy,ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
+      hud={status:fr.state==='out'?INC_LABEL[fr.dnfType].toUpperCase():fr.pausing?INC_LABEL[fr.pausing.type].toUpperCase():'',left:T.hair.filter(h=>h>i).length,time:fmtMs(Math.max(0,Math.min(tt,fr.dur))/fr.sc),idx:runs.list.indexOf(fr)+1,n:runs.list.filter(x=>!x.ghost).length,ghost:!!fr.ghost,name:fr.d.first.toUpperCase(),code:CARS[fr.model].code,kmh,rpm,rl,gear:g+1,tofu:fr.state==='out'?0:100-fr.res.dmg*fr.stress[i],cup:runs.convoy?null:(fr.cupT||null),convoy:runs.convoy?(runs.solo?'JOY RIDE':'CONVOY'):'',ct:tt,cam:runs.dir&&!runs.replay?(runs.dir.lock!=null?`LOCKED · ${runs.list[runs.dir.lock].d.first.toUpperCase()}`:DIRECTOR_ON?'DIRECTOR CAM':''):'',cutName:runs.dir&&runs.dir.name,flash:runs.dir&&runs.dir.flash};
       if(race){const A=runs.list[0],Bq=runs.list[1],ia=A.state==='done'?N-1:A.i,ib=Bq.state==='done'?N-1:Bq.i;const sA=A.start||0,sB=Bq.start||0;let gap;if(ia>=ib)gap=(sB+Bq.cumReal[ia])-(sA+A.cumReal[ia]);else gap=-((sA+A.cumReal[ib])-(sB+Bq.cumReal[ib]));
         Object.assign(hud,{race:true,gap,title:runs.title,dir:runs.dir,count:-el,lead:gap>=0?`${A.d.first.toUpperCase()} LEADS`:`${Bq.d.first.toUpperCase()} LEADS`});
         const realT=el/A.sc;while(runs.ev<runs.events.length&&runs.events[runs.ev].t<=realT){const e=runs.events[runs.ev];if(!runs.replay)pushFeed(e);if(e.cut){runs.cutin={...e.cut,t0:now,seed:runs.list[e.cut.by].d.seed,face:runs.list[e.cut.by].d.face};if(!runs.replay)AUDIO.stinger(e.cut.ok);
@@ -2631,7 +2659,7 @@ const MAP=(()=>{
     runT0=performance.now();setFollow(true);zTarget=driveZ();liveCards(list,false);
   }
   function runConvoy(o,done){
-    runs={mode:'delivery',convoy:true,T:o.T,list:o.list,lead:null,finished:false,focus:null};onDone=done;
+    runs={mode:'delivery',convoy:true,solo:o.list.length===1,T:o.T,list:o.list,lead:null,finished:false,focus:null};onDone=done;
     {const T=o.T,N=T.len,mx=Math.max(...o.list.map(r=>r.cumReal[N-1]));const sc=clamp(mx/9,24,38)/mx;o.list.forEach((r,i)=>prepRun(r,i,T,sc,false));runs.dir=buildDirector(o.list,sc)}
     runT0=performance.now();setFollow(true);zTarget=driveZ();liveCards(o.list,false);
   }
@@ -2713,7 +2741,7 @@ const MAP=(()=>{
   function focusLeaf(){if(runs)return false;if(!world||!world.def.home)loadWorld('usuzumi');if(!leafOK('usuzumi'))return false;const L=leafMask(road);let i=0;while(i<road.len&&!L[i])i++;if(i>=road.len)return false;const a=road.pts[i];setFollow(false);camTarget=[a.v,a.u];zTarget=clamp(Math.min(vw/9,vh/7),40,90);return true}
   function focusShop(){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');camTarget=[shopRect.v+.9,shopRect.u+1.05];zTarget=clamp(Math.min(vw/4.2,vh/3.4),120,330)}
   /* pan to the workshop or the dealer (or back to the shop) when their tab is opened */
-  function focusSpot(k){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');const p=spots[k];if(!p){focusShop();return}setFollow&&follow&&0;camTarget=[p.v,p.u];zTarget=clamp(Math.min(vw/4.2,vh/3.4),120,330)}
+  function focusSpot(k){if(runs)return;if(!world||!world.def.home)loadWorld('usuzumi');const p=spots[k];if(!p){focusShop();return}const b=p.b,w=b.v1-b.v0,h=b.u1-b.u0;camTarget=[(b.v0+b.v1)/2,(b.u0+b.u1)/2];zTarget=clamp(Math.min(vw/(w*1.45),vh/(h*1.45*TILT)),60,330)}
   /* put a car up on the workshop lift for a few seconds, with the mechanic at work */
   function workOn(car){if(!car||runs)return;if(!world||!world.def.home)loadWorld('usuzumi');const t=performance.now();liftJob={c1:car.c1,c2:car.c2,model:car.model,look:car.look,t0:t,until:t+5200};focusSpot('garage')}
   return{runConvoy,focusSpot,workOn,preview,stopPreview,previewK:()=>prev?prev.k||0:null,clockInfo:()=>runs&&{el:runs.el,rate:runs.clk?runs.clk.rate:1,slowTo:runs.slowTo??null,miss:!!runs.miss,cut:runs.cutin?{ok:runs.cutin.ok,move:runs.cutin.move}:null},toggleSlow:()=>{SLOWMO_ON=!SLOWMO_ON;try{localStorage.setItem('tougeTofu.slowmo',SLOWMO_ON?'1':'0')}catch(e){}return SLOWMO_ON},slowOn:()=>SLOWMO_ON,homeTrack:()=>home().road,init,runDelivery,runRace,skip,replayStart,replayStop,fit,zoom,focusRun,toggleDirector,directorOn:()=>DIRECTOR_ON,profile,gripLoss,leafCorners,focusLeaf,leavesOn:T=>leafOK(T.id)&&WX()!=='Snow'?leafMask(T):null,loadWorld,track,par,focusShop,worldId:()=>world&&world.id,setFollow:v=>{setFollow(v);if(v&&runs){zTarget=driveZ();runs.camK=.04}if(v&&!runs)fit()},isFollow:()=>follow,setDark:v=>darkTarget=v,setDarkNow:v=>{dark=darkTarget=v},hairpins:()=>home().road.hair.length,running:()=>!!runs,toggleCRT:()=>{crt=!crt;return crt}};
@@ -2732,24 +2760,25 @@ function plannedRuns(day=S.day){
   return out;
 }
 /* fill the week: 'rotate' shares the days out evenly, 'top' sends the strongest pairs every day, 'all' puts everyone on every day */
-function autoRoster(mode){const el=S.drivers.filter(d=>carById(d.carId)),P=Math.min(S.prod,el.length);
-  if(mode==='all'){S.drivers.forEach(d=>setDw(d,127));return}
+function autoRoster(mode,sunOff){const el=S.drivers.filter(d=>carById(d.carId)),P=Math.min(S.prod,el.length),sun=!sunOff&&(mode==='all'||S.drivers.some(d=>onDay(d,0)&&carById(d.carId)));
+  if(mode==='clear'){S.drivers.forEach(d=>setDw(d,0));return}
+  if(mode==='all'){S.drivers.forEach(d=>setDw(d,sun?127:126));return}
   const rate=d=>{const c=carById(d.carId);return dskill(d)*65+(c?spec(c).pi/10*.35:0)},idx=new Map(S.drivers.map((d,i)=>[d.id,i])),cnt=new Map(el.map(d=>[d.id,0])),dw=new Map(S.drivers.map(d=>[d.id,0]));let prev=new Set();
-  for(let day=0;day<7;day++){let pick;
+  for(let day=sun?0:1;day<7;day++){let pick;
     if(mode==='top')pick=el.slice().sort((a,b)=>rate(b)-rate(a)).slice(0,P);
     else pick=el.slice().sort((a,b)=>cnt.get(a.id)-cnt.get(b.id)||(prev.has(a.id)-prev.has(b.id))||idx.get(a.id)-idx.get(b.id)).slice(0,P);
     pick.forEach(d=>{cnt.set(d.id,cnt.get(d.id)+1);dw.set(d.id,dw.get(d.id)|(1<<day))});prev=new Set(pick.map(d=>d.id))}
   S.drivers.forEach(d=>setDw(d,dw.get(d.id)))}
 function dayNeed(day){const n=S.drivers.filter(d=>onDay(d,day)&&carById(d.carId)).length;return{n,cls:n===0?'rest':n>S.prod?'over':n<Math.min(S.prod,S.drivers.filter(d=>carById(d.carId)).length)?'under':'ok'}}
-function rosterHTML(){if(S.drivers.length<2)return'';
+function rosterHTML(){if(!S.drivers.length)return'';sunDefault();
   const ds=sortedDrivers(),cols=`minmax(64px,auto) repeat(7,minmax(0,1fr))`;
-  let g=`<div class="rg" style="grid-template-columns:${cols}"><span></span>${DAYS.map((x,i)=>`<span class="rh ${i===S.day?'td':''} ${i===6?'sat':''}">${x}</span>`).join('')}`;
+  let g=`<div class="rg" style="grid-template-columns:${cols}"><span></span>${DAYS.map((x,i)=>`<span class="rh ${i===S.day?'td':''} ${i===6?'sat':''}">${dayH(i)}</span>`).join('')}`;
   ds.forEach(d=>{const c=carById(d.carId);g+=`<span class="rn"><img class="av" src="${avatar(d.seed,d.face)}" alt="">${esc(d.first)}${c?'':' <i>no car</i>'}</span>`+DAYS.map((x,i)=>{const on=onDay(d,i),bench=on&&c&&!plannedRuns(i).some(r=>r.d===d);return`<button class="rc ${on?'on':''} ${bench?'bench':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${on}" aria-label="${esc(d.first)} on ${x}" title="${bench?'Rostered, but no press is free':''}">${on?(bench?'–':'●'):''}</button>`}).join('')});
-  g+=`<span class="rn rf">Runs</span>${DAYS.map((x,i)=>{const q=dayNeed(i);return isConvoyDay(i)?`<span class="rcount rest ${i===S.day?'td':''}" title="Sunday is convoy day">convoy</span>`:`<span class="rcount ${q.cls} ${i===S.day?'td':''} ${i===6?'sat':''}">${q.n?Math.min(q.n,S.prod)+'/'+S.prod:'rest'}</span>`}).join('')}</div>`;
+  g+=`<span class="rn rf">Runs</span>${DAYS.map((x,i)=>{const q=dayNeed(i);return isConvoyDay(i)?`<span class="rcount rest ${i===S.day?'td':''}" title="Nobody on the Sunday roster: a rest day, with a convoy or joy ride if you like. Tick drivers to make it a delivery day.">rest</span>`:`<span class="rcount ${q.cls} ${i===S.day?'td':''} ${i===6?'sat':''}">${q.n?Math.min(q.n,S.prod)+'/'+S.prod:'rest'}</span>`}).join('')}</div>`;
   const warn=DAYS.map((x,i)=>{if(isConvoyDay(i))return'';const q=dayNeed(i);return q.cls==='over'?`${x}: ${q.n-S.prod} benched`:q.cls==='rest'?`${x}: rest day`:q.cls==='under'?`${x}: ${S.prod-q.n>1?S.prod-q.n+' presses':'a press'} idle`:''}).filter(Boolean);
   const per=S.drivers.filter(d=>carById(d.carId)).map(d=>plannedCount(d)),lo=Math.min(...per),hi=Math.max(...per);
   return`<div class="card roster"><div class="rtop"><h3>Dawn roster <span class="jp">当番表</span></h3><span class="note">Tap a day to put a driver on or off. The week repeats until you change it. Drivers who skip the Saturday run race fresher that night.</span></div>${g}
-    <div class="row">${[['rotate','Rotate evenly'],['top','Strongest only'],['all','Everyone, every day']].map(([m,l])=>`<button class="btn sm" data-act="rosAuto" data-m="${m}">${l}</button>`).join('')}</div>
+    <div class="row">${[['rotate','Rotate evenly'],['top','Strongest only'],['all','Everyone, every day']].map(([m,l])=>`<button class="btn sm" data-act="rosAuto" data-m="${m}">${l}</button>`).join('')}<button class="btn sm" data-act="rosAuto" data-m="clear">Clear all</button></div>
     <div class="note ${warn.some(w=>!/rest day/.test(w))?'rwarn':''}">${warn.length?warn.join(' · ')+'.':'Every press is busy and nobody is benched.'} ${per.length?`Each driver runs ${lo===hi?lo:lo+' to '+hi} day${hi===1?'':'s'} a week.`:''}</div></div>`}
 /* Saturday: drivers who skipped the dawn run go into race night fresher (fewer mistakes, steadier under pressure, a touch quicker) */
 const REST_K={mist:.65,press:.7,pace:.997,def:5};
@@ -2757,7 +2786,7 @@ function rested(d){return!(S.satRan&&S.satRan.w===S.week&&S.satRan.ids.includes(
 function plannedCount(d){let n=0;for(let i=0;i<7;i++)if(plannedRuns(i).some(r=>r.d===d))n++;return n}
 function renderHUD(){
   $('#sMoney').textContent=yen(S.money);$('#sCred').textContent=Math.round(S.cred);$('#sWeek').textContent=S.week;
-  $('#days').innerHTML=DAYS.map((d,i)=>`<div class="day ${i<S.day?'past':''} ${i===S.day?'now':''} ${i===6?'sat':''}">${d}<small>${i===6?'TOUGE':isConvoyDay(i)?'CONVOY':'RUN'}</small></div>`).join('');
+  $('#days').innerHTML=DAYS.map((d,i)=>`<div class="day ${i<S.day?'past':''} ${i===S.day?'now':''} ${i===6?'sat':''}">${d}<small>${i===6?'TOUGE':isConvoyDay(i)?'REST':'RUN'}</small></div>`).join('');
   const ph={pre:isConvoyDay()?['Sunday morning','09:30']:['Before dawn','04:30'],post:[S.day===6||isConvoyDay()?'Afternoon':'Morning',S.day===6?'16:20':isConvoyDay()?'15:40':'06:40'],race:['Race night','23:30'],raced:['Late night','01:15']}[S.phase]||['',''];
   if(S.day===6&&!S.raceWeather)S.raceWeather=rollWeather(S.weather);if(S.day===6&&!S.raceWind)S.raceWind=rollWind();const w0=S.phase==='race'||S.phase==='raced'?tropWx(S.raceWeather||S.weather,RACE_M):S.weather,wc=w=>w==='Wet'?'wet':w==='Damp'?'damp':w==='Fog'?'fog':w==='Snow'?'snow':'',WN=windNow(),SE=SEASONS[seasonIdx(S.week)];
   $('#clock').innerHTML=`<span class="pill season s${seasonIdx(S.week)}">${wxIcon(SE.n)}${SE.jp}<span class="sn"> ${SE.n}</span></span><span class="pill amber">${DAYS[S.day]} ${ph[1]}</span><span class="pill ${wc(w0)}">${wxTag(w0,isDaytime())}<span class="wind" title="Wind ${WN.kmh} km/h from the ${compass(WN.from)} (the arrow shows where it blows). Slipstream passes work best into a headwind."><i class="warr" style="transform:rotate(${(WN.from+180)%360}deg)"><svg viewBox="0 0 9 9" width="13" height="13" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><rect x="4" y="0" width="1" height="1"/><rect x="3" y="1" width="1" height="1"/><rect x="4" y="1" width="1" height="1"/><rect x="5" y="1" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="3" y="2" width="1" height="1"/><rect x="4" y="2" width="1" height="1"/><rect x="5" y="2" width="1" height="1"/><rect x="6" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="3" width="1" height="1"/><rect x="3" y="3" width="1" height="1"/><rect x="4" y="3" width="1" height="1"/><rect x="5" y="3" width="1" height="1"/><rect x="6" y="3" width="1" height="1"/><rect x="7" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/><rect x="1" y="4" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/><rect x="3" y="4" width="1" height="1"/><rect x="4" y="4" width="1" height="1"/><rect x="5" y="4" width="1" height="1"/><rect x="6" y="4" width="1" height="1"/><rect x="7" y="4" width="1" height="1"/><rect x="8" y="4" width="1" height="1"/><rect x="3" y="5" width="1" height="1"/><rect x="4" y="5" width="1" height="1"/><rect x="5" y="5" width="1" height="1"/><rect x="3" y="6" width="1" height="1"/><rect x="4" y="6" width="1" height="1"/><rect x="5" y="6" width="1" height="1"/><rect x="3" y="7" width="1" height="1"/><rect x="4" y="7" width="1" height="1"/><rect x="5" y="7" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="5" y="8" width="1" height="1"/></svg></i>${WN.kmh}<small>km/h</small></span></span><span class="pill ph">${ph[0]}</span>${S.day===6&&(S.phase==='pre'||S.phase==='post')?`<span class="pill ${wc(S.raceWeather)}" title="Race night forecast">Tonight: ${wxTag(S.raceWeather)}</span>`:''}`;
@@ -2766,9 +2795,9 @@ function renderHUD(){
 function renderAction(){
   document.documentElement.classList.toggle('busy',!!busy);const a=$('#actionbar');let h='';
   if(busy)h=`<button class="btn" data-act="skip">Skip to results</button>`;
-  else if(S.phase==='pre'&&isConvoyDay()){h=`<span class="why">Sunday: no deliveries. Take the crew out for a daytime convoy, or give everyone the day off.</span><button class="btn" data-act="restDay">Rest day</button><button class="btn primary big" data-act="convoy">Sunday convoy <small>daytime</small></button>`}
+  else if(S.phase==='pre'&&isConvoyDay()){h=`<span class="why">Sunday: no deliveries. ${S.drivers.length>1?'Take the crew out for a daytime convoy':'Take the car out for a daytime joy ride'}, or rest. (Tick drivers for Sunday on the roster to make it a delivery day.)</span><button class="btn" data-act="restDay">Rest day</button><button class="btn primary big" data-act="convoy">${S.drivers.filter(raceReady).length>1?'Sunday convoy':'Joy ride'} <small>daytime</small></button>`}
   else if(S.phase==='pre'){const runs=plannedRuns();
-    if(!runs.length){if(stuck()){h=`<span class="why">Every car is wrecked and there's no money for repairs.</span><button class="btn" data-act="restDay">Rest today</button><button class="btn primary big" data-act="loanOffer">Take a loan</button>`}else{const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${DAYS[S.day]}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}}
+    if(!runs.length){if(stuck()){h=`<span class="why">Every car is wrecked and there's no money for repairs.</span><button class="btn" data-act="restDay">Rest today</button><button class="btn primary big" data-act="loanOffer">Take a loan</button>`}else{const why=S.drivers.some(d=>onDay(d,S.day)&&carById(d.carId)&&!carOK(carById(d.carId)))?'Your car is wrecked. Repair it in the Garage.':S.drivers.some(d=>onDay(d,S.day))?'Assign a car to a driver in the Crew tab.':`Nobody is rostered for ${dayT(S.day)}. Set the dawn roster in the Crew tab.`;const canRest=S.drivers.length>0;h=`<span class="why">${why}</span>`+(canRest?`<button class="btn" data-act="tab" data-t="crew">Roster</button><button class="btn primary big" data-act="restDay">Rest today${S.day===6?' <small>fresh for tonight</small>':''}</button>`:`<button class="btn primary big" disabled>Dispatch</button>`)}}
     else{const ready=readyDrivers().length,extra=ready-runs.length;
       if(extra>0)h=`<span class="why">${extra} driver${extra>1?'s':''} waiting: only ${S.prod} press${S.prod>1?'es':''}.</span>`+(S.prod<6?`<button class="btn" data-act="tab" data-t="shop">${S.money>=PROD[S.prod]?'Add press '+yenK(PROD[S.prod]):'Press costs '+yenK(PROD[S.prod])}</button>`:'');
       h+=`<button class="btn primary big" data-act="dispatch">Dispatch ${runs.length} run${runs.length>1?'s':''} <small>04:30</small></button>`}}
@@ -2791,7 +2820,7 @@ function renderPanel(){
 }
 let lastView='';
 function syncView(){const key=S.phase+'|'+S.day+'|'+S.week;if(key===lastView)return;lastView=key;if((S.phase==='pre'||S.phase==='post')&&!busy)viewForTab()}
-function renderAll(){tabToLoan();syncSecret();{const b=document.getElementById('dirBtn');if(b&&window.MAP)b.classList.toggle('on',MAP.directorOn())}renderHUD();renderAction();renderTabs();renderPanel();syncView()}
+function renderAll(){if(S&&S.drivers)sunDefault();tabToLoan();syncSecret();{const b=document.getElementById('dirBtn');if(b&&window.MAP)b.classList.toggle('on',MAP.directorOn())}renderHUD();renderAction();renderTabs();renderPanel();syncView()}
 
 function carLabel(c){const m=CARS[c.model];return`${m.code} ${m.name}`}
 function carOptions(d){let h=`<option value="0">No car</option>`;S.cars.forEach(c=>{const o=driverOfCar(c.id);h+=`<option value="${c.id}" ${d.carId===c.id?'selected':''}>${esc(CARS[c.model].code)} ${esc(CARS[c.model].name)}${o&&o.id!==d.id?' ('+esc(o.first)+')':''}</option>`});return h}
@@ -2819,7 +2848,7 @@ function crewHTML(){
     ${progHTML(d)}
     <div class="row"><label class="fld" for="as${d.id}">Car</label><select id="as${d.id}" data-chg="assign" data-id="${d.id}">${carOptions(d)}</select>${(()=>{const c=carById(d.carId);return c?`<span class="carmini" title="${esc(CARS[c.model].maker+' '+CARS[c.model].name)}"><img src="${SPR.url(c,132,84)}" alt=""><b><small>PI</small>${spec(c).pi}</b></span>`:''})()}
     <span class="wage">${d.wage?yen(d.wage)+' per run':d.legend?'Drives for free':'Family, unpaid'}</span></div>
-    <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${x}</button>`).join('')}</div></div>
+    <div class="dwrow" id="ac${d.id}"><span class="fld">Dawn runs</span><div class="dw">${DAYS.map((x,i)=>`<button class="dwd ${onDay(d,i)?'on':''} ${i===S.day?'td':''} ${i===6?'sat':''}" data-act="rosT" data-id="${d.id}" data-d="${i}" aria-pressed="${onDay(d,i)}" aria-label="${esc(d.first)} on ${x}">${dayH(i)}</button>`).join('')}</div></div>
     <div class="row"><button class="btn sm" data-act="studio" data-id="${d.id}">Look and name</button>${d.son?'':`<button class="btn sm" data-act="fire" data-id="${d.id}">Let ${esc(d.first)} go</button>`}</div>
     ${onDay(d,S.day)&&carById(d.carId)&&!plannedRuns().some(r=>r.d===d)?`<div class="note" style="color:var(--warn)">Benched ${S.phase==='pre'?'this morning':'today'}: more drivers are rostered than there are presses. Change the roster, or add a press in the Shop tab.</div>`:''}</div>`;
   });
@@ -2908,7 +2937,7 @@ function tyreOptions(c){return TYRES.map((t,g)=>{const s=setsOf(c);if(c.tyre.gra
 /* ================= save codes ================= */
 function saveCode(){const b=new TextEncoder().encode(JSON.stringify(S));let s='';for(let i=0;i<b.length;i+=8192)s+=String.fromCharCode.apply(null,b.subarray(i,i+8192));return'TTT1:'+btoa(s)}
 function readCode(code){code=(code||'').replace(/\s+/g,'');if(!code.startsWith('TTT1:'))throw new Error('prefix');const bin=atob(code.slice(5)),b=Uint8Array.from(bin,c=>c.charCodeAt(0)),o=JSON.parse(new TextDecoder().decode(b));if(!o||o.v!==1||!Array.isArray(o.drivers)||!Array.isArray(o.cars)||!o.drivers.length)throw new Error('shape');return o}
-function saveSummary(o){return`Week ${o.week}, ${DAYS[o.day]||'SUN'} · ${yen(o.money)} · ${o.drivers.length} driver${o.drivers.length>1?'s':''}, ${o.cars.length} car${o.cars.length>1?'s':''} · ${Math.round(o.cred)} cred`}
+function saveSummary(o){return`Week ${o.week}, ${dayT(o.day||0)} · ${yen(o.money)} · ${o.drivers.length} driver${o.drivers.length>1?'s':''}, ${o.cars.length} car${o.cars.length>1?'s':''} · ${Math.round(o.cred)} cred`}
 /* ================= modal & toast ================= */
 function modal(html,wide){const m=$('#modal');m.innerHTML=`<div class="mbox ${wide?'wide':''}" role="dialog" aria-modal="true">${html}</div>`;m.hidden=false;const b=m.querySelector('.btn.primary,.btn.race');b&&b.focus({preventScroll:true})}
 function closeModal(){const m=$('#modal');const hadHL=!!m.querySelector('#hlbox');m.hidden=true;m.innerHTML='';MAP.replayStop&&MAP.replayStop();if(hadHL)MUSIC.stop(.6)}
@@ -3021,7 +3050,7 @@ function finishDelivery(list){
   const fin=rows.filter(r=>r.res.dnf==null),best=fin.length?fin.reduce((a,b)=>a.res.time<b.res.time?a:b):null;
   addLog(`Delivered ${fin.length} of ${list.length} batch${list.length>1?'es':''} for ${yen(rev)}.${best?` Best run ${best.d.first}, ${fmtT(best.res.time)}.`:''}`);
   S.phase='post';MAP.setDark(S.day===6?.05:.12);save();renderAll();if(rev>0)AUDIO.cash();
-  modal(`<div class="eyebrow">${DAYS[S.day]} · Week ${S.week} · ${S.weather}</div><h2>${fin.length===list.length?'Delivered to Grand Hotel Kumoi':fin.length?'Partial delivery':'Nothing reached the hotel'}</h2>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed,gh.d.face)}" alt=""><div><b>Bunta Fujiwara</b> · GC8 Type R<br><span>${passed.length?`Came up behind and passed ${esc(passed.map(r=>r.d.first).join(', '))} without breaking a sweat.`:'Was on the pass this morning, but nobody saw him up close.'} He doesn't race for money and he isn't looking for a crew.</span></div></div>`:''}
+  modal(`<div class="eyebrow">${dayT(S.day)} · Week ${S.week} · ${S.weather}</div><h2>${fin.length===list.length?'Delivered to Grand Hotel Kumoi':fin.length?'Partial delivery':'Nothing reached the hotel'}</h2>${gh?`<div class="ghostnote"><img class="av" src="${avatar(gh.d.seed,gh.d.face)}" alt=""><div><b>Bunta Fujiwara</b> · GC8 Type R<br><span>${passed.length?`Came up behind and passed ${esc(passed.map(r=>r.d.first).join(', '))} without breaking a sweat.`:'Was on the pass this morning, but nobody saw him up close.'} He doesn't race for money and he isn't looking for a crew.</span></div></div>`:''}
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th class="num">Time</th><th class="num">Fresh</th><th class="num">Damage</th><th class="num" title="Water left in the cup on the dashboard">Cup</th><th class="num">Paid</th><th class="num">XP</th><th>Notes</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num ${r.res.dnf!=null?'neg':''}">${r.res.dnf!=null?'DNF':fmtT(r.res.time)}</td><td class="num">${r.res.dnf!=null?'-':Math.round(r.res.fresh*100)+'%'}</td><td class="num ${r.res.dmg>8?'neg':r.res.dmg<2?'pos':''}">${r.res.dnf!=null?'Lost':r.res.dmg.toFixed(1)+'%'}</td><td class="num ${r.cup==null?'':r.cup>80?'pos':r.cup<50?'neg':''}">${r.cup==null?'-':r.cup+'%'}</td><td class="num">${yen(r.res.price)}</td><td class="num">+${r.res.xp}</td><td class="tagline">${r.notes.join(' · ')}</td></tr>`).join('')}
   </tbody></table></div>
@@ -3047,27 +3076,37 @@ function endWeek(){
   <div class="mact"><button class="btn primary" data-act="startWeek">Start week ${S.week+1}</button></div>`);
 }
 function weekQuip(){const n=MTNS.filter(m=>S.cred>=m.cred).length;if(n===MTNS.length)return'Every pass in the region knows the name Kasumi Tofu.';const nx=MTNS.find(m=>S.cred<m.cred);return`${nx.name} opens at ${nx.cred} street cred. You have ${Math.round(S.cred)}.`}
-function startWeek(){const quit=dayEnd();setTimeout(()=>quitModal(quit),60);const pw=S.raceWeather||S.weather;S.raceWeather=null;S.raceWind=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather(pw);S.wind=rollWind();MAP.setDark(isConvoyDay()?0:1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red, the fog comes in, and wet leaves pile up on some corners.',Winter:'Winter. Snow on the passes, and cold tyres on the first corners of every dawn run. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
+function startWeek(){const quit=dayEnd(true);setTimeout(()=>quitModal(quit),60);const pw=S.raceWeather||S.weather;S.raceWeather=null;S.raceWind=null;S.week++;S.day=0;S.phase='pre';S.weekRev=0;S.weekCredStart=S.cred;S.weekRaces=[];S.weather=rollWeather(pw);S.wind=rollWind();MAP.setDark(isConvoyDay()?0:1);addLog(`Week ${S.week} begins.`);if(seasonIdx(S.week)!==seasonIdx(S.week-1)){const sn=SEASON(),msg={Spring:'Spring. The snow is gone and the first sakura are opening.',Summer:'Summer. Rainy season first, then long green nights.',Autumn:'Autumn. The maples turn red, the fog comes in, and wet leaves pile up on some corners.',Winter:'Winter. Snow on the passes, and cold tyres on the first corners of every dawn run. Shiga-Kusatsu is closed until spring.'}[sn];addLog(msg);toast(msg);MAP.loadWorld('usuzumi');lastView=''}else if(SEASON()==='Spring'){const bl=bloomOf(springP()),m=bl.late?'The sakura petals are falling. Leaves are coming in.':bl.pink>=.95?'Sakura in full bloom on the passes.':'More sakura opening on the passes.';addLog(m);toast(m);MAP.loadWorld('usuzumi');lastView=''}closeModal();save();renderAll()}
 
 
 /* ================= Sunday convoy =================
    From week 2, Sunday has no dawn delivery. The crew can take a pass for a relaxed daytime drive instead:
    everyone leaves together nose to tail, with the odd playful overtake. Drivers who go get a mood lift and learn the pass. */
 const cvMtn=id=>MTNS.find(m=>m.id===id);
-const isConvoyDay=(day=S.day)=>day===0&&(S.week>=2||S.day>0);
+const isConvoyDay=(day=S.day)=>day===0&&(S.week>=2||S.day>0)&&!S.drivers.some(d=>onDay(d,0)&&carById(d.carId));
+/* everyone starts with Sunday off the roster (after the opening Sunday); tick it to make Sunday a delivery day */
+function sunWarn(d,day){const f=esc(d.first);
+  modal(`<div class="eyebrow">Roster · ${dayT(day)}</div><h2>${f} would get no day off</h2>
+  <p>Without a rest day ${f}'s Stamina never refills. Tired drivers crash more and race badly, and their mood sinks${canQuit(d)?' until they quit':''}.</p>
+  <div class="mact"><button class="btn" data-act="close">Keep ${DAYS[day]} off</button><button class="btn race" data-act="rosT" data-id="${d.id}" data-d="${day}" data-ok="1">Work them anyway</button></div>`)}
+function weekWarn(list,mode){const all=list.length===S.drivers.filter(d=>carById(d.carId)).length&&list.length>1,who=all?'Everyone':list.map(d=>esc(d.first)).join(list.length===2?' and ':', '),q=list.some(canQuit);
+  modal(`<div class="eyebrow">Roster</div><h2>${who} would get no day off</h2>
+  <p>Without a rest day Stamina never refills. Tired drivers crash more and race badly, and their mood sinks${q?' until they quit':''}.</p>
+  <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="rosAuto" data-m="${mode}" data-keep="1">Give them Sunday off</button><button class="btn race" data-act="rosAuto" data-m="${mode}" data-ok="1">Work them anyway</button></div>`)}
+function sunDefault(){if(S.week<2&&S.day===0)return;S.drivers.forEach(d=>{if(!d.sunSet){d.sunSet=1;setDw(d,dwOf(d)&~1)}})}
 let CVY=null;
 function openConvoy(){if(busy)return;const open=MTNS.filter(passOpen),ds=S.drivers.filter(raceReady);
   if(!ds.length){toast('No car is fit to drive. Rest today, or repair one in the Garage.');return}
   if(!CVY)CVY={m:open[0].id,dir:'down',ids:ds.map(d=>d.id)};if(!open.some(m=>m.id===CVY.m))CVY.m=open[0].id;CVY.ids=CVY.ids.filter(id=>ds.some(d=>d.id===id));if(!CVY.ids.length)CVY.ids=ds.map(d=>d.id);
   renderConvoy()}
 function renderConvoy(){const open=MTNS.filter(passOpen),ds=S.drivers.filter(raceReady),m=cvMtn(CVY.m);
-  modal(`<div class="eyebrow">Sunday · Week ${S.week} · ${wxTag(tropWx(S.weather,CVY.m),true)}</div><h2>Sunday convoy <span class="jp">日曜ツーリング</span></h2>
+  modal(`<div class="eyebrow">Sunday · Week ${S.week} · ${wxTag(tropWx(S.weather,CVY.m),true)}</div><h2>${CVY.ids.length===1?'Sunday joy ride <span class="jp">ドライブ</span>':'Sunday convoy <span class="jp">日曜ツーリング</span>'}</h2>
   <p>No deliveries today. Take the crew out for a relaxed daytime drive: everyone sets off together, nose to tail, with the odd playful overtake. Drivers who go come back in a better mood and learn the pass. Everyone who stays home gets a full rest.</p>
   <div class="row"><label class="fld" for="cvM">Pass</label><select id="cvM" data-chg="cvM">${open.map(x=>`<option value="${x.id}" ${x.id===CVY.m?'selected':''}>${x.name}</option>`).join('')}</select>
   <label class="fld" for="cvD">Direction</label><select id="cvD" data-chg="cvD"><option value="down" ${CVY.dir==='down'?'selected':''}>Downhill</option><option value="up" ${CVY.dir==='up'?'selected':''}>Uphill</option></select></div>
   <p class="note">${dirTag(CVY.dir,`${CVY.dir==='up'?'Uphill':'Downhill'} on ${m.name}`)}. Tap drivers to bring them along or leave them home.</p>
   <div class="cvlist">${ds.map(d=>{const on=CVY.ids.includes(d.id),c=carById(d.carId);return`<button class="cvd ${on?'on':''}" data-act="cvT" data-id="${d.id}" aria-pressed="${on}"><img class="av" src="${avatar(d.seed,d.face)}" alt=""><span><b>${esc(d.first)}</b><small>${esc(CARS[c.model].code)} · ${moodWord(moodOf(d))} · stamina ${staOf(d)}%</small></span></button>`}).join('')}</div>
-  <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="cvGo" ${CVY.ids.length?'':'disabled'}>Roll out with ${CVY.ids.length} car${CVY.ids.length===1?'':'s'}</button></div>`)}
+  <div class="mact"><button class="btn" data-act="close">Cancel</button><button class="btn primary" data-act="cvGo" ${CVY.ids.length?'':'disabled'}>${CVY.ids.length===1?'Head out for a joy ride':`Roll out with ${CVY.ids.length} cars`}</button></div>`)}
 function convoyGo(){stopPreview();const m=cvMtn(CVY.m),dir=CVY.dir,ds=CVY.ids.map(id=>S.drivers.find(d=>d.id===id)).filter(raceReady);if(!m||!ds.length||busy)return;closeModal();busy=true;
   const w=tropWx(S.weather,m.id);WX_OVR=w;MAP.loadWorld(m.id);MAP.setDarkNow(0);const T=MAP.track(dir),N=T.len;
   const list=ds.map((d,k)=>{const c=carById(d.carId),prof=MAP.profile(d,c,w,T,true),base=prof.cum,cum=new Float32Array(N),seed=Math.floor(R()*1e6),pace=1.1*(1+(R()-.5)*.05);let acc=0;
@@ -3077,11 +3116,11 @@ function convoyGo(){stopPreview();const m=cvMtn(CVY.m),dir=CVY.dir,ds=CVY.ids.ma
   if(list.length>1){const cars=list.map(r=>({cum:r.cumReal,start:r.start,dnf:null,d:r.d,c:r.c,incs:[],ghost:false}));traffic(cars,T,false);list.forEach((r,k)=>{r.cumReal=cars[k].rel;r.lanes=cars[k].lanes;r.res.time=r.start+r.cumReal[N-1]})}
   MAP.runConvoy({T,list},()=>{busy=false;MUSIC.stop();finishConvoy(list,m,dir)});MUSIC.play('delivery');renderAll()}
 function finishConvoy(list,m,dir){WX_OVR=null;
-  const rows=list.map(r=>{const d=r.d,notes=[],b=knowOf(d,m.id),mb=moodOf(d);staUse(d,4);moodAdd(d,12,'Sunday convoy');learnPass(d,m.id,6);giveXP(d,40,notes);return{d,c:r.c,g:Math.round(knowOf(d,m.id)-b),dm:moodOf(d)-mb,notes}});
+  const rows=list.map(r=>{const d=r.d,notes=[],b=knowOf(d,m.id),mb=moodOf(d);staUse(d,4);moodAdd(d,list.length===1?10:12,list.length===1?'a Sunday joy ride':'Sunday convoy');learnPass(d,m.id,6);giveXP(d,40,notes);return{d,c:r.c,g:Math.round(knowOf(d,m.id)-b),dm:moodOf(d)-mb,notes}});
   const fuel=list.reduce((a,r)=>a+Math.round(spec(r.c).hp*1.6/10)*10,0);S.money-=fuel;S.weekRev-=fuel;S.convoys=(S.convoys||0)+1;
-  addLog(`Sunday convoy ${dir==='up'?'up':'down'} ${m.name} with ${list.map(r=>r.d.first).join(', ')}. Fuel ${yen(fuel)}.`);
+  addLog(list.length===1?`${list[0].d.first} took a Sunday joy ride ${dir==='up'?'up':'down'} ${m.name}. Fuel ${yen(fuel)}.`:`Sunday convoy ${dir==='up'?'up':'down'} ${m.name} with ${list.map(r=>r.d.first).join(', ')}. Fuel ${yen(fuel)}.`);
   MAP.loadWorld('usuzumi');MAP.setDarkNow(0);S.phase='post';lastView='';save();renderAll();
-  modal(`<div class="eyebrow">Sunday · ${esc(m.jp)} ${esc(m.name)} · ${dirTag(dir)}</div><h2>Back from the convoy</h2><p>An easy run in the sunshine. Nobody kept score.</p>
+  modal(`<div class="eyebrow">Sunday · ${esc(m.jp)} ${esc(m.name)} · ${dirTag(dir)}</div><h2>${list.length===1?'Back from the joy ride':'Back from the convoy'}</h2><p>${list.length===1?`${esc(list[0].d.first)} took the long way round with the windows down.`:'An easy run in the sunshine. Nobody kept score.'}</p>
   <div class="tblwrap"><table><thead><tr><th>Driver</th><th class="num">Mood</th><th class="num">Knows ${esc(m.name)}</th><th>Notes</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td><img class="av" src="${avatar(r.d.seed,r.d.face)}" alt="">${esc(r.d.first)} <span class="chip">${CARS[r.c.model].code}</span></td><td class="num pos">+${r.dm} · ${moodWord(moodOf(r.d))}</td><td class="num">${Math.round(knowOf(r.d,m.id))}%${r.g>0?` <span class="pos">+${r.g}</span>`:''}</td><td class="tagline">${r.notes.join(' · ')||'+40 XP'}</td></tr>`).join('')}
   </tbody></table></div><div class="tot"><div><span>Fuel</span><b class="neg">${yen(-fuel)}</b></div><div><span>Drivers at home</span><b>${S.drivers.length-list.length} resting</b></div></div>
@@ -3314,7 +3353,7 @@ const NET=(()=>{
   function markSeen(k){const s=seen();s[k]=now();const ks=Object.keys(s);if(ks.length>240)ks.sort((a,b)=>s[a]-s[b]).slice(0,ks.length-200).forEach(x=>delete s[x])}
 
   /* ---- race history (newest first), kept in the save and shown on the profile ---- */
-  function hist(e){S.hist=S.hist||[];S.hist.unshift(Object.assign({when:`W${S.week} ${DAYS[S.day]}`,t:now()},e));if(S.hist.length>30)S.hist.length=30;save()}
+  function hist(e){S.hist=S.hist||[];S.hist.unshift(Object.assign({when:`W${S.week} ${dayT(S.day)}`,t:now()},e));if(S.hist.length>30)S.hist.length=30;save()}
   function backfill(){if(S.histInit)return;S.histInit=1;S.hist=S.hist||[];const byName=n=>(MTNS.concat([GENTING]).find(m=>m.name===n)||{}).id;
     (S.log||[]).forEach(l=>{const g=/^(WIN|LOSS) (?:challenge vs @(\S+) |vs @(\S+)'s ghost )?(.+?) (uphill|downhill): (.*)$/.exec(l.m||'');if(!g)return;const m=byName(g[4]);if(!m)return;
       S.hist.unshift({r:g[1]==='WIN'?'W':'L',k:g[2]?'ch':g[3]?'gh':'cpu',vs:g[2]?'@'+g[2]:g[3]?'@'+g[3]:'',m,dir:g[5]==='uphill'?'up':'down',line:g[6],when:l.t||''})});
@@ -3884,10 +3923,15 @@ const ACT={
   pv:d=>startPreview(d.m,d.dir),pvStop:()=>{stopPreview();if(!busy)MAP.focusShop();renderPanel()},
   convoy:()=>openConvoy(),cvT:d=>{const id=+d.id;CVY.ids=CVY.ids.includes(id)?CVY.ids.filter(x=>x!==id):CVY.ids.concat(id);renderConvoy()},cvGo:()=>convoyGo(),
   restDay:()=>{if(busy||S.phase!=='pre'||plannedRuns().length)return;if(S.day===6)S.satRan={w:S.week,ids:[]};S.phase='post';
-    addLog(S.day===6?'No dawn run this Saturday. The whole crew rested for race night.':`${DAYS[S.day]}: no dawn run. The shop stayed shut and the crew rested.`);MAP.setDark(S.day===6?.05:.12);save();renderAll();
+    addLog(S.day===6?'No dawn run this Saturday. The whole crew rested for race night.':`${dayT(S.day)}: no dawn run. The shop stayed shut and the crew rested.`);MAP.setDark(S.day===6?.05:.12);save();renderAll();
     toast(S.day===6?'Rest day. Everyone is fresh for tonight.':'Rest day. The shop stays shut today.')},
-  rosT:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||busy)return;setDw(x,dwOf(x)^(1<<+d.d));save();renderAll()},
-  rosAuto:d=>{if(busy)return;autoRoster(d.m);save();renderAll();toast({rotate:'Roster shared out evenly across the week',top:'Strongest drivers on every day',all:'Everyone on every day'}[d.m])},
+  rosT:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x||busy)return;const nd=dwOf(x)^(1<<+d.d);
+    /* warn before a driver ends up working all seven days, whichever day fills the week */
+    if((nd&127)===127&&!d.ok){sunWarn(x,+d.d);return}
+    if(d.ok)closeModal();const was=isConvoyDay();setDw(x,nd);if(+d.d===0&&S.day===0&&S.phase==='pre'&&was!==isConvoyDay())restoreLight();save();renderAll()},
+  rosAuto:d=>{if(busy)return;const old=S.drivers.map(x=>dwOf(x));autoRoster(d.m,!!d.keep);const seven=S.drivers.filter(x=>carById(x.carId)&&dwOf(x)===127);
+    if(seven.length&&!d.ok){S.drivers.forEach((x,i)=>setDw(x,old[i]));weekWarn(seven,d.m);return}if(d.ok||d.keep)closeModal();
+    if(S.day===0&&S.phase==='pre')restoreLight();save();renderAll();toast({rotate:'Roster shared out evenly across the week',top:'Strongest drivers on every day',all:d.keep?'Everyone on Monday to Saturday':'Everyone on every day',clear:'Roster cleared. Everyone is off.'}[d.m])},
   starD:d=>{const x=S.drivers.find(v=>v.id===+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
   starC:d=>{const x=carById(+d.id);if(!x)return;x.star=!x.star;if(!x.star)delete x.star;save();renderPanel()},
   studio:d=>openStudio(+d.id),stuSet:d=>{if(!STU)return;const v=d.v;STU.f[d.k]=/^-?\d+$/.test(v)?+v:v==='true'?true:v==='false'?false:v;renderStudio()},
@@ -3994,8 +4038,8 @@ window.onMapPick=k=>{TAB='shop';renderAll();toast(k==='hotel'?`Grand Hotel Kumoi
 function showHelp(intro){
   modal(`<div class="eyebrow">${intro?'04:30 · Mt. Usuzumi':'How it works'}</div><h2>${intro?'The shop at the bottom of the pass':'Running Kasumi Tofu'}</h2>
   ${intro?`<p>Every morning before dawn, Grand Hotel Kumoi at the summit takes delivery of your tofu. Your son Kenta drives it up in the family AE86 while the pass is empty. The kitchen pays for freshness, and it pays for tofu that arrives in one piece.</p>`:''}
-  <p><b>Mood and Stamina.</b> Every driver has two bars in the Crew tab. Stamina drops with each dawn run and race, and one day without driving refills it to 100%, so give everyone a day off each week. Mood goes up with wins, clean runs, repairs, upgrades and fresh tyres, and down with losses, crashes, a battered car, bald tyres, being left off the roster and running on empty. Tired or unhappy drivers make more mistakes, and a hired driver who stays fed up for two weeks quits.</p>
-  <p><b>Sunday convoy.</b> From week 2 there are no deliveries on Sunday. Take any of your drivers for a relaxed daytime convoy on an open pass: it lifts their mood and teaches them the road, and everyone who stays home gets a full rest.</p>
+  <p><b>Mood and Stamina.</b> Every driver has two bars in the Crew tab. Stamina drops a little with each dawn run and race and partly recovers overnight, and one day without driving refills it to 100%, so give everyone a day off each week. Mood bounces back a little at the start of every week. Mood goes up with wins, clean runs, repairs, upgrades and fresh tyres, and down with losses, crashes, a battered car, bald tyres, being left off the roster and running on empty. Tired or unhappy drivers make more mistakes, and a hired driver who stays fed up for two weeks quits.</p>
+  <p><b>Sunday convoy.</b> From week 2, Sunday is a rest day by default; tick drivers for Sunday on the Crew tab roster to make it a delivery day. Take any of your drivers for a relaxed daytime convoy on an open pass: it lifts their mood and teaches them the road, and everyone who stays home gets a full rest.</p>
   <p><b>Weekly cycle.</b> Monday to Saturday, one dawn delivery a day. Each car carries one batch, so the number of runs is capped by both your crew and your production line. The dawn roster in the Crew tab sets which days each driver runs. It repeats every week, and Rotate evenly shares the days out when you have more drivers than presses. A day with nobody rostered can be taken as a rest day. Drivers who skip Saturday's dawn run go into race night rested: fewer mistakes, steadier under pressure and slightly quicker.</p>
   <p><b>Driving.</b> Every run trains braking, cornering, drifting, heel-toe, throttle and focus. Faster runs mean fresher tofu. Smooth inputs and good suspension mean less damage. Both raise what the hotel pays.</p>
   <p><b>Garage.</b> Spend on engine, suspension, brakes, a limited-slip diff, weight reduction and a sprung tofu cradle. Watch tyre wear: bald tyres cost grip and time.</p>
