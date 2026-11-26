@@ -669,7 +669,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1972</span><span class="ver" id="gver" title="Game version">v152</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v152</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -4094,7 +4094,7 @@ document.addEventListener('change',e=>{const el=e.target.closest('[data-chg]');i
   let gbuf='';document.addEventListener('keydown',e=>{const t=e.target;if(t&&(t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable))return;if(e.key&&e.key.length===1){gbuf=(gbuf+e.key.toLowerCase()).slice(-12);if(gbuf.endsWith('genting')){gbuf='';genting()}}});
   let staps=[];document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.pill.season'))return;const n=performance.now();staps=staps.filter(x=>n-x<3000);staps.push(n);if(staps.length>=7){staps=[];genting()}});
   document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('.brand'))return;const n=performance.now();taps=taps.filter(x=>n-x<3000);taps.push(n);if(taps.length>=7){taps=[];pay()}});})();
-window.onMapPick=k=>{TAB='shop';renderAll();toast(k==='hotel'?`Grand Hotel Kumoi pays ${yen(QUAL[S.qual-1].price)} base per batch`:'Kasumi Tofu. Open since 1972.')};
+window.onMapPick=k=>{TAB='shop';renderAll();toast(k==='hotel'?`Grand Hotel Kumoi pays ${yen(QUAL[S.qual-1].price)} base per batch`:'Kasumi Tofu. Open since 1984.')};
 
 function showHelp(intro){
   modal(`<div class="eyebrow">${intro?'04:30 · Mt. Usuzumi':'How it works'}</div><h2>${intro?'The shop at the bottom of the pass':'Running Kasumi Tofu'}</h2>
