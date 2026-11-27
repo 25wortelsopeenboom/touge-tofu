@@ -201,7 +201,7 @@ kbd{font-family:var(--f-dot);font-size:.85em;padding:0 5px;border:1px solid var(
 .lc .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px}
 .driving #actionbar{right:auto;left:50%;transform:translateX(-50%);bottom:14px}
 #map{image-rendering:pixelated}
-.lc{display:grid;grid-template-columns:30px 1fr auto;gap:4px 8px;align-items:center;width:230px;padding:6px 8px;border-radius:10px;background:rgba(10,14,30,.84);border:1px solid var(--line)}
+.lc{display:grid;grid-template-columns:30px 1fr auto;gap:4px 8px;align-items:center;width:230px;padding:6px 8px;border-radius:10px;background:rgba(10,14,30,.58);border:1px solid var(--line)}
 .lc img{width:30px;height:30px;border-radius:6px;image-rendering:pixelated;grid-row:span 2}
 .lc .n{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .lc .hh,.hc .hh{margin-left:5px;font-weight:600;color:var(--sodium);font-size:.92em}
@@ -418,7 +418,7 @@ textarea.code{width:100%;font-family:var(--f-dot);font-size:12px;line-height:1.4
 
 #sCred,.brand,.pill.season{touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .chip.legend{color:#d8dde4;border-color:#d8dde488;background:rgba(142,147,154,.14)}
-.lc.ghost{border-color:#8e939a99;background:rgba(40,44,52,.9)}
+.lc.ghost{border-color:#8e939a99;background:rgba(40,44,52,.62)}
 .lc.ghost .n{color:#d8dde4}
 .ghostnote{display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;border:1px solid #8e939a66;background:rgba(142,147,154,.08);font-size:13px;line-height:1.45;color:var(--dim)}
 .ghostnote b{font-family:var(--f-display);font-weight:400;font-size:15px;color:#d8dde4}
@@ -538,8 +538,8 @@ html.phone #live{display:none}
 html.phone .driving #live{display:flex;top:auto;bottom:214px;right:8px;gap:3px;max-height:calc(100% - 296px)}
 html.phone.land .driving #live{top:46px;bottom:auto;max-height:calc(100% - 210px)}
 html.phone .driving #live .lc,html.phone .driving #live .lc:not(.on){display:grid}
-html.phone .lc{grid-template-columns:minmax(0,1fr) auto auto;gap:0 7px;width:auto;min-width:112px;max-width:160px;padding:2px 7px;border-radius:7px;background:rgba(10,14,30,.66);border-color:transparent}
-html.phone .lc.on{border-color:var(--sodium);background:rgba(10,14,30,.85)}
+html.phone .lc{grid-template-columns:minmax(0,1fr) auto auto;gap:0 7px;width:auto;min-width:112px;max-width:160px;padding:2px 7px;border-radius:7px;background:rgba(10,14,30,.5);border-color:transparent}
+html.phone .lc.on{border-color:var(--sodium);background:rgba(10,14,30,.66)}
 html.phone .lc img,html.phone .lc .gm,html.phone .lc .tb,html.phone .lc .cc,html.phone .lc .spd small{display:none}
 html.phone .lc .n{font-size:11px;grid-column:1;grid-row:1}
 html.phone .lc .bars{grid-column:2;grid-row:1}
@@ -566,7 +566,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v191</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v193</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -2217,8 +2217,11 @@ const MAP=(()=>{
     c.drawImage(OW&&OW.feather||groundC,B.v0,B.u0,B.v1-B.v0,B.u1-B.u0);
     if(OW){const fo=clamp((48-cam.z)/22,0,1);if(fo>0){c.globalAlpha=fo;c.drawImage(OW.t,OW.E.v0,OW.E.u0,OW.E.v1-OW.E.v0,OW.E.u1-OW.E.u0);c.globalAlpha=1}}
     if(cam.z>30){c.globalAlpha=clamp((cam.z-30)/40,0,1)*.9;c.fillStyle=pats.grass;const x0=Math.max(B.v0,vr.v0),y0=Math.max(B.u0,vr.u0);c.fillRect(x0,y0,Math.min(B.v1,vr.v1)-x0,Math.min(B.u1,vr.u1)-y0);c.globalAlpha=1}
-    if(world.def.home){const L=shopSlots[shopSlots.length-1];rect(c,shopSlots[0].v-.2,shopSlots[0].u-.32,L.v-shopSlots[0].v+.4,L.u-shopSlots[0].u+.64,'#4a4b50');rect(c,hotelSlots[0].v-.18,hotelSlots[0].u-.3,1.85,.6,'#4a4b50');
-      if(lod){c.fillStyle='rgba(240,240,230,.7)';shopSlots.forEach(s=>c.fillRect(s.v-.13,s.row?s.u-.22:s.u-.28,.012,.5));{const a=shopSlots[9],b=shopSlots[19];if(a)c.fillRect(a.v+.13,a.u-.28,.012,.5);if(b)c.fillRect(b.v+.13,b.u-.22,.012,.5)}hotelSlots.forEach(s=>c.fillRect(s.v-.135,s.u-.26,.012,.48))}}
+    if(world.def.home){/* the car park grows with the garage: one row with a bay per car, and once the front row is full a second row opens with the same ten bays behind it */
+      const nc=clamp(S.cars.length,1,GARAGE_MAX),r1=Math.min(nc,10),r2=nc>10?10:0,A=shopSlots[0],E=shopSlots[r1-1];
+      rect(c,A.v-.2,A.u-.32,E.v-A.v+.4,r2?shopSlots[10].u-A.u+.64:.6,'#4a4b50');rect(c,hotelSlots[0].v-.18,hotelSlots[0].u-.3,1.85,.6,'#4a4b50');
+      if(lod){c.fillStyle='rgba(240,240,230,.7)';const bay=(s,last)=>{const y=s.row?s.u-.22:s.u-.28;c.fillRect(s.v-.13,y,.012,.5);if(last)c.fillRect(s.v+.13,y,.012,.5)};
+        for(let k=0;k<r1;k++)bay(shopSlots[k],k===r1-1);for(let k=0;k<r2;k++)bay(shopSlots[10+k],k===r2-1);hotelSlots.forEach(s=>c.fillRect(s.v-.135,s.u-.26,.012,.48))}}
     c.lineJoin='round';c.lineCap='round';
     c.strokeStyle=cam.z>30?pats.gravel:'#d8cfb8';c.lineWidth=Math.max(SHW*2,4/Zl);c.stroke(paths.center);
     c.strokeStyle=cam.z>30?pats.asphalt:'#34363c';c.lineWidth=Math.max(HW*2,2.2/Zl);c.stroke(paths.center);
