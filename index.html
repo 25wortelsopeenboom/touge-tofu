@@ -566,7 +566,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v193</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v194</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -2217,8 +2217,8 @@ const MAP=(()=>{
     c.drawImage(OW&&OW.feather||groundC,B.v0,B.u0,B.v1-B.v0,B.u1-B.u0);
     if(OW){const fo=clamp((48-cam.z)/22,0,1);if(fo>0){c.globalAlpha=fo;c.drawImage(OW.t,OW.E.v0,OW.E.u0,OW.E.v1-OW.E.v0,OW.E.u1-OW.E.u0);c.globalAlpha=1}}
     if(cam.z>30){c.globalAlpha=clamp((cam.z-30)/40,0,1)*.9;c.fillStyle=pats.grass;const x0=Math.max(B.v0,vr.v0),y0=Math.max(B.u0,vr.u0);c.fillRect(x0,y0,Math.min(B.v1,vr.v1)-x0,Math.min(B.u1,vr.u1)-y0);c.globalAlpha=1}
-    if(world.def.home){/* the car park grows with the garage: one row with a bay per car, and once the front row is full a second row opens with the same ten bays behind it */
-      const nc=clamp(S.cars.length,1,GARAGE_MAX),r1=Math.min(nc,10),r2=nc>10?10:0,A=shopSlots[0],E=shopSlots[r1-1];
+    if(world.def.home){/* the car park grows with the garage: one row that starts with four bays and adds one per car, and once the front row is full a second row opens with the same ten bays behind it */
+      const nc=clamp(S.cars.length,4,GARAGE_MAX),r1=Math.min(nc,10),r2=nc>10?10:0,A=shopSlots[0],E=shopSlots[r1-1];
       rect(c,A.v-.2,A.u-.32,E.v-A.v+.4,r2?shopSlots[10].u-A.u+.64:.6,'#4a4b50');rect(c,hotelSlots[0].v-.18,hotelSlots[0].u-.3,1.85,.6,'#4a4b50');
       if(lod){c.fillStyle='rgba(240,240,230,.7)';const bay=(s,last)=>{const y=s.row?s.u-.22:s.u-.28;c.fillRect(s.v-.13,y,.012,.5);if(last)c.fillRect(s.v+.13,y,.012,.5)};
         for(let k=0;k<r1;k++)bay(shopSlots[k],k===r1-1);for(let k=0;k<r2;k++)bay(shopSlots[10+k],k===r2-1);hotelSlots.forEach(s=>c.fillRect(s.v-.135,s.u-.26,.012,.48))}}
