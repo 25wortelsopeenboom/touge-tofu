@@ -566,7 +566,7 @@ html.phone.land #app{padding-block:6px;gap:6px}
 
 <div id="app">
   <header class="hud">
-    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v188</span></div>
+    <div class="brand"><span class="k">霞豆腐店</span><span class="e">Kasumi Tofu · since 1984</span><span class="ver" id="gver" title="Game version">v190</span></div>
     <div class="days" id="days"></div>
     <div class="stats">
       <div class="stat"><label>Funds</label><b id="sMoney">¥0</b></div>
@@ -3943,7 +3943,7 @@ const ACT={
   raceSkip:()=>MAP.skip(), raceNext:()=>INSTANT?endInstant():nextRace(),
   acceptOffer, declineOffer,
   newGameAsk:()=>modal(`<h2>Start over?</h2><p>This wipes the shop, the crew and every car except the hachi-roku.</p><div class="mact"><button class="btn" data-act="close">Keep playing</button><button class="btn race" data-act="newGameYes">Start a new game</button></div>`),
-  newGameYes:()=>{newGame();S.seenIntro=true;S.tut={s:-1,tips:TUT.allTips()};closeModal();MAP.setDarkNow(1);save();renderAll();toast('New game. Back to the hachi-roku.')},
+  newGameYes:()=>{newGame();S.seenIntro=true;TUT.replay();closeModal();MAP.setDarkNow(1);save();renderAll();toast('New game. Back to the hachi-roku.')},
   intro:()=>{S.seenIntro=true;save();closeModal()},
   exportSave:()=>{modal(`<div class="eyebrow">Export save</div><h2>Your save code</h2><p>${esc(saveSummary(S))}. Copy the whole code and keep it somewhere safe. Paste it into Import save on any device to carry on from here.</p><textarea id="saveOut" class="code" rows="6" readonly>${saveCode()}</textarea><div class="mact"><button class="btn" data-act="close">Close</button><button class="btn primary" data-act="copySave">Copy code</button></div>`);const t=$('#saveOut');t&&t.addEventListener('focus',()=>t.select())},
   copySave:()=>{const t=$('#saveOut');if(!t)return;const done=()=>toast('Save code copied');const fail=()=>{t.focus();t.select();toast('Code selected. Copy it with your keyboard or long-press.')};try{navigator.clipboard.writeText(t.value).then(done,fail)}catch(e){fail()}},
@@ -4540,7 +4540,7 @@ const TUT=(()=>{
   let mark=null;
   const STEPS=[
     {t:'Welcome to Kasumi Tofu',b:'You run a small tofu shop at the foot of Mt. Usuzumi. Every dawn a batch goes up the pass to Grand Hotel Kumoi at the summit. Faster, smoother runs mean fresher tofu and a better price. Let\'s do your first delivery together.',btn:'Show me',skipBtn:true,dim:true},
-    {t:'Meet Kenta',target:'#pbody .card',enter:()=>{if(TAB!=='crew'){TAB='crew';renderTabs();renderPanel()}},b:'Your son and first driver. Braking, cornering, drifting, heel-toe, throttle and focus grow with every run, and OVR is his overall rating. Pick a driver\'s car here, and choose the days they do the morning delivery under Dawn runs.',btn:'Next',dim:true,show:calm},
+    {t:'Meet Kenta',target:'#pbody .card:not(.roster):not(.hint)',enter:()=>{if(TAB!=='crew'){TAB='crew';renderTabs();renderPanel()}},b:'Your son and first driver. Braking, cornering, drifting, heel-toe, throttle and focus grow with every run, and OVR is his overall rating. Pick a driver\'s car here, and choose the days they do the morning delivery under Dawn runs.',btn:'Next',dim:true,show:calm},
     {t:'Send the dawn run',target:'#actionbar [data-act="dispatch"]',b:'It\'s 04:30 and the pass is empty. Hit Dispatch to send Kenta up the mountain.',dim:true,show:()=>calm()&&S.phase==='pre',skip:()=>!busy&&S.phase!=='pre',done:()=>busy},
     {t:'On the pass',target:'#live',b:'Top left counts the hairpins to go. The driver card shows speed and the tofu, which takes a knock from rough driving. Drag the map or use Whole pass and Follow to move the camera, or skip straight to the results.',btn:'Got it',show:()=>busy,skip:()=>!busy&&S.phase!=='pre',done:()=>!busy},
     {t:'Payday',target:'#modal .tot',b:'The hotel pays for freshness, which comes from a fast run, and for tofu that arrives in one piece. Beans, fuel and wages come out of that. Press Continue when you\'re done.',show:results,skip:()=>!busy&&!modalOpen(),done:()=>!busy&&!modalOpen()},
